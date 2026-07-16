@@ -965,6 +965,101 @@ function SubmitTab({ onSubmit }) {
   );
 }
 
+function BrowseTab({ allQuotes }) {
+  const [difficulty, setDifficulty] = useState("All");
+  const [search, setSearch] = useState("");
+
+  const filtered = allQuotes.filter(q => {
+    const matchesDifficulty = difficulty === "All" || q.difficulty === difficulty;
+    const term = search.trim().toLowerCase();
+    const matchesSearch = !term || q.text.toLowerCase().includes(term) || q.author.toLowerCase().includes(term);
+    return matchesDifficulty && matchesSearch;
+  });
+
+  return (
+    <div style={{ maxWidth: 820, margin: "0 auto", padding: "2rem 1.5rem" }}>
+      <div style={{ marginBottom: "1.75rem" }}>
+        <input
+          type="text"
+          className="input"
+          placeholder="Search by quote or author..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ marginBottom: "1.1rem" }}
+        />
+        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "center" }}>
+          {["All", ...Object.keys(DIFFICULTY_CONFIG).filter(d => d !== "Random")].map(d => {
+            const active = difficulty === d;
+            const cfg = d === "All" ? { color: "#e8c97a", glow: "#e8c97a40" } : DIFFICULTY_CONFIG[d];
+            return (
+              <button
+                key={d}
+                onClick={() => setDifficulty(d)}
+                className="diff-btn diff-btn--sm"
+                style={{
+                  background: active ? cfg.color : "transparent",
+                  color: active ? "#0a0a08" : cfg.color,
+                  borderColor: cfg.color,
+                  boxShadow: active ? `0 0 14px ${cfg.glow}` : "none",
+                }}
+              >
+                {d}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <p className="eyebrow" style={{ textAlign: "center", marginBottom: "1.25rem" }}>
+        {filtered.length} {filtered.length === 1 ? "quote" : "quotes"}
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {filtered.map((q, i) => {
+          const cfg = DIFFICULTY_CONFIG[q.difficulty] || DIFFICULTY_CONFIG.Random;
+          return (
+            <div key={q.id || `${q.text}-${i}`} className="card" style={{ padding: "1.5rem 1.75rem", position: "relative" }}>
+              <div className="tag-pill" style={{
+                position: "absolute", top: "1.1rem", right: "1.1rem",
+                background: `${cfg.color}18`,
+                borderColor: `${cfg.color}50`,
+                color: cfg.color,
+              }}>
+                {q.difficulty}
+              </div>
+              <p style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: "1.15rem",
+                lineHeight: 1.55,
+                color: "var(--text)",
+                fontStyle: "italic",
+                margin: "0 0 0.75rem",
+                paddingRight: "6rem",
+              }}>
+                "{q.text}"
+              </p>
+              <p style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.75rem",
+                color: "var(--text-dim)",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}>
+                — {q.author}
+              </p>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <p style={{ textAlign: "center", color: "var(--text-faint)", fontFamily: "var(--font-serif)", fontStyle: "italic", padding: "2rem 0" }}>
+            No quotes match your search.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("practice");
   const [dogVisible, setDogVisible] = useState(true);
@@ -1271,7 +1366,7 @@ export default function App() {
 
           {/* Tabs */}
           <nav style={{ display: "flex", gap: "0.5rem" }}>
-            {[["practice", "Practice"], ["submit", "Submit A Quotation"]].map(([id, label]) => (
+            {[["practice", "Practice"], ["browse", "All Quotations"], ["submit", "Submit A Quotation"]].map(([id, label]) => (
               <button
                 className="tab-btn"
                 key={id}
@@ -1381,6 +1476,31 @@ export default function App() {
           </div>
         )}
 
+        {activeTab === "browse" && (
+          <div style={{
+            textAlign: "center",
+            padding: "3rem 2rem 1rem",
+            width: "100%",
+            background: "radial-gradient(ellipse 80% 40% at 50% 0%, #1a1205 0%, #0a0a08 100%)",
+            position: "relative",
+            zIndex: 3,
+          }}>
+            <h1 className="hero-h1" style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: "clamp(2rem, 5vw, 3.2rem)",
+              fontWeight: 400,
+              color: "var(--text)",
+              lineHeight: 1.15,
+              marginBottom: "0.75rem",
+            }}>
+              Every quote in the <span style={{ color: "var(--accent)" }}>pool.</span>
+            </h1>
+            <p style={{ color: "var(--text-dim)", fontSize: "1rem", fontStyle: "italic" }}>
+              Updates live the moment someone submits a new one.
+            </p>
+          </div>
+        )}
+
         {/* Floating Characters */}
         {activeTab === "practice" && dogVisible && (
           <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, overflow: "visible" }}>
@@ -1400,6 +1520,7 @@ export default function App() {
         {/* Tab Content */}
         <main style={{ padding: "2rem 1rem 4rem", width: "100%", position: "relative", zIndex: 3 }}>
           {activeTab === "practice" && <PracticeTab allQuotes={allQuotes} onPhaseChange={p => setDogVisible(p === "IDLE")} />}
+          {activeTab === "browse" && <BrowseTab allQuotes={allQuotes} />}
           {activeTab === "submit" && <SubmitTab onSubmit={handleSubmit} />}
         </main>
 
