@@ -66,11 +66,11 @@ const BUILTIN_QUOTES = [
 ];
 
 const DIFFICULTY_CONFIG = {
-  Easy: { color: "#4ade80", glow: "#4ade8040" },
-  Medium: { color: "#facc15", glow: "#facc1540" },
-  Hard: { color: "#f97316", glow: "#f9731640" },
+  Easy: { color: "#34d399", glow: "#34d39940" },
+  Medium: { color: "#fbbf24", glow: "#fbbf2440" },
+  Hard: { color: "#fb923c", glow: "#fb923c40" },
   "Insaneo CRAZY": { color: "#e879f9", glow: "#e879f940" },
-  Random: { color: "#60a5fa", glow: "#60a5fa40" },
+  Random: { color: "#22d3ee", glow: "#22d3ee40" },
 };
 
 const PHASES = {
@@ -101,31 +101,37 @@ function getRandomQuote(difficulty, pool, lastQuoteText = null) {
 }
 
 // ── Circular progress ring used for every countdown ─────────────
-function CircularTimer({ value, max, color, size = 220, strokeWidth = 5, big, urgent }) {
+function CircularTimer({ value, max, color, size = 220, strokeWidth = 6, big, calm }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const progress = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
   const offset = circumference * (1 - progress);
+  const stroke = calm ? "url(#timerGradient)" : color;
 
   return (
     <div
-      className={urgent ? "timer-ring pulse-ring" : "timer-ring"}
       style={{
         position: "relative",
         width: size,
         height: size,
         margin: "0 auto 2.5rem",
-        filter: `drop-shadow(0 0 26px ${color}30)`,
+        filter: `drop-shadow(0 0 30px ${color}35)`,
       }}
     >
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)", display: "block" }}>
+        <defs>
+          <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--accent)" />
+            <stop offset="100%" stopColor="var(--accent-2)" />
+          </linearGradient>
+        </defs>
         <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--border-soft)" strokeWidth={strokeWidth} />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={color}
+          stroke={stroke}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -133,19 +139,14 @@ function CircularTimer({ value, max, color, size = 220, strokeWidth = 5, big, ur
           style={{ transition: "stroke-dashoffset 1s linear, stroke 0.4s ease" }}
         />
       </svg>
-      <div
-        style={{
-          position: "absolute", inset: 0,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}
-      >
+      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
         <span style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: big ? "4.6rem" : "3.4rem",
-          fontWeight: 700,
+          fontFamily: "var(--font-display)",
+          fontSize: big ? "4.4rem" : "3.2rem",
+          fontWeight: 600,
           color,
           letterSpacing: "-0.02em",
-          textShadow: `0 0 30px ${color}80`,
+          textShadow: `0 0 30px ${color}70`,
           transition: "color 0.4s",
         }}>
           {big ? value : formatTime(value)}
@@ -155,109 +156,122 @@ function CircularTimer({ value, max, color, size = 220, strokeWidth = 5, big, ur
   );
 }
 
+// ── Flying mascot #1: a laser-eyed cyborg dog ────────────────────
 function CyborgDog() {
-  const tan = "#C9844B", dkTan = "#9A6030", metal = "#7A99BB", dkMetal = "#3A5570";
   const legXs = [56, 76, 116, 136];
   return (
     <svg width="210" height="160" viewBox="0 0 210 160" style={{ overflow: "visible" }}>
+      <defs>
+        <linearGradient id="dogTan" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#F0B27A" />
+          <stop offset="100%" stopColor="#C9844B" />
+        </linearGradient>
+        <linearGradient id="dogTanDark" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#B5723A" />
+          <stop offset="100%" stopColor="#8A5A2C" />
+        </linearGradient>
+        <linearGradient id="dogMetal" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#B9D4F0" />
+          <stop offset="100%" stopColor="#5A7DA0" />
+        </linearGradient>
+        <radialGradient id="dogEyeGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#e0f7ff" />
+          <stop offset="45%" stopColor="#22d3ee" />
+          <stop offset="100%" stopColor="#8b5cf6" />
+        </radialGradient>
+      </defs>
+
       {/* LEFT LASER */}
-      <line x1="40" y1="82" x2="-600" y2="82" stroke="#FF2222" strokeWidth="3" strokeLinecap="round">
+      <line x1="40" y1="82" x2="-600" y2="82" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round">
         <animate attributeName="opacity" values="0;0;1;1;1;0" dur="2.8s" repeatCount="indefinite" />
       </line>
-      <line x1="40" y1="82" x2="-600" y2="82" stroke="#FF000033" strokeWidth="14" strokeLinecap="round">
+      <line x1="40" y1="82" x2="-600" y2="82" stroke="#f8717133" strokeWidth="12" strokeLinecap="round">
         <animate attributeName="opacity" values="0;0;1;1;1;0" dur="2.8s" repeatCount="indefinite" />
       </line>
       {/* RIGHT LASER */}
-      <line x1="152" y1="82" x2="800" y2="82" stroke="#FF2222" strokeWidth="3" strokeLinecap="round">
+      <line x1="152" y1="82" x2="800" y2="82" stroke="#f87171" strokeWidth="2.5" strokeLinecap="round">
         <animate attributeName="opacity" values="0;0;1;1;1;0" dur="2.8s" repeatCount="indefinite" begin="1.4s" />
       </line>
-      <line x1="152" y1="82" x2="800" y2="82" stroke="#FF000033" strokeWidth="14" strokeLinecap="round">
+      <line x1="152" y1="82" x2="800" y2="82" stroke="#f8717133" strokeWidth="12" strokeLinecap="round">
         <animate attributeName="opacity" values="0;0;1;1;1;0" dur="2.8s" repeatCount="indefinite" begin="1.4s" />
       </line>
 
-      {/* TAIL — fishhook */}
-      <path d="M43,82 Q16,62 22,42 Q28,24 46,34" stroke={dkTan} strokeWidth="13" strokeLinecap="round" fill="none" />
-      <path d="M43,82 Q16,62 22,42 Q28,24 46,34" stroke={tan} strokeWidth="8" strokeLinecap="round" fill="none" />
+      {/* TAIL */}
+      <path d="M43,82 Q16,62 22,42 Q28,24 46,34" stroke="url(#dogTanDark)" strokeWidth="12" strokeLinecap="round" fill="none" />
+      <path d="M43,82 Q16,62 22,42 Q28,24 46,34" stroke="url(#dogTan)" strokeWidth="7" strokeLinecap="round" fill="none" />
 
       {/* BODY */}
-      <ellipse cx="97" cy="82" rx="58" ry="27" fill={tan} />
+      <ellipse cx="97" cy="82" rx="58" ry="27" fill="url(#dogTan)" />
 
       {/* NECK */}
-      <ellipse cx="146" cy="72" rx="19" ry="16" fill={tan} />
+      <ellipse cx="146" cy="72" rx="19" ry="16" fill="url(#dogTan)" />
 
       {/* HEAD */}
-      <ellipse cx="160" cy="59" rx="29" ry="24" fill={tan} />
+      <ellipse cx="160" cy="59" rx="29" ry="24" fill="url(#dogTan)" />
 
       {/* SNOUT */}
-      <ellipse cx="181" cy="67" rx="15" ry="10" fill={dkTan} />
-      <ellipse cx="193" cy="68" rx="5" ry="4" fill="#1A0800" />
+      <ellipse cx="181" cy="67" rx="15" ry="10" fill="url(#dogTanDark)" />
+      <ellipse cx="193" cy="68" rx="5" ry="4" fill="#1A0F08" />
       <circle cx="192" cy="66.5" r="1.5" fill="white" opacity="0.55" />
 
       {/* EARS */}
-      <polygon points="141,50 149,22 161,50" fill={dkTan} />
+      <polygon points="141,50 149,22 161,50" fill="url(#dogTanDark)" />
       <polygon points="142,50 149,29 159,50" fill="#EAA07888" />
-      <polygon points="158,47 166,19 175,47" fill={dkTan} />
+      <polygon points="158,47 166,19 175,47" fill="url(#dogTanDark)" />
       <polygon points="159,47 166,25 174,47" fill="#EAA07888" />
 
       {/* METAL ARMOR PLATE */}
-      <rect x="50" y="68" width="52" height="27" rx="5" fill={metal} />
-      <rect x="50" y="68" width="52" height="8" rx="4" fill={dkMetal} />
-      <line x1="50" y1="81.5" x2="102" y2="81.5" stroke={dkMetal} strokeWidth="1.5" />
-      <line x1="76" y1="68" x2="76" y2="95" stroke={dkMetal} strokeWidth="1.5" />
-      <circle cx="57" cy="73" r="2.5" fill={dkMetal} />
-      <circle cx="95" cy="73" r="2.5" fill={dkMetal} />
-      <circle cx="57" cy="89" r="2.5" fill={dkMetal} />
-      <circle cx="95" cy="89" r="2.5" fill={dkMetal} />
+      <rect x="50" y="68" width="52" height="27" rx="6" fill="url(#dogMetal)" />
+      <rect x="50" y="68" width="52" height="8" rx="4" fill="#3A5570" />
+      <line x1="50" y1="81.5" x2="102" y2="81.5" stroke="#3A5570" strokeWidth="1.2" opacity="0.6" />
+      <line x1="76" y1="68" x2="76" y2="95" stroke="#3A5570" strokeWidth="1.2" opacity="0.6" />
+      <circle cx="57" cy="73" r="2.2" fill="#3A5570" />
+      <circle cx="95" cy="73" r="2.2" fill="#3A5570" />
+      <circle cx="57" cy="89" r="2.2" fill="#3A5570" />
+      <circle cx="95" cy="89" r="2.2" fill="#3A5570" />
 
       {/* LASER EMITTER PORTS */}
-      <circle cx="40" cy="82" r="7" fill={dkMetal} />
-      <circle cx="40" cy="82" r="4.5" fill="#FF1111"><animate attributeName="opacity" values="0.45;1;0.45" dur="2.8s" repeatCount="indefinite" /></circle>
-      <circle cx="40" cy="82" r="2" fill="#FF9999"><animate attributeName="opacity" values="0.6;1;0.6" dur="2.8s" repeatCount="indefinite" /></circle>
-      <circle cx="152" cy="82" r="7" fill={dkMetal} />
-      <circle cx="152" cy="82" r="4.5" fill="#FF1111"><animate attributeName="opacity" values="0.45;1;0.45" dur="2.8s" repeatCount="indefinite" begin="1.4s" /></circle>
-      <circle cx="152" cy="82" r="2" fill="#FF9999"><animate attributeName="opacity" values="0.6;1;0.6" dur="2.8s" repeatCount="indefinite" begin="1.4s" /></circle>
+      <circle cx="40" cy="82" r="6.5" fill="#3A5570" />
+      <circle cx="40" cy="82" r="4" fill="#f87171"><animate attributeName="opacity" values="0.45;1;0.45" dur="2.8s" repeatCount="indefinite" /></circle>
+      <circle cx="152" cy="82" r="6.5" fill="#3A5570" />
+      <circle cx="152" cy="82" r="4" fill="#f87171"><animate attributeName="opacity" values="0.45;1;0.45" dur="2.8s" repeatCount="indefinite" begin="1.4s" /></circle>
 
       {/* NORMAL EYE */}
-      <ellipse cx="173" cy="56" rx="5.5" ry="5" fill="#1A0800" />
+      <ellipse cx="173" cy="56" rx="5.5" ry="5" fill="#1A0F08" />
       <circle cx="174.5" cy="54.5" r="1.5" fill="white" />
 
-      {/* CYBORG EYE */}
-      <circle cx="150" cy="57" r="9.5" fill="#0A0A0A" />
-      <circle cx="150" cy="57" r="7.5" fill="#880000" />
-      <circle cx="150" cy="57" r="5" fill="#CC0000" />
-      <circle cx="150" cy="57" r="2.5" fill="#FF4444" />
-      <circle cx="151" cy="56" r="1.2" fill="white" opacity="0.9" />
-      <circle cx="150" cy="57" r="9.5" stroke={metal} strokeWidth="1.5" fill="none" />
-      <circle cx="150" cy="57" r="14" fill="#FF000012">
+      {/* CYBORG EYE — glowing accent core, tied to site palette */}
+      <circle cx="150" cy="57" r="9.5" fill="#0A0A12" />
+      <circle cx="150" cy="57" r="7.5" fill="url(#dogEyeGlow)" />
+      <circle cx="151" cy="56" r="1.4" fill="white" opacity="0.9" />
+      <circle cx="150" cy="57" r="9.5" stroke="#B9D4F0" strokeWidth="1.3" fill="none" />
+      <circle cx="150" cy="57" r="14" fill="#22d3ee14">
         <animate attributeName="r" values="11;15;11" dur="1.3s" repeatCount="indefinite" />
         <animate attributeName="opacity" values="0.4;0.75;0.4" dur="1.3s" repeatCount="indefinite" />
       </circle>
 
       {/* MOUTH */}
-      <path d="M179,75 Q185,79 189,75" stroke="#1A0800" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+      <path d="M179,75 Q185,79 189,75" stroke="#1A0F08" strokeWidth="1.5" fill="none" strokeLinecap="round" />
 
       {/* LEGS */}
       {legXs.map((x, i) => (
-        <rect key={i} x={x - 7} y={104} width="13" height="22" rx="4" fill={dkTan} />
+        <rect key={i} x={x - 7} y={104} width="13" height="22" rx="4" fill="url(#dogTanDark)" />
       ))}
 
       {/* ROCKET BOOSTERS */}
       {legXs.map((cx, i) => (
         <g key={i}>
-          <rect x={cx - 8} y={123} width="16" height="11" rx="3" fill={metal} />
-          <rect x={cx - 8} y={123} width="16" height="4" rx="2" fill={dkMetal} />
-          <path d={`M${cx-6},134 L${cx-9},138 L${cx+9},138 L${cx+6},134 Z`} fill="#445566" />
-          {/* Outer flame */}
+          <rect x={cx - 8} y={123} width="16" height="11" rx="3" fill="url(#dogMetal)" />
+          <rect x={cx - 8} y={123} width="16" height="4" rx="2" fill="#3A5570" />
+          <path d={`M${cx-6},134 L${cx-9},138 L${cx+9},138 L${cx+6},134 Z`} fill="#3A4658" />
           <ellipse cx={cx} cy={145} rx="8" ry="12">
             <animate attributeName="fill" values="#FF5500;#FF8800;#FF3300;#FF7700" dur="0.13s" repeatCount="indefinite" />
             <animate attributeName="ry" values="12;16;9;14;12" dur="0.13s" repeatCount="indefinite" />
           </ellipse>
-          {/* Mid flame */}
           <ellipse cx={cx} cy={143} rx="5" ry="7">
             <animate attributeName="fill" values="#FFCC00;#FFEE00;#FF9900;#FFDD00" dur="0.13s" repeatCount="indefinite" />
             <animate attributeName="ry" values="7;10;5;9;7" dur="0.13s" repeatCount="indefinite" />
           </ellipse>
-          {/* White core */}
           <ellipse cx={cx} cy={140} rx="2.5" ry="3" fill="white" opacity="0.88" />
         </g>
       ))}
@@ -265,90 +279,107 @@ function CyborgDog() {
   );
 }
 
+// ── Flying mascot #2: an improv dragon with a glowing eye ────────
 function ImprovDragon() {
-  const body = "#2E7D32", dark = "#1B5E20", mid = "#4CAF50";
-  const gold = "#FFD700", dkGold = "#B8960C";
-  const wingMem = "#388E3C";
-
   return (
     <svg width="270" height="230" viewBox="0 0 270 230" style={{ overflow: "visible" }}>
+      <defs>
+        <linearGradient id="dragonBody" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#2dd4a7" />
+          <stop offset="100%" stopColor="#0f766e" />
+        </linearGradient>
+        <linearGradient id="dragonDark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#115e59" />
+          <stop offset="100%" stopColor="#053b36" />
+        </linearGradient>
+        <linearGradient id="dragonWing" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#5eead4" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#0f766e" stopOpacity="0.75" />
+        </linearGradient>
+        <linearGradient id="dragonGold" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#fde68a" />
+          <stop offset="100%" stopColor="#d97706" />
+        </linearGradient>
+        <radialGradient id="dragonEyeGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#f5f3ff" />
+          <stop offset="45%" stopColor="#a78bfa" />
+          <stop offset="100%" stopColor="#22d3ee" />
+        </radialGradient>
+      </defs>
+
       {/* LEFT WING */}
-      <path d="M108,100 Q68,55 25,32 Q48,72 80,94 Q94,100 108,100 Z" fill={wingMem} stroke={dark} strokeWidth="1.5" />
-      <line x1="108" y1="100" x2="25" y2="32" stroke={dark} strokeWidth="1" opacity="0.55" />
-      <line x1="103" y1="95" x2="55" y2="56" stroke={dark} strokeWidth="1" opacity="0.35" />
-      <line x1="97"  y1="91" x2="72" y2="70" stroke={dark} strokeWidth="1" opacity="0.35" />
+      <path d="M108,100 Q68,55 25,32 Q48,72 80,94 Q94,100 108,100 Z" fill="url(#dragonWing)" stroke="url(#dragonDark)" strokeWidth="1.5" />
+      <line x1="108" y1="100" x2="25" y2="32" stroke="#053b36" strokeWidth="1" opacity="0.5" />
+      <line x1="103" y1="95" x2="55" y2="56" stroke="#053b36" strokeWidth="1" opacity="0.3" />
+      <line x1="97"  y1="91" x2="72" y2="70" stroke="#053b36" strokeWidth="1" opacity="0.3" />
 
       {/* RIGHT WING */}
-      <path d="M162,100 Q202,55 248,28 Q228,68 196,93 Q179,100 162,100 Z" fill={wingMem} stroke={dark} strokeWidth="1.5" />
-      <line x1="162" y1="100" x2="248" y2="28" stroke={dark} strokeWidth="1" opacity="0.55" />
-      <line x1="167" y1="95" x2="218" y2="52" stroke={dark} strokeWidth="1" opacity="0.35" />
-      <line x1="172" y1="91" x2="204" y2="68" stroke={dark} strokeWidth="1" opacity="0.35" />
+      <path d="M162,100 Q202,55 248,28 Q228,68 196,93 Q179,100 162,100 Z" fill="url(#dragonWing)" stroke="url(#dragonDark)" strokeWidth="1.5" />
+      <line x1="162" y1="100" x2="248" y2="28" stroke="#053b36" strokeWidth="1" opacity="0.5" />
+      <line x1="167" y1="95" x2="218" y2="52" stroke="#053b36" strokeWidth="1" opacity="0.3" />
+      <line x1="172" y1="91" x2="204" y2="68" stroke="#053b36" strokeWidth="1" opacity="0.3" />
 
       {/* TAIL */}
       <path d="M92,115 Q45,125 26,104 Q8,82 18,56 Q28,32 46,42"
-        stroke={dark} strokeWidth="17" fill="none" strokeLinecap="round" />
+        stroke="url(#dragonDark)" strokeWidth="16" fill="none" strokeLinecap="round" />
       <path d="M92,115 Q45,125 26,104 Q8,82 18,56 Q28,32 46,42"
-        stroke={body} strokeWidth="11" fill="none" strokeLinecap="round" />
-      {/* Tail spike */}
-      <polygon points="44,40 38,28 57,38" fill={gold} stroke={dkGold} strokeWidth="1" />
+        stroke="url(#dragonBody)" strokeWidth="10" fill="none" strokeLinecap="round" />
+      <polygon points="44,40 38,28 57,38" fill="url(#dragonGold)" stroke="#b45309" strokeWidth="1" />
 
       {/* BODY */}
-      <ellipse cx="135" cy="115" rx="55" ry="32" fill={body} />
-      <ellipse cx="135" cy="120" rx="38" ry="20" fill={mid} opacity="0.3" />
+      <ellipse cx="135" cy="115" rx="55" ry="32" fill="url(#dragonBody)" />
+      <ellipse cx="135" cy="120" rx="38" ry="20" fill="#5eead4" opacity="0.22" />
 
       {/* NECK */}
-      <ellipse cx="174" cy="99" rx="20" ry="18" fill={body} />
+      <ellipse cx="174" cy="99" rx="20" ry="18" fill="url(#dragonBody)" />
 
       {/* HEAD */}
-      <ellipse cx="196" cy="82" rx="30" ry="24" fill={body} />
+      <ellipse cx="196" cy="82" rx="30" ry="24" fill="url(#dragonBody)" />
 
       {/* SNOUT */}
-      <ellipse cx="218" cy="89" rx="17" ry="11" fill={dark} />
-      <ellipse cx="233" cy="90" rx="5" ry="4" fill="#0A150A" />
-      <circle cx="232" cy="88.5" r="1.5" fill="white" opacity="0.45" />
+      <ellipse cx="218" cy="89" rx="17" ry="11" fill="url(#dragonDark)" />
+      <ellipse cx="233" cy="90" rx="5" ry="4" fill="#03211d" />
+      <circle cx="232" cy="88.5" r="1.5" fill="white" opacity="0.4" />
 
       {/* HORNS */}
-      <path d="M186,65 L178,37 L192,63 Z" fill={gold} stroke={dkGold} strokeWidth="1" />
-      <path d="M202,61 L197,32 L210,58 Z" fill={gold} stroke={dkGold} strokeWidth="1" />
+      <path d="M186,65 L178,37 L192,63 Z" fill="url(#dragonGold)" stroke="#b45309" strokeWidth="1" />
+      <path d="M202,61 L197,32 L210,58 Z" fill="url(#dragonGold)" stroke="#b45309" strokeWidth="1" />
 
-      {/* EYE */}
-      <ellipse cx="212" cy="79" rx="7.5" ry="6.5" fill="#FF8C00" />
-      <ellipse cx="212" cy="79" rx="4.5" ry="5.5" fill="#1A0A00" />
-      <circle cx="213" cy="77.5" r="1.5" fill="white" opacity="0.65" />
-      <ellipse cx="212" cy="79" rx="10" ry="9" fill="#FF8C0014">
-        <animate attributeName="rx" values="8;12;8" dur="2.2s" repeatCount="indefinite" />
-        <animate attributeName="ry" values="7;11;7" dur="2.2s" repeatCount="indefinite" />
+      {/* EYE — glowing accent core, matches CyborgDog's motif */}
+      <ellipse cx="212" cy="79" rx="8" ry="7" fill="#03211d" />
+      <ellipse cx="212" cy="79" rx="5.5" ry="5" fill="url(#dragonEyeGlow)" />
+      <circle cx="213.5" cy="77.5" r="1.4" fill="white" opacity="0.85" />
+      <ellipse cx="212" cy="79" rx="11" ry="10" fill="#a78bfa14">
+        <animate attributeName="rx" values="9;13;9" dur="2.2s" repeatCount="indefinite" />
+        <animate attributeName="ry" values="8;12;8" dur="2.2s" repeatCount="indefinite" />
       </ellipse>
 
       {/* MOUTH — grin */}
-      <path d="M218,94 Q227,101 234,95" stroke="#0A150A" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M218,94 Q227,101 234,95" stroke="#03211d" strokeWidth="2" fill="none" strokeLinecap="round" />
       <polygon points="221,96 224,103 227,96" fill="white" />
       <polygon points="228,95 231,102 234,95" fill="white" />
 
       {/* CLAWS */}
-      <path d="M150,141 L144,154 M150,141 L149,155 M150,141 L155,153" stroke={dark} strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M115,141 L109,154 M115,141 L114,155 M115,141 L120,153" stroke={dark} strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M150,141 L144,154 M150,141 L149,155 M150,141 L155,153" stroke="url(#dragonDark)" strokeWidth="2.5" strokeLinecap="round" />
+      <path d="M115,141 L109,154 M115,141 L114,155 M115,141 L120,153" stroke="url(#dragonDark)" strokeWidth="2.5" strokeLinecap="round" />
 
-      {/* CHAIN — dashed gold line from neck to medallion */}
+      {/* CHAIN */}
       <path d="M183,113 Q180,135 177,158 Q175,172 170,182"
-        stroke={gold} strokeWidth="5" fill="none" strokeLinecap="round"
+        stroke="url(#dragonGold)" strokeWidth="4.5" fill="none" strokeLinecap="round"
         strokeDasharray="9,6" />
 
       {/* MEDALLION */}
-      <rect x="60" y="182" width="210" height="54" rx="11" fill="#180E06" stroke={gold} strokeWidth="2.5" />
-      <rect x="63" y="185" width="204" height="48" rx="9" fill="none" stroke={dkGold} strokeWidth="1" opacity="0.5" />
-      {/* chain connects */}
-      <line x1="170" y1="182" x2="170" y2="182" stroke={gold} strokeWidth="4" />
+      <rect x="60" y="182" width="210" height="54" rx="14" fill="#06181a" stroke="url(#dragonGold)" strokeWidth="2.5" />
+      <rect x="63" y="185" width="204" height="48" rx="11" fill="none" stroke="#b45309" strokeWidth="1" opacity="0.45" />
       <text x="165" y="204" textAnchor="middle"
-        fill={gold} fontFamily="Georgia, serif" fontSize="11.5" fontWeight="bold" letterSpacing="0.6">
-        The dragon who always wins
+        fill="#fde68a" fontFamily="'Space Mono', monospace" fontSize="10.5" fontWeight="700" letterSpacing="1.5">
+        THE DRAGON WHO ALWAYS WINS
       </text>
-      <text x="165" y="222" textAnchor="middle"
-        fill={gold} fontFamily="Georgia, serif" fontSize="11.5" fontWeight="bold" letterSpacing="0.6">
-        Duo Improv
+      <text x="165" y="221" textAnchor="middle"
+        fill="#fde68a" fontFamily="'Space Mono', monospace" fontSize="10.5" fontWeight="700" letterSpacing="2">
+        DUO IMPROV
       </text>
-      {/* Medallion shine flicker */}
-      <ellipse cx="80" cy="198" rx="9" ry="5" fill={gold} opacity="0.12" />
+      <ellipse cx="80" cy="198" rx="9" ry="5" fill="#fde68a" opacity="0.12" />
     </svg>
   );
 }
@@ -380,23 +411,21 @@ function ReviewScreen({ blob, quote, onReset }) {
 
   return (
     <div style={{ maxWidth: 680, margin: "0 auto", animation: "fadeUp 0.6s ease both" }}>
-      {/* Header */}
       <div style={{ textAlign: "center", marginBottom: "2.25rem" }}>
         <div className="eyebrow" style={{ color: "var(--good)", marginBottom: "0.6rem" }}>
           ✓ Speech Complete
         </div>
         <h2 style={{
-          fontFamily: "var(--font-serif)", fontSize: "2rem",
-          color: "var(--text)", fontWeight: 400, marginBottom: "0.4rem",
+          fontFamily: "var(--font-display)", fontSize: "2rem",
+          color: "var(--text)", fontWeight: 600, marginBottom: "0.4rem",
         }}>
           Nice work. Review your recording.
         </h2>
-        <p style={{ color: "var(--text-dim)", fontFamily: "var(--font-serif)", fontSize: "1rem", fontStyle: "italic" }}>
+        <p style={{ color: "var(--text-dim)", fontFamily: "var(--font-body)", fontSize: "1rem" }}>
           Watch it back, then download and send to your coach.
         </p>
       </div>
 
-      {/* Video Player */}
       <div className="card" style={{ overflow: "hidden", marginBottom: "1.5rem" }}>
         {videoUrl ? (
           <video
@@ -411,16 +440,14 @@ function ReviewScreen({ blob, quote, onReset }) {
         )}
       </div>
 
-      {/* Quote reminder */}
       {quote && (
         <div className="card card--flat" style={{ padding: "1.1rem 1.5rem", marginBottom: "1.5rem" }}>
-          <p style={{ fontFamily: "var(--font-serif)", fontSize: "1rem", color: "var(--text-dim)", fontStyle: "italic", margin: 0 }}>
+          <p style={{ fontFamily: "var(--font-body)", fontSize: "1rem", color: "var(--text-dim)", fontStyle: "italic", margin: 0 }}>
             "{quote.text}" — {quote.author}
           </p>
         </div>
       )}
 
-      {/* Student Info */}
       <div className="card" style={{ padding: "1.75rem", marginBottom: "1.5rem" }}>
         <div style={{ marginBottom: "1.3rem" }}>
           <label className="label">Your Name</label>
@@ -456,7 +483,6 @@ function ReviewScreen({ blob, quote, onReset }) {
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
         <button
           onClick={handleDownload}
@@ -473,7 +499,7 @@ function ReviewScreen({ blob, quote, onReset }) {
 
       <p style={{
         marginTop: "1.1rem", textAlign: "center",
-        fontFamily: "var(--font-serif)", fontSize: "0.9rem",
+        fontFamily: "var(--font-body)", fontSize: "0.9rem",
         color: "var(--text-faint)", fontStyle: "italic",
       }}>
         Download your recording and send it to {selectedCoaches.length === 0 ? "your coach" : selectedCoaches.join(", ")} for feedback.
@@ -499,7 +525,6 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const liveVideoRef = useRef(null);
   phaseRef.current = phase;
 
-  // Start camera as soon as component mounts so preview is ready
   useEffect(() => {
     async function initCamera() {
       try {
@@ -518,7 +543,6 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     };
   }, []);
 
-  // Attach stream to video element once ref is ready
   useEffect(() => {
     if (liveVideoRef.current && streamRef.current) {
       liveVideoRef.current.srcObject = streamRef.current;
@@ -600,8 +624,6 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
   useEffect(() => () => clearTimer(), []);
 
-  const diffColor = DIFFICULTY_CONFIG[difficulty]?.color || "#fff";
-
   const phaseLabel = {
     [PHASES.BUFFER]: "GET READY",
     [PHASES.READING]: "READ YOUR QUOTE",
@@ -612,14 +634,14 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const isUrgent = phase === PHASES.SPEAKING && countdown <= 30;
   const isMedium = phase === PHASES.SPEAKING && countdown <= 60 && countdown > 30;
 
-  const timerColor = isUrgent ? "var(--danger)" : isMedium ? "var(--warn)" : "var(--accent)";
+  const timerColor = isUrgent ? "var(--danger)" : isMedium ? "var(--warn)" : "var(--accent-2)";
+  const timerCalm = !isUrgent && !isMedium;
   const timerMax = phase === PHASES.BUFFER || phase === PHASES.READING ? 10 : 420;
 
   const stepIndex = { [PHASES.BUFFER]: 0, [PHASES.READING]: 1, [PHASES.SPEAKING]: 2, [PHASES.DONE]: 3 }[phase] ?? -1;
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "2rem 1.5rem" }}>
-      {/* Difficulty Selector */}
       {phase === PHASES.IDLE && (
         <div style={{ marginBottom: "3rem", animation: "fadeUp 0.6s ease both" }}>
           <p className="eyebrow" style={{ marginBottom: "1.2rem", textAlign: "center" }}>
@@ -635,10 +657,9 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
                   className="diff-btn"
                   onClick={() => setDifficulty(d)}
                   style={{
-                    "--diff-color": cfg.color,
-                    "--diff-glow": cfg.glow,
                     background: active ? cfg.color : "transparent",
-                    color: active ? "#0a0a08" : cfg.color,
+                    color: active ? "#05060a" : cfg.color,
+                    borderColor: cfg.color,
                     boxShadow: active ? `0 0 18px ${cfg.glow}` : "none",
                   }}
                 >
@@ -650,13 +671,18 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
         </div>
       )}
 
-      {/* Main Area */}
       {phase === PHASES.IDLE ? (
         <div style={{ textAlign: "center", animation: "fadeUp 0.8s ease 0.2s both" }}>
           <div className="start-orb" aria-hidden="true">
             <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
-              <circle cx="32" cy="32" r="30" stroke="var(--accent)" strokeWidth="1" opacity="0.35" />
-              <path d="M26 20 L26 44 L48 32 Z" fill="var(--accent)" opacity="0.9" />
+              <circle cx="32" cy="32" r="30" stroke="var(--accent-2)" strokeWidth="1" opacity="0.4" />
+              <path d="M26 20 L26 44 L48 32 Z" fill="url(#playGrad)" />
+              <defs>
+                <linearGradient id="playGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="var(--accent)" />
+                  <stop offset="100%" stopColor="var(--accent-2)" />
+                </linearGradient>
+              </defs>
             </svg>
           </div>
           <div>
@@ -664,13 +690,12 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
               Start Session
             </button>
           </div>
-          <p style={{ marginTop: "1.5rem", fontFamily: "var(--font-serif)", color: "var(--text-dim)", fontSize: "0.95rem", fontStyle: "italic" }}>
+          <p style={{ marginTop: "1.5rem", fontFamily: "var(--font-body)", color: "var(--text-dim)", fontSize: "0.95rem" }}>
             {difficulty === "Random" ? "Any difficulty" : `${difficulty} quotes only`} · {allQuotes.filter(q => difficulty === "Random" || q.difficulty === difficulty).length} available
           </p>
         </div>
       ) : (
         <div style={{ textAlign: "center" }}>
-          {/* Step indicator */}
           {phase !== PHASES.REVIEW && (
             <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginBottom: "1.1rem" }}>
               {["Ready", "Read", "Speak"].map((label, i) => (
@@ -682,16 +707,14 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
             </div>
           )}
 
-          {/* Phase Label */}
           <div className="eyebrow" style={{
-            color: phase === PHASES.DONE ? "var(--accent)" : isUrgent ? "var(--danger)" : "var(--text-dim)",
+            color: phase === PHASES.DONE ? "var(--accent-2)" : isUrgent ? "var(--danger)" : "var(--text-dim)",
             marginBottom: "2rem",
             animation: "pulse 1s ease infinite",
           }}>
             {phaseLabel}
           </div>
 
-          {/* Timer Ring */}
           {phase !== PHASES.DONE && (
             <CircularTimer
               value={countdown}
@@ -699,11 +722,10 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
               color={timerColor}
               size={220}
               big={phase === PHASES.BUFFER || phase === PHASES.READING}
-              urgent={isUrgent}
+              calm={timerCalm}
             />
           )}
 
-          {/* Quote Display */}
           {(phase === PHASES.READING || phase === PHASES.SPEAKING || phase === PHASES.DONE) && currentQuote && (
             <div className="card quote-box" style={{
               padding: "2.5rem 2rem",
@@ -711,10 +733,10 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
               animation: "fadeUp 0.5s ease both",
               position: "relative",
             }}>
-              <div style={{ color: "var(--accent)", fontSize: "4rem", lineHeight: 0.5, fontFamily: "Georgia, serif", opacity: 0.35, marginBottom: "0.5rem" }}>"</div>
+              <div style={{ color: "var(--accent-2)", fontSize: "4rem", lineHeight: 0.5, fontFamily: "Georgia, serif", opacity: 0.3, marginBottom: "0.5rem" }}>"</div>
               <p className="quote-text" style={{
-                fontFamily: "var(--font-serif)",
-                fontSize: "1.55rem",
+                fontFamily: "var(--font-body)",
+                fontSize: "1.5rem",
                 lineHeight: 1.6,
                 color: "var(--text)",
                 fontStyle: "italic",
@@ -745,9 +767,9 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
           {phase === PHASES.DONE && (
             <div style={{ animation: "fadeUp 0.5s ease both", textAlign: "center" }}>
               <p style={{
-                fontFamily: "var(--font-serif)",
+                fontFamily: "var(--font-body)",
                 fontSize: "1.3rem",
-                color: "var(--accent)",
+                color: "var(--accent-2)",
                 fontStyle: "italic",
                 marginBottom: "2rem",
               }}>
@@ -756,7 +778,6 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
             </div>
           )}
 
-          {/* REVIEW SCREEN */}
           {phase === PHASES.REVIEW && (
             <ReviewScreen
               blob={recordingBlob}
@@ -765,11 +786,10 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
             />
           )}
 
-          {/* Live Camera Preview — shown during session, hidden on IDLE/REVIEW */}
           {phase !== PHASES.IDLE && phase !== PHASES.REVIEW && (
             <div className="camera-preview" style={{
               borderColor: phase === PHASES.SPEAKING ? "var(--danger)" : "var(--border)",
-              boxShadow: phase === PHASES.SPEAKING ? "0 0 24px #ef444440" : "0 8px 24px #00000080",
+              boxShadow: phase === PHASES.SPEAKING ? "0 0 24px #f8717140" : "0 8px 24px #00000080",
             }}>
               {phase === PHASES.SPEAKING && (
                 <div style={{
@@ -799,7 +819,6 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
             </div>
           )}
 
-          {/* Progress Indicator for Speaking */}
           {phase === PHASES.SPEAKING && (
             <div style={{ margin: "0 auto 2rem", maxWidth: 400 }}>
               <div style={{ height: 3, background: "var(--border-soft)", borderRadius: 2, overflow: "hidden" }}>
@@ -821,6 +840,101 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function BrowseTab({ allQuotes }) {
+  const [difficulty, setDifficulty] = useState("All");
+  const [search, setSearch] = useState("");
+
+  const filtered = allQuotes.filter(q => {
+    const matchesDifficulty = difficulty === "All" || q.difficulty === difficulty;
+    const term = search.trim().toLowerCase();
+    const matchesSearch = !term || q.text.toLowerCase().includes(term) || q.author.toLowerCase().includes(term);
+    return matchesDifficulty && matchesSearch;
+  });
+
+  return (
+    <div style={{ maxWidth: 820, margin: "0 auto", padding: "2rem 1.5rem" }}>
+      <div style={{ marginBottom: "1.75rem" }}>
+        <input
+          type="text"
+          className="input"
+          placeholder="Search by quote or author..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ marginBottom: "1.1rem" }}
+        />
+        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "center" }}>
+          {["All", ...Object.keys(DIFFICULTY_CONFIG).filter(d => d !== "Random")].map(d => {
+            const active = difficulty === d;
+            const cfg = d === "All" ? { color: "var(--accent-2)", glow: "#22d3ee40" } : DIFFICULTY_CONFIG[d];
+            return (
+              <button
+                key={d}
+                onClick={() => setDifficulty(d)}
+                className="diff-btn diff-btn--sm"
+                style={{
+                  background: active ? cfg.color : "transparent",
+                  color: active ? "#05060a" : cfg.color,
+                  borderColor: cfg.color,
+                  boxShadow: active ? `0 0 14px ${cfg.glow}` : "none",
+                }}
+              >
+                {d}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <p className="eyebrow" style={{ textAlign: "center", marginBottom: "1.25rem" }}>
+        {filtered.length} {filtered.length === 1 ? "quote" : "quotes"}
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {filtered.map((q, i) => {
+          const cfg = DIFFICULTY_CONFIG[q.difficulty] || DIFFICULTY_CONFIG.Random;
+          return (
+            <div key={q.id || `${q.text}-${i}`} className="card list-card" style={{ padding: "1.5rem 1.75rem", position: "relative" }}>
+              <div className="tag-pill" style={{
+                position: "absolute", top: "1.1rem", right: "1.1rem",
+                background: `${cfg.color}18`,
+                borderColor: `${cfg.color}50`,
+                color: cfg.color,
+              }}>
+                {q.difficulty}
+              </div>
+              <p style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "1.1rem",
+                lineHeight: 1.55,
+                color: "var(--text)",
+                fontStyle: "italic",
+                margin: "0 0 0.75rem",
+                paddingRight: "6rem",
+              }}>
+                "{q.text}"
+              </p>
+              <p style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.75rem",
+                color: "var(--text-dim)",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}>
+                — {q.author}
+              </p>
+            </div>
+          );
+        })}
+        {filtered.length === 0 && (
+          <p style={{ textAlign: "center", color: "var(--text-faint)", fontFamily: "var(--font-body)", fontStyle: "italic", padding: "2rem 0" }}>
+            No quotes match your search.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -865,15 +979,15 @@ function SubmitTab({ onSubmit }) {
     <div style={{ maxWidth: 640, margin: "0 auto", padding: "2rem 1.5rem", animation: "fadeUp 0.6s ease both" }}>
       <div className="card submit-card" style={{ padding: "2.5rem" }}>
         <h2 style={{
-          fontFamily: "var(--font-serif)",
+          fontFamily: "var(--font-display)",
           fontSize: "1.8rem",
-          color: "var(--accent)",
-          fontWeight: 400,
+          color: "var(--text)",
+          fontWeight: 600,
           marginBottom: "0.4rem",
         }}>
-          Contribute a Quotation
+          Contribute a <span className="grad-text">Quotation</span>
         </h2>
-        <p style={{ fontFamily: "var(--font-serif)", color: "var(--text-dim)", fontSize: "1rem", fontStyle: "italic", marginBottom: "2rem" }}>
+        <p style={{ fontFamily: "var(--font-body)", color: "var(--text-dim)", fontSize: "1rem", marginBottom: "2rem" }}>
           Help grow the practice pool for everyone.
         </p>
 
@@ -912,7 +1026,7 @@ function SubmitTab({ onSubmit }) {
                   className="diff-btn diff-btn--sm"
                   style={{
                     background: active ? cfg.color : "transparent",
-                    color: active ? "#0a0a08" : cfg.color,
+                    color: active ? "#05060a" : cfg.color,
                     borderColor: cfg.color,
                     boxShadow: active ? `0 0 14px ${cfg.glow}` : "none",
                   }}
@@ -924,7 +1038,7 @@ function SubmitTab({ onSubmit }) {
           </div>
           <div style={{ marginTop: "0.75rem" }}>
             {["Easy", "Medium", "Hard", "Insaneo CRAZY"].map(d => (
-              <p key={d} style={{ color: "var(--text-faint)", fontFamily: "var(--font-serif)", fontSize: "0.85rem", margin: "0.2rem 0" }}>
+              <p key={d} style={{ color: "var(--text-faint)", fontFamily: "var(--font-body)", fontSize: "0.85rem", margin: "0.2rem 0" }}>
                 <span style={{ color: DIFFICULTY_CONFIG[d].color, fontWeight: 700 }}>{d}</span>{" "}
                 {{
                   Easy: "— Straightforward, motivational, universally relatable.",
@@ -950,111 +1064,16 @@ function SubmitTab({ onSubmit }) {
           style={{
             width: "100%",
             padding: "0.95rem",
-            background: submitted ? "#1a3a1a" : saving ? "var(--border-soft)" : "var(--accent)",
-            color: submitted ? "var(--good)" : saving ? "var(--text-dim)" : "#0a0a08",
+            background: submitted ? "#0f3d2e" : saving ? "var(--border-soft)" : "var(--accent-grad)",
+            color: submitted ? "var(--good)" : saving ? "var(--text-dim)" : "#05060a",
             border: submitted ? "1px solid var(--good)" : "none",
             fontWeight: 700,
             cursor: saving ? "not-allowed" : "pointer",
-            boxShadow: submitted ? "0 0 20px #4ade8030" : saving ? "none" : "0 0 20px #e8c97a20",
+            boxShadow: submitted ? "0 0 20px #34d39930" : saving ? "none" : "0 8px 30px -8px #8b5cf680",
           }}
         >
           {submitted ? "✓ Added to the Pool!" : saving ? "Saving..." : "Submit Quotation"}
         </button>
-      </div>
-    </div>
-  );
-}
-
-function BrowseTab({ allQuotes }) {
-  const [difficulty, setDifficulty] = useState("All");
-  const [search, setSearch] = useState("");
-
-  const filtered = allQuotes.filter(q => {
-    const matchesDifficulty = difficulty === "All" || q.difficulty === difficulty;
-    const term = search.trim().toLowerCase();
-    const matchesSearch = !term || q.text.toLowerCase().includes(term) || q.author.toLowerCase().includes(term);
-    return matchesDifficulty && matchesSearch;
-  });
-
-  return (
-    <div style={{ maxWidth: 820, margin: "0 auto", padding: "2rem 1.5rem" }}>
-      <div style={{ marginBottom: "1.75rem" }}>
-        <input
-          type="text"
-          className="input"
-          placeholder="Search by quote or author..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{ marginBottom: "1.1rem" }}
-        />
-        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "center" }}>
-          {["All", ...Object.keys(DIFFICULTY_CONFIG).filter(d => d !== "Random")].map(d => {
-            const active = difficulty === d;
-            const cfg = d === "All" ? { color: "#e8c97a", glow: "#e8c97a40" } : DIFFICULTY_CONFIG[d];
-            return (
-              <button
-                key={d}
-                onClick={() => setDifficulty(d)}
-                className="diff-btn diff-btn--sm"
-                style={{
-                  background: active ? cfg.color : "transparent",
-                  color: active ? "#0a0a08" : cfg.color,
-                  borderColor: cfg.color,
-                  boxShadow: active ? `0 0 14px ${cfg.glow}` : "none",
-                }}
-              >
-                {d}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <p className="eyebrow" style={{ textAlign: "center", marginBottom: "1.25rem" }}>
-        {filtered.length} {filtered.length === 1 ? "quote" : "quotes"}
-      </p>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        {filtered.map((q, i) => {
-          const cfg = DIFFICULTY_CONFIG[q.difficulty] || DIFFICULTY_CONFIG.Random;
-          return (
-            <div key={q.id || `${q.text}-${i}`} className="card" style={{ padding: "1.5rem 1.75rem", position: "relative" }}>
-              <div className="tag-pill" style={{
-                position: "absolute", top: "1.1rem", right: "1.1rem",
-                background: `${cfg.color}18`,
-                borderColor: `${cfg.color}50`,
-                color: cfg.color,
-              }}>
-                {q.difficulty}
-              </div>
-              <p style={{
-                fontFamily: "var(--font-serif)",
-                fontSize: "1.15rem",
-                lineHeight: 1.55,
-                color: "var(--text)",
-                fontStyle: "italic",
-                margin: "0 0 0.75rem",
-                paddingRight: "6rem",
-              }}>
-                "{q.text}"
-              </p>
-              <p style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "0.75rem",
-                color: "var(--text-dim)",
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-              }}>
-                — {q.author}
-              </p>
-            </div>
-          );
-        })}
-        {filtered.length === 0 && (
-          <p style={{ textAlign: "center", color: "var(--text-faint)", fontFamily: "var(--font-serif)", fontStyle: "italic", padding: "2rem 0" }}>
-            No quotes match your search.
-          </p>
-        )}
       </div>
     </div>
   );
@@ -1067,7 +1086,6 @@ export default function App() {
   const [dbLoading, setDbLoading] = useState(true);
   const [dbError, setDbError] = useState(false);
 
-  // Realtime listener — any new submission anywhere shows up for everyone instantly
   useEffect(() => {
     const q = query(collection(db, "quotes"), orderBy("createdAt", "asc"));
     const unsub = onSnapshot(
@@ -1099,27 +1117,48 @@ export default function App() {
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Space+Mono:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:ital,wght@0,400;0,500;0,600;1,400&family=Space+Mono:wght@400;700&display=swap');
 
         :root {
-          --bg: #0a0a08;
-          --bg-raised: #100d07;
-          --bg-input: #070604;
-          --border: #2a2010;
-          --border-soft: #1c1509;
-          --accent: #e8c97a;
-          --text: #f2ead6;
-          --text-dim: #9a8a6a;
-          --text-faint: #4a4030;
-          --good: #4ade80;
-          --warn: #f97316;
-          --danger: #ef4444;
-          --radius-sm: 6px;
-          --radius-md: 12px;
-          --radius-lg: 22px;
-          --font-serif: 'Crimson Text', Georgia, serif;
+          --bg: #07070d;
+          --bg-raised: #121320;
+          --bg-input: #0a0b14;
+          --border: #262a40;
+          --border-soft: #171827;
+          --accent: #8b5cf6;
+          --accent-2: #22d3ee;
+          --accent-grad: linear-gradient(135deg, var(--accent), var(--accent-2));
+          --text: #edeffb;
+          --text-dim: #8d90ac;
+          --text-faint: #4b4e66;
+          --good: #34d399;
+          --warn: #fb923c;
+          --danger: #f87171;
+          --radius-sm: 10px;
+          --radius-md: 18px;
+          --radius-lg: 28px;
+          --font-display: 'Space Grotesk', sans-serif;
+          --font-body: 'Inter', sans-serif;
           --font-mono: 'Space Mono', monospace;
-          --shadow-card: 0 1px 0 rgba(255,255,255,0.03) inset, 0 16px 40px -12px rgba(0,0,0,0.65);
+          --shadow-card: 0 1px 0 rgba(255,255,255,0.04) inset, 0 24px 60px -18px rgba(0,0,0,0.75);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+          background:
+            radial-gradient(ellipse 55% 40% at 12% -8%, #8b5cf62c 0%, transparent 60%),
+            radial-gradient(ellipse 55% 40% at 92% 6%, #22d3ee22 0%, transparent 60%),
+            radial-gradient(ellipse 60% 45% at 50% 110%, #8b5cf61c 0%, transparent 60%),
+            var(--bg);
+          color: var(--text);
+        }
+        textarea, input { color-scheme: dark; }
+
+        .grad-text {
+          background: var(--accent-grad);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
         }
 
         .card {
@@ -1128,13 +1167,15 @@ export default function App() {
           border-radius: var(--radius-md);
           box-shadow: var(--shadow-card);
         }
-        .card--flat { box-shadow: none; background: #0d0a05; }
+        .card--flat { box-shadow: none; background: #0d0e1a; }
+        .list-card { transition: border-color 0.2s ease, transform 0.2s ease; }
+        .list-card:hover { border-color: var(--accent); transform: translateY(-1px); }
 
         .btn {
           font-family: var(--font-mono);
-          letter-spacing: 0.1em;
+          letter-spacing: 0.09em;
           text-transform: uppercase;
-          font-size: 0.82rem;
+          font-size: 0.8rem;
           font-weight: 700;
           border-radius: var(--radius-sm);
           border: none;
@@ -1142,17 +1183,17 @@ export default function App() {
           transition: box-shadow 0.2s ease, transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
         }
         .btn-primary {
-          background: var(--accent);
-          color: #0a0a08;
-          box-shadow: 0 0 22px #e8c97a25;
+          background: var(--accent-grad);
+          color: #05060a;
+          box-shadow: 0 8px 30px -10px #8b5cf675;
         }
-        .btn-primary:hover:not(:disabled) { box-shadow: 0 0 40px #e8c97a55; transform: translateY(-1px); }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 10px 40px -8px #8b5cf6a0; transform: translateY(-1px); }
         .btn-ghost {
           background: transparent;
           color: var(--text-dim);
           border: 1px solid var(--border);
         }
-        .btn-ghost:hover { color: var(--accent); border-color: var(--accent); }
+        .btn-ghost:hover { color: var(--text); border-color: var(--accent-2); }
 
         .input, textarea.input {
           width: 100%;
@@ -1161,14 +1202,14 @@ export default function App() {
           border-radius: var(--radius-sm);
           padding: 0.85rem 1rem;
           color: var(--text);
-          font-family: var(--font-serif);
-          font-size: 1.05rem;
+          font-family: var(--font-body);
+          font-size: 1.02rem;
           outline: none;
           resize: vertical;
           box-sizing: border-box;
           transition: border-color 0.2s;
         }
-        .input:focus { border-color: #e8c97a80 !important; }
+        .input:focus { border-color: var(--accent-2) !important; }
 
         .label {
           display: block;
@@ -1182,8 +1223,8 @@ export default function App() {
 
         .eyebrow {
           font-family: var(--font-mono);
-          font-size: 0.75rem;
-          letter-spacing: 0.25em;
+          font-size: 0.74rem;
+          letter-spacing: 0.24em;
           text-transform: uppercase;
           color: var(--text-dim);
         }
@@ -1210,7 +1251,7 @@ export default function App() {
           cursor: pointer;
           transition: all 0.2s;
         }
-        .chip-toggle--active { background: #e8c97a1f; color: var(--accent); border-color: var(--accent); }
+        .chip-toggle--active { background: #22d3ee1f; color: var(--accent-2); border-color: var(--accent-2); }
 
         .btn-pill {
           padding: 0.55rem 1.15rem;
@@ -1225,11 +1266,11 @@ export default function App() {
           cursor: pointer;
           transition: all 0.2s;
         }
-        .btn-pill--active { background: var(--accent); color: #0a0a08; border-color: var(--accent); }
+        .btn-pill--active { background: var(--accent-grad); color: #05060a; border-color: transparent; }
 
         .diff-btn {
           padding: 0.65rem 1.5rem;
-          border: 1.5px solid var(--diff-color, currentColor);
+          border: 1.5px solid currentColor;
           border-radius: var(--radius-sm);
           font-family: var(--font-mono);
           font-size: 0.78rem;
@@ -1249,9 +1290,9 @@ export default function App() {
           width: 190px; height: 190px;
           border-radius: 50%;
           margin: 0 auto 2.75rem;
-          background: radial-gradient(circle, #241a06 0%, #0a0a08 72%);
+          background: radial-gradient(circle, #171a2c 0%, #0a0a12 72%);
           border: 1px solid var(--border);
-          box-shadow: 0 0 70px #e8c97a1c, inset 0 0 40px #00000080;
+          box-shadow: 0 0 80px #8b5cf622, inset 0 0 40px #00000080;
         }
 
         .start-btn { padding: 1.05rem 3.5rem; font-size: 1rem; letter-spacing: 0.14em; }
@@ -1268,28 +1309,31 @@ export default function App() {
           overflow: hidden;
           border: 2px solid;
           z-index: 50;
-          background: #0a0a08;
+          background: #0a0a12;
           transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
-
-        * { box-sizing: border-box; }
-        body { background: var(--bg); color: var(--text); }
-        textarea, input { color-scheme: dark; }
 
         /* ── Mobile ── */
         @media (max-width: 600px) {
           .header-title { font-size: 0.85rem !important; max-width: 160px !important; }
           .header-subtitle { display: none !important; }
           .tab-btn { padding: 0.4rem 0.7rem !important; font-size: 0.62rem !important; }
-          .hero-h1 { font-size: 1.8rem !important; }
+          .hero-h1 { font-size: 1.9rem !important; }
           .hero-sub { font-size: 0.85rem !important; }
           .diff-btn { padding: 0.5rem 0.9rem !important; font-size: 0.68rem !important; }
-          .timer-ring { width: 168px !important; height: 168px !important; }
           .quote-box { padding: 1.5rem 1rem !important; }
           .quote-text { font-size: 1.2rem !important; }
           .flying-char { display: none !important; }
           .submit-card { padding: 1.5rem 1rem !important; }
           .start-orb { width: 150px !important; height: 150px !important; }
+          .float-header {
+            margin: 0 !important;
+            border-radius: 0 !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.85rem !important;
+          }
+          .header-nav { width: 100% !important; flex-wrap: wrap !important; }
         }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
@@ -1326,122 +1370,118 @@ export default function App() {
         }
       `}</style>
 
-      <div style={{ minHeight: "100vh", width: "100%", background: "var(--bg)", fontFamily: "var(--font-serif)" }}>
-        {/* Header */}
-        <header style={{
-          borderBottom: "1px solid var(--border-soft)",
-          padding: "1.5rem 2rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          background: "linear-gradient(180deg, #0d0b06 0%, #0a0a08 100%)",
-          boxShadow: "0 4px 30px #00000060",
-          position: "sticky",
-          top: 0,
-          zIndex: 100,
-        }}>
-          <div>
-            <div className="header-title" style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: "1.1rem",
-              fontWeight: 600,
-              color: "var(--accent)",
-              letterSpacing: "0.02em",
-              lineHeight: 1.2,
-              maxWidth: 220,
-            }}>
-              Edward's really cool and awesome Impromptu practice website
-            </div>
-            <div className="header-subtitle" style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.62rem",
-              color: "var(--text-dim)",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              marginTop: "0.25rem",
-            }}>
-              Impromptu Speaking Practice
-            </div>
-          </div>
-
-          {/* Tabs */}
-          <nav style={{ display: "flex", gap: "0.5rem" }}>
-            {[["practice", "Practice"], ["browse", "All Quotations"], ["submit", "Submit A Quotation"]].map(([id, label]) => (
-              <button
-                className="tab-btn"
-                key={id}
-                onClick={() => { setActiveTab(id); if (id === "practice") setDogVisible(true); }}
-                style={{
-                  padding: "0.5rem 1.2rem",
-                  background: activeTab === id ? "var(--border-soft)" : "transparent",
-                  color: activeTab === id ? "var(--accent)" : "var(--text-dim)",
-                  border: `1px solid ${activeTab === id ? "var(--border)" : "transparent"}`,
-                  borderRadius: "var(--radius-sm)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "0.72rem",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                  transition: "all 0.2s",
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </nav>
-        </header>
-
-        {/* Pool Stats Bar */}
-        <div style={{
-          background: "#0d0b06",
-          borderBottom: "1px solid var(--border-soft)",
-          padding: "0.7rem 2rem",
-          display: "flex",
-          gap: "2rem",
-          justifyContent: "center",
-          position: "relative",
-          zIndex: 3,
-        }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.95rem", color: "var(--accent)", fontWeight: 700 }}>
-              {dbLoading ? "..." : allQuotes.length}
-            </div>
-            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.58rem", color: "var(--text-faint)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Quotes in Pool</div>
-          </div>
-          {dbError && (
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem", color: "var(--danger)", letterSpacing: "0.05em" }}>
-                ⚠ Live pool unavailable — showing built-in quotes only
+      <div style={{ minHeight: "100vh", width: "100%", fontFamily: "var(--font-body)" }}>
+        {/* Floating glass header */}
+        <div style={{ position: "sticky", top: 0, zIndex: 100, padding: "1.1rem 1.25rem 0" }}>
+          <header className="float-header" style={{
+            maxWidth: 1240,
+            margin: "0 auto",
+            borderRadius: "var(--radius-lg)",
+            border: "1px solid var(--border)",
+            background: "rgba(18,19,32,0.72)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+            padding: "1.1rem 1.75rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            boxShadow: "0 20px 50px -20px rgba(0,0,0,0.8)",
+          }}>
+            <div>
+              <div className="header-title" style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "1.05rem",
+                fontWeight: 700,
+                color: "var(--text)",
+                letterSpacing: "-0.01em",
+                lineHeight: 1.2,
+                maxWidth: 240,
+              }}>
+                Edward's really cool and awesome <span className="grad-text">Impromptu</span> practice website
+              </div>
+              <div className="header-subtitle" style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.6rem",
+                color: "var(--text-faint)",
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                marginTop: "0.3rem",
+              }}>
+                Impromptu Speaking Practice
               </div>
             </div>
-          )}
+
+            <nav className="header-nav" style={{ display: "flex", gap: "0.4rem" }}>
+              {[["practice", "Practice"], ["browse", "All Quotations"], ["submit", "Submit A Quotation"]].map(([id, label]) => (
+                <button
+                  className="tab-btn"
+                  key={id}
+                  onClick={() => { setActiveTab(id); if (id === "practice") setDogVisible(true); }}
+                  style={{
+                    padding: "0.5rem 1.1rem",
+                    background: activeTab === id ? "var(--accent-grad)" : "transparent",
+                    color: activeTab === id ? "#05060a" : "var(--text-dim)",
+                    border: `1px solid ${activeTab === id ? "transparent" : "var(--border)"}`,
+                    borderRadius: "999px",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+          </header>
+        </div>
+
+        {/* Floating stat pill */}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "1.5rem", position: "relative", zIndex: 3 }}>
+          <div className="card" style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "1.5rem",
+            padding: "0.6rem 1.6rem",
+            borderRadius: "999px",
+          }}>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: "1rem", color: "var(--text)", fontWeight: 700 }}>
+                {dbLoading ? "..." : allQuotes.length}
+              </span>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--text-faint)", letterSpacing: "0.1em", textTransform: "uppercase", marginLeft: "0.5rem" }}>
+                Quotes in Pool
+              </span>
+            </div>
+            {dbError && (
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--danger)", letterSpacing: "0.04em" }}>
+                ⚠ Live pool unavailable
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Hero area */}
         {activeTab === "practice" && (
-          <div style={{
-            textAlign: "center",
-            padding: "3rem 2rem 1rem",
-            width: "100%",
-            background: "radial-gradient(ellipse 80% 40% at 50% 0%, #1a1205 0%, #0a0a08 100%)",
-            position: "relative",
-            zIndex: 3,
-          }}>
+          <div style={{ textAlign: "center", padding: "3rem 2rem 1rem", width: "100%", position: "relative", zIndex: 3 }}>
             <h1 className="hero-h1" style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: "clamp(2rem, 5vw, 3.2rem)",
-              fontWeight: 400,
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(2.1rem, 5vw, 3.4rem)",
+              fontWeight: 700,
               color: "var(--text)",
-              lineHeight: 1.15,
+              lineHeight: 1.12,
+              letterSpacing: "-0.01em",
               marginBottom: "0.75rem",
             }}>
               Good luck bro.<br />
-              <span style={{ color: "var(--accent)" }}>You got this gang.</span>
+              <span className="grad-text">You got this gang.</span>
             </h1>
             <p className="hero-sub" style={{
               color: "var(--text-dim)",
               fontSize: "1rem",
-              fontStyle: "italic",
               maxWidth: 460,
               margin: "0 auto",
             }}>
@@ -1451,51 +1491,39 @@ export default function App() {
         )}
 
         {activeTab === "submit" && (
-          <div style={{
-            textAlign: "center",
-            padding: "3rem 2rem 1rem",
-            width: "100%",
-            background: "radial-gradient(ellipse 80% 40% at 50% 0%, #1a1205 0%, #0a0a08 100%)",
-            position: "relative",
-            zIndex: 3,
-          }}>
+          <div style={{ textAlign: "center", padding: "3rem 2rem 1rem", width: "100%", position: "relative", zIndex: 3 }}>
             <h1 className="hero-h1" style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: "clamp(2rem, 5vw, 3.2rem)",
-              fontWeight: 400,
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(2.1rem, 5vw, 3.4rem)",
+              fontWeight: 700,
               color: "var(--text)",
-              lineHeight: 1.15,
+              lineHeight: 1.12,
+              letterSpacing: "-0.01em",
               marginBottom: "0.75rem",
             }}>
               Submit whatever quotation,<br />
-              <span style={{ color: "var(--accent)" }}>Just make sure someone said it at some point lol</span>
+              <span className="grad-text">just make sure someone said it at some point lol</span>
             </h1>
-            <p style={{ color: "var(--text-dim)", fontSize: "1rem", fontStyle: "italic" }}>
+            <p style={{ color: "var(--text-dim)", fontSize: "1rem" }}>
               Your submissions are saved instantly for everyone.
             </p>
           </div>
         )}
 
         {activeTab === "browse" && (
-          <div style={{
-            textAlign: "center",
-            padding: "3rem 2rem 1rem",
-            width: "100%",
-            background: "radial-gradient(ellipse 80% 40% at 50% 0%, #1a1205 0%, #0a0a08 100%)",
-            position: "relative",
-            zIndex: 3,
-          }}>
+          <div style={{ textAlign: "center", padding: "3rem 2rem 1rem", width: "100%", position: "relative", zIndex: 3 }}>
             <h1 className="hero-h1" style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: "clamp(2rem, 5vw, 3.2rem)",
-              fontWeight: 400,
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(2.1rem, 5vw, 3.4rem)",
+              fontWeight: 700,
               color: "var(--text)",
-              lineHeight: 1.15,
+              lineHeight: 1.12,
+              letterSpacing: "-0.01em",
               marginBottom: "0.75rem",
             }}>
-              Every quote in the <span style={{ color: "var(--accent)" }}>pool.</span>
+              Every quote in the <span className="grad-text">pool.</span>
             </h1>
-            <p style={{ color: "var(--text-dim)", fontSize: "1rem", fontStyle: "italic" }}>
+            <p style={{ color: "var(--text-dim)", fontSize: "1rem" }}>
               Updates live the moment someone submits a new one.
             </p>
           </div>
