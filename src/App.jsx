@@ -10,66 +10,66 @@ import {
 } from "firebase/firestore";
 
 const BUILTIN_QUOTES = [
-  // Easy
+  // Easy — simple, immediately clear, no unpacking required
   { text: "The only way to do great work is to love what you do.", author: "Steve Jobs", difficulty: "Easy" },
-  { text: "In the middle of every difficulty lies opportunity.", author: "Albert Einstein", difficulty: "Easy" },
-  { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius", difficulty: "Easy" },
-  { text: "Life is what happens when you're busy making other plans.", author: "John Lennon", difficulty: "Easy" },
-  { text: "The future belongs to those who believe in the beauty of their dreams.", author: "Eleanor Roosevelt", difficulty: "Easy" },
-  { text: "It is never too late to be what you might have been.", author: "George Eliot", difficulty: "Easy" },
+  { text: "It's not that I'm so smart, it's just that I stay with problems longer.", author: "Albert Einstein", difficulty: "Easy" },
+  { text: "Slow and steady wins the race.", author: "Aesop, \"The Tortoise and the Hare\"", difficulty: "Easy" },
+  { text: "Life is what happens to you while you're busy making other plans.", author: "Allen Saunders", difficulty: "Easy" },
+  { text: "You must do the thing you think you cannot do.", author: "Eleanor Roosevelt", difficulty: "Easy" },
+  { text: "It is not too late to seek a newer world.", author: "Alfred, Lord Tennyson", difficulty: "Easy" },
   { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky", difficulty: "Easy" },
-  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford", difficulty: "Easy" },
-  { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb", difficulty: "Easy" },
-  { text: "An unexamined life is not worth living.", author: "Socrates", difficulty: "Easy" },
-  // Medium
-  { text: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", author: "Aristotle", difficulty: "Medium" },
-  { text: "The man who does not read has no advantage over the man who cannot read.", author: "Mark Twain", difficulty: "Medium" },
-  { text: "It is not the strongest of the species that survives, nor the most intelligent; it is the one most adaptable to change.", author: "Charles Darwin", difficulty: "Medium" },
+  { text: "The most difficult thing is the decision to act, the rest is merely tenacity.", author: "Amelia Earhart", difficulty: "Easy" },
+  { text: "A journey of a thousand miles begins with a single step.", author: "Laozi", difficulty: "Easy" },
+  { text: "The unexamined life is not worth living.", author: "Socrates", difficulty: "Easy" },
+  // Medium — pointed in a few different directions at once
+  { text: "Habit is habit, and not to be flung out of the window by any man, but coaxed downstairs a step at a time.", author: "Mark Twain", difficulty: "Medium" },
+  { text: "Some books are to be tasted, others to be swallowed, and some few to be chewed and digested.", author: "Francis Bacon", difficulty: "Medium" },
+  { text: "Only the wisest and the stupidest of men never change.", author: "Confucius", difficulty: "Medium" },
   { text: "Not everything that is faced can be changed, but nothing can be changed until it is faced.", author: "James Baldwin", difficulty: "Medium" },
-  { text: "The measure of intelligence is the ability to change.", author: "Albert Einstein", difficulty: "Medium" },
+  { text: "The chains of habit are too weak to be felt until they are too strong to be broken.", author: "Samuel Johnson", difficulty: "Medium" },
   { text: "I am not afraid of storms, for I am learning how to sail my ship.", author: "Louisa May Alcott", difficulty: "Medium" },
-  { text: "You have enemies? Good. That means you've stood up for something, sometime in your life.", author: "Winston Churchill", difficulty: "Medium" },
-  { text: "A people that elect corrupt politicians, imposters, thieves and traitors are not victims... but accomplices.", author: "George Orwell", difficulty: "Medium" },
-  { text: "The difference between genius and stupidity is that genius has its limits.", author: "Albert Einstein", difficulty: "Medium" },
-  { text: "The only thing necessary for the triumph of evil is for good men to do nothing.", author: "Edmund Burke", difficulty: "Medium" },
-  { text: "It's not what you look at that matters, it's what you see.", author: "Henry David Thoreau", difficulty: "Medium" },
-  { text: "Two things are infinite: the universe and human stupidity; and I'm not sure about the universe.", author: "Albert Einstein", difficulty: "Medium" },
-  // Hard
-  { text: "The paradox of our time in history is that we have taller buildings but shorter tempers.", author: "George Carlin", difficulty: "Hard" },
-  { text: "We do not inherit the earth from our ancestors; we borrow it from our children.", author: "Antoine de Saint-Exupéry", difficulty: "Hard" },
-  { text: "The whole problem with the world is that fools and fanatics are always so certain of themselves, and wiser people so full of doubts.", author: "Bertrand Russell", difficulty: "Hard" },
+  { text: "To be great is to be misunderstood.", author: "Ralph Waldo Emerson", difficulty: "Medium" },
+  { text: "We must always take sides. Neutrality helps the oppressor, never the victim.", author: "Elie Wiesel", difficulty: "Medium" },
+  { text: "I know that I know nothing.", author: "Socrates", difficulty: "Medium" },
+  { text: "Bad men need nothing more to compass their ends than that good men should look on and do nothing.", author: "John Stuart Mill", difficulty: "Medium" },
+  { text: "The question is not what you look at, but what you see.", author: "Henry David Thoreau", difficulty: "Medium" },
+  { text: "Against stupidity the gods themselves contend in vain.", author: "Friedrich Schiller", difficulty: "Medium" },
+  // Hard — abstract and dense, takes real work to unpack
+  { text: "Our inventions are wont to be pretty toys, which distract our attention from serious things. They are but improved means to an unimproved end.", author: "Henry David Thoreau", difficulty: "Hard" },
+  { text: "We abuse land because we regard it as a commodity belonging to us. When we see land as a community to which we belong, we may begin to use it with love and respect.", author: "Aldo Leopold", difficulty: "Hard" },
+  { text: "The fundamental cause of the trouble is that in the modern world the stupid are cocksure, while the intelligent are full of doubt.", author: "Bertrand Russell", difficulty: "Hard" },
   { text: "Integrity without knowledge is weak and useless, and knowledge without integrity is dangerous and dreadful.", author: "Samuel Johnson", difficulty: "Hard" },
-  { text: "The most courageous act is still to think for yourself. Aloud.", author: "Coco Chanel", difficulty: "Hard" },
+  { text: "He who has a why to live can bear almost any how.", author: "Friedrich Nietzsche", difficulty: "Hard" },
   { text: "We are all atheists about most of the gods humanity has ever believed in. Some of us just go one god further.", author: "Richard Dawkins", difficulty: "Hard" },
-  { text: "The price of apathy towards public affairs is to be ruled by evil men.", author: "Plato", difficulty: "Hard" },
-  { text: "A great many people think they are thinking when they are merely rearranging their prejudices.", author: "William James", difficulty: "Hard" },
-  { text: "It is no measure of health to be well adjusted to a profoundly sick society.", author: "Jiddu Krishnamurti", difficulty: "Hard" },
+  { text: "We alone regard a man who takes no interest in public affairs, not as a harmless, but as a useless character.", author: "Pericles", difficulty: "Hard" },
+  { text: "Life can only be understood backwards; but it must be lived forwards.", author: "Søren Kierkegaard", difficulty: "Hard" },
+  { text: "They are normal only in relation to a profoundly abnormal society. Their perfect adjustment to that abnormal society is a measure of their mental sickness.", author: "Aldous Huxley", difficulty: "Hard" },
   { text: "The good we secure for ourselves is precarious and uncertain until it is secured for all of us and incorporated into our common life.", author: "Jane Addams", difficulty: "Hard" },
   { text: "Cowardice asks the question: is it safe? Expediency asks the question: is it politic? Vanity asks the question: is it popular? But conscience asks the question: is it right?", author: "Martin Luther King Jr.", difficulty: "Hard" },
   { text: "The unleashed power of the atom has changed everything save our modes of thinking, and we thus drift toward unparalleled catastrophe.", author: "Albert Einstein", difficulty: "Hard" },
-  // Insaneo CRAZY
-  { text: "Man is the only creature who refuses to be what he is.", author: "Albert Camus", difficulty: "Insaneo CRAZY" },
-  { text: "The most dangerous creation of any society is the man who has nothing to lose.", author: "James Baldwin", difficulty: "Insaneo CRAZY" },
-  { text: "One does not become enlightened by imagining figures of light, but by making the darkness conscious.", author: "Carl Jung", difficulty: "Insaneo CRAZY" },
-  { text: "There is no greater agony than bearing an untold story inside you.", author: "Maya Angelou", difficulty: "Insaneo CRAZY" },
-  { text: "Society exists only as a mental concept; in the real world there are only individuals.", author: "Oscar Wilde", difficulty: "Insaneo CRAZY" },
-  { text: "The only real prison is fear, and the only real freedom is freedom from fear.", author: "Aung San Suu Kyi", difficulty: "Insaneo CRAZY" },
-  { text: "The secret of freedom lies in educating people, whereas the secret of tyranny is in keeping them ignorant.", author: "Maximilien Robespierre", difficulty: "Insaneo CRAZY" },
-  { text: "Progress is impossible without change, and those who cannot change their minds cannot change anything.", author: "George Bernard Shaw", difficulty: "Insaneo CRAZY" },
-  { text: "If you want to know what a man's like, take a good look at how he treats his inferiors, not his equals.", author: "J.K. Rowling", difficulty: "Insaneo CRAZY" },
-  { text: "Washing one's hands of the conflict between the powerful and the powerless means to side with the powerful, not to be neutral.", author: "Paulo Freire", difficulty: "Insaneo CRAZY" },
-  { text: "Every gun that is made, every warship launched, every rocket fired signifies, in the final sense, a theft from those who hunger and are not fed.", author: "Dwight D. Eisenhower", difficulty: "Insaneo CRAZY" },
-  { text: "The opposite of love is not hate, it's indifference. The opposite of art is not ugliness, it's indifference. The opposite of faith is not heresy, it's indifference.", author: "Elie Wiesel", difficulty: "Insaneo CRAZY" },
-  { text: "All that is necessary to raise imbecility into what the mob calls genius is to develop initiative, imagination, and the courage to stand by one's convictions.", author: "H.L. Mencken", difficulty: "Insaneo CRAZY" },
-  { text: "The distinction between past, present, and future is only a stubbornly persistent illusion.", author: "Albert Einstein", difficulty: "Insaneo CRAZY" },
-  { text: "A civilization is judged not by how it treats its most powerful, but by how it treats its most vulnerable.", author: "Mahatma Gandhi", difficulty: "Insaneo CRAZY" },
+  // Insane-O Crazy — completely unhinged, barely makes sense, that's the point
+  { text: "Bro WHAT ARE YOU DOING??", author: "CS:GO Players", difficulty: "Insane-O Crazy" },
+  { text: "Rush B, no wait, go A, actually why is nobody talking", author: "Every CS:GO Team, Every Round", difficulty: "Insane-O Crazy" },
+  { text: "It's not the fall that kills you. It's the fall damage.", author: "Minecraft Logic", difficulty: "Insane-O Crazy" },
+  { text: "I'm not owned, I'm testing the floor.", author: "A Guy Who Just Respawned", difficulty: "Insane-O Crazy" },
+  { text: "This is fine.", author: "A Dog, Sitting In A Burning Room", difficulty: "Insane-O Crazy" },
+  { text: "Sir, this is a Wendy's.", author: "Every Group Chat, Eventually", difficulty: "Insane-O Crazy" },
+  { text: "The floor is lava. It always has been.", author: "Ancient Astronaut Theorists", difficulty: "Insane-O Crazy" },
+  { text: "Bro said 'trust me' and immediately fell off.", author: "My Group Project Partner", difficulty: "Insane-O Crazy" },
+  { text: "It is what it is, but also it isn't, but also it kind of is.", author: "A Discord Mod At 3AM", difficulty: "Insane-O Crazy" },
+  { text: "Skill issue.", author: "Anonymous, Constantly", difficulty: "Insane-O Crazy" },
+  { text: "Why is the bread hot?", author: "A Man, Screaming, About Nothing", difficulty: "Insane-O Crazy" },
+  { text: "One does not simply walk into the dining hall after 8pm.", author: "Boromir, If He Went To College", difficulty: "Insane-O Crazy" },
+  { text: "I didn't lag, the server just chose violence.", author: "Every Ranked Player Ever", difficulty: "Insane-O Crazy" },
+  { text: "Objection! I don't have a reason, I just wanted to say it.", author: "A Freshman In Mock Trial", difficulty: "Insane-O Crazy" },
+  { text: "We were on a break!", author: "Ross, Probably", difficulty: "Insane-O Crazy" },
 ];
 
 const DIFFICULTY_CONFIG = {
   Easy: { color: "#34d399", glow: "#34d39940" },
   Medium: { color: "#fbbf24", glow: "#fbbf2440" },
   Hard: { color: "#fb923c", glow: "#fb923c40" },
-  "Insaneo CRAZY": { color: "#e879f9", glow: "#e879f940" },
+  "Insane-O Crazy": { color: "#e879f9", glow: "#e879f940" },
   Random: { color: "#22d3ee", glow: "#22d3ee40" },
 };
 
@@ -888,7 +888,7 @@ function SubmitTab({ onSubmit }) {
         <div style={{ marginBottom: "2rem" }}>
           <label className="label">Difficulty</label>
           <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-            {["Easy", "Medium", "Hard", "Insaneo CRAZY"].map(d => {
+            {["Easy", "Medium", "Hard", "Insane-O Crazy"].map(d => {
               const active = form.difficulty === d;
               const cfg = DIFFICULTY_CONFIG[d];
               return (
@@ -909,14 +909,14 @@ function SubmitTab({ onSubmit }) {
             })}
           </div>
           <div style={{ marginTop: "0.75rem" }}>
-            {["Easy", "Medium", "Hard", "Insaneo CRAZY"].map(d => (
+            {["Easy", "Medium", "Hard", "Insane-O Crazy"].map(d => (
               <p key={d} style={{ color: "var(--text-faint)", fontFamily: "var(--font-body)", fontSize: "0.85rem", margin: "0.2rem 0" }}>
                 <span style={{ color: DIFFICULTY_CONFIG[d].color, fontWeight: 700 }}>{d}</span>{" "}
                 {{
-                  Easy: "— Straightforward, motivational, universally relatable.",
-                  Medium: "— Requires some unpacking. Good for building comfort.",
-                  Hard: "— Dense, philosophical, or politically charged.",
-                  "Insaneo CRAZY": "— Paradoxical, provocative, or highly abstract.",
+                  Easy: "— Simple and immediately clear. No unpacking required.",
+                  Medium: "— Pointed in a few different directions at once. Room to pick an angle.",
+                  Hard: "— Abstract and dense. Takes real work to unpack.",
+                  "Insane-O Crazy": "— Completely unhinged. Barely makes sense, and that's the point.",
                 }[d]}
               </p>
             ))}
