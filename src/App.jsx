@@ -79,7 +79,6 @@ const PHASES = {
   READING: "READING",
   SPEAKING: "SPEAKING",
   DONE: "DONE",
-  REVIEW: "REVIEW",
 };
 
 function formatTime(seconds) {
@@ -384,194 +383,16 @@ function ImprovDragon() {
   );
 }
 
-const COACHES = ["Marisa", "Tiana", "Peter"];
-
-function ReviewScreen({ blob, quote, onReset }) {
-  const [studentName, setStudentName] = useState("");
-  const [selectedCoaches, setSelectedCoaches] = useState([COACHES[0]]);
-  const videoUrl = blob ? URL.createObjectURL(blob) : null;
-
-  const toggleCoach = (c) => {
-    setSelectedCoaches(prev =>
-      prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
-    );
-  };
-
-  const selectAll = () => setSelectedCoaches([...COACHES]);
-  const allSelected = selectedCoaches.length === COACHES.length;
-
-  const handleDownload = () => {
-    if (!blob) return;
-    const name = studentName.trim() || "student";
-    const a = document.createElement("a");
-    a.href = videoUrl;
-    a.download = `${name.replace(/\s+/g, "-")}-impromptu-${Date.now()}.webm`;
-    a.click();
-  };
-
-  return (
-    <div style={{ maxWidth: 680, margin: "0 auto", animation: "fadeUp 0.6s ease both" }}>
-      <div style={{ textAlign: "center", marginBottom: "2.25rem" }}>
-        <div className="eyebrow" style={{ color: "var(--good)", marginBottom: "0.6rem" }}>
-          ✓ Speech Complete
-        </div>
-        <h2 style={{
-          fontFamily: "var(--font-display)", fontSize: "2rem",
-          color: "var(--text)", fontWeight: 600, marginBottom: "0.4rem",
-        }}>
-          Nice work. Review your recording.
-        </h2>
-        <p style={{ color: "var(--text-dim)", fontFamily: "var(--font-body)", fontSize: "1rem" }}>
-          Watch it back, then download and send to your coach.
-        </p>
-      </div>
-
-      <div className="card" style={{ overflow: "hidden", marginBottom: "1.5rem" }}>
-        {videoUrl ? (
-          <video
-            src={videoUrl}
-            controls
-            style={{ width: "100%", display: "block", maxHeight: 380, background: "#000" }}
-          />
-        ) : (
-          <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: "0.8rem" }}>
-            Recording not available — camera may have been blocked.
-          </div>
-        )}
-      </div>
-
-      {quote && (
-        <div className="card card--flat" style={{ padding: "1.1rem 1.5rem", marginBottom: "1.5rem" }}>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "1rem", color: "var(--text-dim)", fontStyle: "italic", margin: 0 }}>
-            "{quote.text}" — {quote.author}
-          </p>
-        </div>
-      )}
-
-      <div className="card" style={{ padding: "1.75rem", marginBottom: "1.5rem" }}>
-        <div style={{ marginBottom: "1.3rem" }}>
-          <label className="label">Your Name</label>
-          <input
-            type="text"
-            className="input"
-            value={studentName}
-            onChange={e => setStudentName(e.target.value)}
-            placeholder="e.g. Edward Kent"
-          />
-        </div>
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem" }}>
-            <label className="label" style={{ marginBottom: 0 }}>Send To Coach</label>
-            <button onClick={selectAll} className={`chip-toggle ${allSelected ? "chip-toggle--active" : ""}`}>
-              {allSelected ? "✓ All Selected" : "Select All"}
-            </button>
-          </div>
-          <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-            {COACHES.map(c => {
-              const active = selectedCoaches.includes(c);
-              return (
-                <button
-                  key={c}
-                  onClick={() => toggleCoach(c)}
-                  className={`btn-pill ${active ? "btn-pill--active" : ""}`}
-                >
-                  {c}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-        <button
-          onClick={handleDownload}
-          disabled={!blob}
-          className="btn btn-primary"
-          style={{ flex: 1, padding: "0.95rem", opacity: blob ? 1 : 0.5, cursor: blob ? "pointer" : "not-allowed" }}
-        >
-          ↓ Download Recording
-        </button>
-        <button onClick={onReset} className="btn btn-ghost" style={{ padding: "0.95rem 1.5rem" }}>
-          ← New Session
-        </button>
-      </div>
-
-      <p style={{
-        marginTop: "1.1rem", textAlign: "center",
-        fontFamily: "var(--font-body)", fontSize: "0.9rem",
-        color: "var(--text-faint)", fontStyle: "italic",
-      }}>
-        Download your recording and send it to {selectedCoaches.length === 0 ? "your coach" : selectedCoaches.join(", ")} for feedback.
-      </p>
-    </div>
-  );
-}
-
 function PracticeTab({ allQuotes, onPhaseChange }) {
   const [difficulty, setDifficulty] = useState("Random");
   const [phase, setPhase] = useState(PHASES.IDLE);
   const [countdown, setCountdown] = useState(0);
   const [currentQuote, setCurrentQuote] = useState(null);
-  const [recordingBlob, setRecordingBlob] = useState(null);
-  const [cameraError, setCameraError] = useState(false);
 
   const intervalRef = useRef(null);
   const phaseRef = useRef(phase);
   const lastQuoteRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const chunksRef = useRef([]);
-  const streamRef = useRef(null);
-  const liveVideoRef = useRef(null);
   phaseRef.current = phase;
-
-  useEffect(() => {
-    async function initCamera() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        streamRef.current = stream;
-        if (liveVideoRef.current) {
-          liveVideoRef.current.srcObject = stream;
-        }
-      } catch (e) {
-        setCameraError(true);
-      }
-    }
-    initCamera();
-    return () => {
-      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
-    };
-  }, []);
-
-  useEffect(() => {
-    if (liveVideoRef.current && streamRef.current) {
-      liveVideoRef.current.srcObject = streamRef.current;
-    }
-  });
-
-  const startRecording = () => {
-    if (!streamRef.current) return;
-    chunksRef.current = [];
-    const options = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-      ? { mimeType: "video/webm;codecs=vp9" }
-      : MediaRecorder.isTypeSupported("video/webm")
-      ? { mimeType: "video/webm" }
-      : {};
-    const recorder = new MediaRecorder(streamRef.current, options);
-    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
-    recorder.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: "video/webm" });
-      setRecordingBlob(blob);
-    };
-    recorder.start(1000);
-    mediaRecorderRef.current = recorder;
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-  };
 
   const clearTimer = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -591,34 +412,36 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     }, 1000);
   }, []);
 
+  const beginReading = useCallback(() => {
+    setPhase(PHASES.READING);
+    startCountdown(10, () => {
+      setPhase(PHASES.SPEAKING);
+      startCountdown(420, () => {
+        setPhase(PHASES.DONE);
+      });
+    });
+  }, [startCountdown]);
+
   const startSession = () => {
     const quote = getRandomQuote(difficulty, allQuotes, lastQuoteRef.current);
     lastQuoteRef.current = quote.text;
     onPhaseChange && onPhaseChange("ACTIVE");
     setCurrentQuote(quote);
-    setRecordingBlob(null);
     setPhase(PHASES.BUFFER);
-    startCountdown(10, () => {
-      setPhase(PHASES.READING);
-      startCountdown(10, () => {
-        setPhase(PHASES.SPEAKING);
-        startRecording();
-        startCountdown(420, () => {
-          stopRecording();
-          setPhase(PHASES.DONE);
-          setTimeout(() => setPhase(PHASES.REVIEW), 1500);
-        });
-      });
-    });
+    startCountdown(10, beginReading);
+  };
+
+  const skipBuffer = () => {
+    if (phaseRef.current !== PHASES.BUFFER) return;
+    clearTimer();
+    beginReading();
   };
 
   const reset = () => {
     clearTimer();
-    stopRecording();
     setPhase(PHASES.IDLE);
     setCurrentQuote(null);
     setCountdown(0);
-    setRecordingBlob(null);
     onPhaseChange && onPhaseChange("IDLE");
   };
 
@@ -696,16 +519,14 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
         </div>
       ) : (
         <div style={{ textAlign: "center" }}>
-          {phase !== PHASES.REVIEW && (
-            <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginBottom: "1.1rem" }}>
-              {["Ready", "Read", "Speak"].map((label, i) => (
-                <span key={label} className="step-dot" style={{
-                  background: i <= stepIndex ? timerColor : "var(--border-soft)",
-                  boxShadow: i === stepIndex ? `0 0 10px ${timerColor}` : "none",
-                }} />
-              ))}
-            </div>
-          )}
+          <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginBottom: "1.1rem" }}>
+            {["Ready", "Read", "Speak"].map((label, i) => (
+              <span key={label} className="step-dot" style={{
+                background: i <= stepIndex ? timerColor : "var(--border-soft)",
+                boxShadow: i === stepIndex ? `0 0 10px ${timerColor}` : "none",
+              }} />
+            ))}
+          </div>
 
           <div className="eyebrow" style={{
             color: phase === PHASES.DONE ? "var(--accent-2)" : isUrgent ? "var(--danger)" : "var(--text-dim)",
@@ -764,58 +585,34 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
             </div>
           )}
 
+          {phase === PHASES.BUFFER && (
+            <button onClick={skipBuffer} className="btn btn-ghost" style={{ padding: "0.65rem 1.75rem", marginBottom: "2rem" }}>
+              Ready now? →
+            </button>
+          )}
+
           {phase === PHASES.DONE && (
-            <div style={{ animation: "fadeUp 0.5s ease both", textAlign: "center" }}>
+            <div className="card" style={{ padding: "2.5rem 2rem", marginBottom: "2rem", animation: "fadeUp 0.5s ease both", textAlign: "center" }}>
+              <div className="eyebrow" style={{ color: "var(--good)", marginBottom: "0.75rem" }}>
+                ✓ Speech Complete
+              </div>
               <p style={{
-                fontFamily: "var(--font-body)",
-                fontSize: "1.3rem",
-                color: "var(--accent-2)",
-                fontStyle: "italic",
-                marginBottom: "2rem",
+                fontFamily: "var(--font-display)",
+                fontSize: "1.5rem",
+                fontWeight: 600,
+                color: "var(--text)",
+                marginBottom: "1.75rem",
               }}>
-                Time's up. Processing your recording...
+                Nice work. Ready for another one?
               </p>
-            </div>
-          )}
-
-          {phase === PHASES.REVIEW && (
-            <ReviewScreen
-              blob={recordingBlob}
-              quote={currentQuote}
-              onReset={reset}
-            />
-          )}
-
-          {phase !== PHASES.IDLE && phase !== PHASES.REVIEW && (
-            <div className="camera-preview" style={{
-              borderColor: phase === PHASES.SPEAKING ? "var(--danger)" : "var(--border)",
-              boxShadow: phase === PHASES.SPEAKING ? "0 0 24px #f8717140" : "0 8px 24px #00000080",
-            }}>
-              {phase === PHASES.SPEAKING && (
-                <div style={{
-                  position: "absolute", top: 8, left: 10, zIndex: 10,
-                  display: "flex", alignItems: "center", gap: 5,
-                }}>
-                  <div style={{
-                    width: 8, height: 8, borderRadius: "50%", background: "var(--danger)",
-                    animation: "pulse 1s ease infinite",
-                  }} />
-                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--danger)", letterSpacing: "0.1em" }}>REC</span>
-                </div>
-              )}
-              {cameraError ? (
-                <div style={{ padding: "1rem", textAlign: "center", color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: "0.65rem" }}>
-                  Camera unavailable
-                </div>
-              ) : (
-                <video
-                  ref={liveVideoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  style={{ width: "100%", display: "block", transform: "scaleX(-1)" }}
-                />
-              )}
+              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
+                <button onClick={startSession} className="btn btn-primary" style={{ padding: "0.9rem 2rem" }}>
+                  Practice Again
+                </button>
+                <button onClick={reset} className="btn btn-ghost" style={{ padding: "0.9rem 1.75rem" }}>
+                  Done
+                </button>
+              </div>
             </div>
           )}
 
@@ -833,7 +630,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
             </div>
           )}
 
-          {phase !== PHASES.REVIEW && (
+          {phase !== PHASES.DONE && (
             <button onClick={reset} className="btn btn-ghost" style={{ padding: "0.65rem 2rem" }}>
               ← Reset
             </button>
@@ -844,9 +641,37 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   );
 }
 
+const BROWSE_PAGE_SIZE = 10;
+
 function BrowseTab({ allQuotes }) {
   const [difficulty, setDifficulty] = useState("All");
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState("pool");
+  const [visibleCount, setVisibleCount] = useState(BROWSE_PAGE_SIZE);
+  const [showJump, setShowJump] = useState(false);
+
+  useEffect(() => {
+    setVisibleCount(BROWSE_PAGE_SIZE);
+  }, [difficulty, search, sort]);
+
+  useEffect(() => {
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        setShowJump(window.scrollY > 600);
+        ticking = false;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const counts = allQuotes.reduce((acc, q) => {
+    acc[q.difficulty] = (acc[q.difficulty] || 0) + 1;
+    return acc;
+  }, {});
 
   const filtered = allQuotes.filter(q => {
     const matchesDifficulty = difficulty === "All" || q.difficulty === difficulty;
@@ -855,21 +680,38 @@ function BrowseTab({ allQuotes }) {
     return matchesDifficulty && matchesSearch;
   });
 
+  const sorted = sort === "author"
+    ? [...filtered].sort((a, b) => a.author.localeCompare(b.author))
+    : filtered;
+
+  const visible = sorted.slice(0, visibleCount);
+
   return (
-    <div style={{ maxWidth: 820, margin: "0 auto", padding: "2rem 1.5rem" }}>
-      <div style={{ marginBottom: "1.75rem" }}>
+    <div style={{ maxWidth: 820, margin: "0 auto", padding: "0 1.5rem 2rem" }}>
+      <div className="browse-filter-bar" style={{
+        position: "sticky",
+        top: "1rem",
+        zIndex: 20,
+        padding: "1.1rem",
+        marginBottom: "1.75rem",
+        borderRadius: "var(--radius-md)",
+        background: "#121320f2",
+        border: "1px solid var(--border)",
+        boxShadow: "0 20px 40px -20px rgba(0,0,0,0.7)",
+      }}>
         <input
           type="text"
           className="input"
           placeholder="Search by quote or author..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ marginBottom: "1.1rem" }}
+          style={{ marginBottom: "1rem" }}
         />
-        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap", justifyContent: "center", marginBottom: "0.9rem" }}>
           {["All", ...Object.keys(DIFFICULTY_CONFIG).filter(d => d !== "Random")].map(d => {
             const active = difficulty === d;
             const cfg = d === "All" ? { color: "var(--accent-2)", glow: "#22d3ee40" } : DIFFICULTY_CONFIG[d];
+            const count = d === "All" ? allQuotes.length : (counts[d] || 0);
             return (
               <button
                 key={d}
@@ -882,19 +724,31 @@ function BrowseTab({ allQuotes }) {
                   boxShadow: active ? `0 0 14px ${cfg.glow}` : "none",
                 }}
               >
-                {d}
+                {d} · {count}
               </button>
             );
           })}
+        </div>
+        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
+          {[["pool", "Pool Order"], ["author", "A–Z by Author"]].map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => setSort(id)}
+              className={`chip-toggle ${sort === id ? "chip-toggle--active" : ""}`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
       <p className="eyebrow" style={{ textAlign: "center", marginBottom: "1.25rem" }}>
         {filtered.length} {filtered.length === 1 ? "quote" : "quotes"}
+        {filtered.length > 0 && ` · showing ${visible.length}`}
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-        {filtered.map((q, i) => {
+        {visible.map((q, i) => {
           const cfg = DIFFICULTY_CONFIG[q.difficulty] || DIFFICULTY_CONFIG.Random;
           return (
             <div key={q.id || `${q.text}-${i}`} className="card list-card" style={{ padding: "1.5rem 1.75rem", position: "relative" }}>
@@ -935,6 +789,24 @@ function BrowseTab({ allQuotes }) {
           </p>
         )}
       </div>
+
+      {visibleCount < sorted.length && (
+        <div style={{ textAlign: "center", marginTop: "1.75rem" }}>
+          <button onClick={() => setVisibleCount(c => c + BROWSE_PAGE_SIZE)} className="btn btn-ghost" style={{ padding: "0.75rem 2rem" }}>
+            Show More ({sorted.length - visibleCount} left)
+          </button>
+        </div>
+      )}
+
+      {showJump && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="btn btn-primary jump-top-btn"
+          aria-label="Back to top"
+        >
+          ↑ Top
+        </button>
+      )}
     </div>
   );
 }
@@ -1299,19 +1171,17 @@ export default function App() {
 
         .step-dot { width: 7px; height: 7px; border-radius: 50%; transition: all 0.3s ease; }
 
-        .quote-box { position: relative; }
-
-        .camera-preview {
+        .jump-top-btn {
           position: fixed;
-          bottom: 1.5rem; right: 1.5rem;
-          width: 180px;
-          border-radius: var(--radius-md);
-          overflow: hidden;
-          border: 2px solid;
-          z-index: 50;
-          background: #0a0a12;
-          transition: border-color 0.3s ease, box-shadow 0.3s ease;
+          bottom: 1.5rem;
+          right: 1.5rem;
+          padding: 0.7rem 1.2rem;
+          border-radius: 999px;
+          z-index: 60;
+          animation: fadeUp 0.3s ease both;
         }
+
+        .quote-box { position: relative; }
 
         /* ── Mobile ── */
         @media (max-width: 600px) {
@@ -1371,8 +1241,8 @@ export default function App() {
       `}</style>
 
       <div style={{ minHeight: "100vh", width: "100%", fontFamily: "var(--font-body)" }}>
-        {/* Floating glass header */}
-        <div style={{ position: "sticky", top: 0, zIndex: 100, padding: "1.1rem 1.25rem 0" }}>
+        {/* Floating glass header — scrolls away with the page, not pinned */}
+        <div style={{ position: "relative", zIndex: 100, padding: "1.1rem 1.25rem 0" }}>
           <header className="float-header" style={{
             maxWidth: 1240,
             margin: "0 auto",
