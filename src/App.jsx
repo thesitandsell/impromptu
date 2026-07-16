@@ -77,9 +77,9 @@ const PHASES = {
   IDLE: "IDLE",
   BUFFER: "BUFFER",
   READING: "READING",
-  PREP: "PREP",
   SPEAKING: "SPEAKING",
   DONE: "DONE",
+  REVIEW: "REVIEW",
 };
 
 function formatTime(seconds) {
@@ -298,15 +298,295 @@ function ImprovDragon() {
   );
 }
 
+const COACHES = ["Marisa", "Tiana", "Peter"];
+
+function ReviewScreen({ blob, quote, onReset }) {
+  const [studentName, setStudentName] = useState("");
+  const [selectedCoaches, setSelectedCoaches] = useState([COACHES[0]]);
+  const videoUrl = blob ? URL.createObjectURL(blob) : null;
+
+  const toggleCoach = (c) => {
+    setSelectedCoaches(prev =>
+      prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]
+    );
+  };
+
+  const selectAll = () => setSelectedCoaches([...COACHES]);
+  const allSelected = selectedCoaches.length === COACHES.length;
+
+  const handleDownload = () => {
+    if (!blob) return;
+    const name = studentName.trim() || "student";
+    const a = document.createElement("a");
+    a.href = videoUrl;
+    a.download = `${name.replace(/\s+/g, "-")}-impromptu-${Date.now()}.webm`;
+    a.click();
+  };
+
+  return (
+    <div style={{ maxWidth: 680, margin: "0 auto", animation: "fadeUp 0.6s ease both" }}>
+      {/* Header */}
+      <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+        <div style={{
+          fontFamily: "'Space Mono', monospace", fontSize: "0.75rem",
+          letterSpacing: "0.2em", textTransform: "uppercase", color: "#4ade80", marginBottom: "0.5rem",
+        }}>
+          ✓ Speech Complete
+        </div>
+        <h2 style={{
+          fontFamily: "'Crimson Text', Georgia, serif", fontSize: "2rem",
+          color: "#f0e8d0", fontWeight: 400, marginBottom: "0.4rem",
+        }}>
+          Nice work. Review your recording.
+        </h2>
+        <p style={{ color: "#5a5040", fontFamily: "'Crimson Text', Georgia, serif", fontSize: "1rem", fontStyle: "italic" }}>
+          Watch it back, then download and send to your coach.
+        </p>
+      </div>
+
+      {/* Video Player */}
+      <div style={{
+        background: "#060504", borderRadius: "8px", overflow: "hidden",
+        border: "1px solid #2a2010", marginBottom: "1.5rem",
+        boxShadow: "0 0 40px #00000060",
+      }}>
+        {videoUrl ? (
+          <video
+            src={videoUrl}
+            controls
+            style={{ width: "100%", display: "block", maxHeight: 380, background: "#000" }}
+          />
+        ) : (
+          <div style={{ padding: "3rem", textAlign: "center", color: "#5a5040", fontFamily: "'Space Mono', monospace", fontSize: "0.8rem" }}>
+            Recording not available — camera may have been blocked.
+          </div>
+        )}
+      </div>
+
+      {/* Quote reminder */}
+      {quote && (
+        <div style={{
+          background: "#0f0d08", border: "1px solid #2a2010", borderRadius: "6px",
+          padding: "1rem 1.5rem", marginBottom: "1.5rem",
+        }}>
+          <p style={{ fontFamily: "'Crimson Text', Georgia, serif", fontSize: "1rem", color: "#9a8a6a", fontStyle: "italic", margin: 0 }}>
+            "{quote.text}" — {quote.author}
+          </p>
+        </div>
+      )}
+
+      {/* Student Info */}
+      <div style={{
+        background: "#0f0d08", border: "1px solid #2a2010", borderRadius: "8px",
+        padding: "1.5rem", marginBottom: "1.5rem",
+      }}>
+        <div style={{ marginBottom: "1.2rem" }}>
+          <label style={reviewLabelStyle}>Your Name</label>
+          <input
+            type="text"
+            value={studentName}
+            onChange={e => setStudentName(e.target.value)}
+            placeholder="e.g. Edward Kent"
+            style={{ ...reviewInputStyle }}
+          />
+        </div>
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+            <label style={reviewLabelStyle}>Send To Coach</label>
+            <button
+              onClick={selectAll}
+              style={{
+                background: allSelected ? "#e8c97a22" : "transparent",
+                color: allSelected ? "#e8c97a" : "#5a5040",
+                border: `1px solid ${allSelected ? "#e8c97a" : "#3a2f00"}`,
+                borderRadius: "3px",
+                fontFamily: "'Space Mono', monospace",
+                fontSize: "0.62rem",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                padding: "0.25rem 0.6rem",
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+            >
+              {allSelected ? "✓ All Selected" : "Select All"}
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
+            {COACHES.map(c => {
+              const active = selectedCoaches.includes(c);
+              return (
+                <button
+                  key={c}
+                  onClick={() => toggleCoach(c)}
+                  style={{
+                    padding: "0.5rem 1.1rem",
+                    background: active ? "#e8c97a" : "transparent",
+                    color: active ? "#0a0a0a" : "#9a8a6a",
+                    border: `1.5px solid ${active ? "#e8c97a" : "#3a2f00"}`,
+                    borderRadius: "4px",
+                    fontFamily: "'Space Mono', monospace",
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    letterSpacing: "0.04em",
+                  }}
+                >
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+        <button
+          onClick={handleDownload}
+          disabled={!blob}
+          style={{
+            flex: 1,
+            padding: "0.9rem",
+            background: blob ? "#e8c97a" : "#2a2010",
+            color: blob ? "#0a0a0a" : "#5a5040",
+            border: "none",
+            borderRadius: "4px",
+            fontFamily: "'Space Mono', monospace",
+            fontSize: "0.82rem",
+            fontWeight: 700,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            cursor: blob ? "pointer" : "not-allowed",
+            boxShadow: blob ? "0 0 20px #e8c97a20" : "none",
+            transition: "all 0.2s",
+          }}
+        >
+          ↓ Download Recording
+        </button>
+        <button
+          onClick={onReset}
+          style={{
+            padding: "0.9rem 1.5rem",
+            background: "transparent",
+            color: "#5a5040",
+            border: "1px solid #2a2010",
+            borderRadius: "4px",
+            fontFamily: "'Space Mono', monospace",
+            fontSize: "0.82rem",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={e => { e.target.style.color = "#e8c97a"; e.target.style.borderColor = "#e8c97a"; }}
+          onMouseLeave={e => { e.target.style.color = "#5a5040"; e.target.style.borderColor = "#2a2010"; }}
+        >
+          ← New Session
+        </button>
+      </div>
+
+      <p style={{
+        marginTop: "1rem", textAlign: "center",
+        fontFamily: "'Crimson Text', Georgia, serif", fontSize: "0.9rem",
+        color: "#3a3020", fontStyle: "italic",
+      }}>
+        Download your recording and send it to {selectedCoaches.length === 0 ? "your coach" : selectedCoaches.join(", ")} for feedback.
+      </p>
+    </div>
+  );
+}
+
+const reviewLabelStyle = {
+  display: "block",
+  fontFamily: "'Space Mono', monospace",
+  fontSize: "0.68rem",
+  letterSpacing: "0.15em",
+  textTransform: "uppercase",
+  color: "#9a8a6a",
+  marginBottom: "0.5rem",
+};
+
+const reviewInputStyle = {
+  width: "100%",
+  background: "#060504",
+  border: "1px solid #2a2010",
+  borderRadius: "4px",
+  padding: "0.75rem 1rem",
+  color: "#f0e8d0",
+  fontFamily: "'Crimson Text', Georgia, serif",
+  fontSize: "1.05rem",
+  outline: "none",
+  boxSizing: "border-box",
+};
+
 function PracticeTab({ allQuotes, onPhaseChange }) {
   const [difficulty, setDifficulty] = useState("Random");
   const [phase, setPhase] = useState(PHASES.IDLE);
   const [countdown, setCountdown] = useState(0);
   const [currentQuote, setCurrentQuote] = useState(null);
+  const [recordingBlob, setRecordingBlob] = useState(null);
+  const [cameraError, setCameraError] = useState(false);
+
   const intervalRef = useRef(null);
   const phaseRef = useRef(phase);
   const lastQuoteRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const chunksRef = useRef([]);
+  const streamRef = useRef(null);
+  const liveVideoRef = useRef(null);
   phaseRef.current = phase;
+
+  // Start camera as soon as component mounts so preview is ready
+  useEffect(() => {
+    async function initCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        streamRef.current = stream;
+        if (liveVideoRef.current) {
+          liveVideoRef.current.srcObject = stream;
+        }
+      } catch (e) {
+        setCameraError(true);
+      }
+    }
+    initCamera();
+    return () => {
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+    };
+  }, []);
+
+  // Attach stream to video element once ref is ready
+  useEffect(() => {
+    if (liveVideoRef.current && streamRef.current) {
+      liveVideoRef.current.srcObject = streamRef.current;
+    }
+  });
+
+  const startRecording = () => {
+    if (!streamRef.current) return;
+    chunksRef.current = [];
+    const options = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? { mimeType: "video/webm;codecs=vp9" }
+      : MediaRecorder.isTypeSupported("video/webm")
+      ? { mimeType: "video/webm" }
+      : {};
+    const recorder = new MediaRecorder(streamRef.current, options);
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    recorder.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: "video/webm" });
+      setRecordingBlob(blob);
+    };
+    recorder.start(1000);
+    mediaRecorderRef.current = recorder;
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  };
 
   const clearTimer = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -331,13 +611,17 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     lastQuoteRef.current = quote.text;
     onPhaseChange && onPhaseChange("ACTIVE");
     setCurrentQuote(quote);
+    setRecordingBlob(null);
     setPhase(PHASES.BUFFER);
     startCountdown(10, () => {
       setPhase(PHASES.READING);
       startCountdown(10, () => {
         setPhase(PHASES.SPEAKING);
+        startRecording();
         startCountdown(420, () => {
+          stopRecording();
           setPhase(PHASES.DONE);
+          setTimeout(() => setPhase(PHASES.REVIEW), 1500);
         });
       });
     });
@@ -345,9 +629,11 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
   const reset = () => {
     clearTimer();
+    stopRecording();
     setPhase(PHASES.IDLE);
     setCurrentQuote(null);
     setCountdown(0);
+    setRecordingBlob(null);
     onPhaseChange && onPhaseChange("IDLE");
   };
 
@@ -539,7 +825,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
           )}
 
           {phase === PHASES.DONE && (
-            <div style={{ animation: "fadeUp 0.5s ease both" }}>
+            <div style={{ animation: "fadeUp 0.5s ease both", textAlign: "center" }}>
               <p style={{
                 fontFamily: "'Crimson Text', Georgia, serif",
                 fontSize: "1.3rem",
@@ -547,8 +833,55 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
                 fontStyle: "italic",
                 marginBottom: "2rem",
               }}>
-                Well done. The floor is yours no more.
+                Time's up. Processing your recording...
               </p>
+            </div>
+          )}
+
+          {/* REVIEW SCREEN */}
+          {phase === PHASES.REVIEW && (
+            <ReviewScreen
+              blob={recordingBlob}
+              quote={currentQuote}
+              onReset={reset}
+            />
+          )}
+
+          {/* Live Camera Preview — shown during session, hidden on IDLE/REVIEW */}
+          {phase !== PHASES.IDLE && phase !== PHASES.REVIEW && (
+            <div style={{
+              position: "fixed", bottom: "1.5rem", right: "1.5rem",
+              width: 180, borderRadius: "8px", overflow: "hidden",
+              border: phase === PHASES.SPEAKING ? "2px solid #ef4444" : "2px solid #3a2f00",
+              boxShadow: phase === PHASES.SPEAKING ? "0 0 20px #ef444440" : "0 0 12px #00000080",
+              zIndex: 50,
+              background: "#0a0a08",
+            }}>
+              {phase === PHASES.SPEAKING && (
+                <div style={{
+                  position: "absolute", top: 6, left: 8, zIndex: 10,
+                  display: "flex", alignItems: "center", gap: 5,
+                }}>
+                  <div style={{
+                    width: 8, height: 8, borderRadius: "50%", background: "#ef4444",
+                    animation: "pulse 1s ease infinite",
+                  }} />
+                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.6rem", color: "#ef4444", letterSpacing: "0.1em" }}>REC</span>
+                </div>
+              )}
+              {cameraError ? (
+                <div style={{ padding: "1rem", textAlign: "center", color: "#5a5040", fontFamily: "'Space Mono', monospace", fontSize: "0.65rem" }}>
+                  Camera unavailable
+                </div>
+              ) : (
+                <video
+                  ref={liveVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  style={{ width: "100%", display: "block", transform: "scaleX(-1)" }}
+                />
+              )}
             </div>
           )}
 
@@ -567,6 +900,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
             </div>
           )}
 
+          {phase !== PHASES.REVIEW && (
           <button
             onClick={reset}
             style={{
@@ -587,6 +921,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
           >
             ← Reset
           </button>
+          )}
         </div>
       )}
     </div>
