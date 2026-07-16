@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /quotes/{quoteId} {
+      allow read: if true;
+      allow create: if request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() < 1000
+                    && request.resource.data.author is string
+                    && request.resource.data.author.size() > 0
+                    && request.resource.data.author.size() < 200
+                    && request.resource.data.difficulty in ['Easy', 'Medium', 'Hard', 'Insaneo CRAZY'];
+      allow update, delete: if false;
+    }
+  }
+}

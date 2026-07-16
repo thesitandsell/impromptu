@@ -100,6 +100,61 @@ function getRandomQuote(difficulty, pool, lastQuoteText = null) {
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
 
+// ── Circular progress ring used for every countdown ─────────────
+function CircularTimer({ value, max, color, size = 220, strokeWidth = 5, big, urgent }) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
+  const offset = circumference * (1 - progress);
+
+  return (
+    <div
+      className={urgent ? "timer-ring pulse-ring" : "timer-ring"}
+      style={{
+        position: "relative",
+        width: size,
+        height: size,
+        margin: "0 auto 2.5rem",
+        filter: `drop-shadow(0 0 26px ${color}30)`,
+      }}
+    >
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)", display: "block" }}>
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="var(--border-soft)" strokeWidth={strokeWidth} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke={color}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          style={{ transition: "stroke-dashoffset 1s linear, stroke 0.4s ease" }}
+        />
+      </svg>
+      <div
+        style={{
+          position: "absolute", inset: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
+        <span style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: big ? "4.6rem" : "3.4rem",
+          fontWeight: 700,
+          color,
+          letterSpacing: "-0.02em",
+          textShadow: `0 0 30px ${color}80`,
+          transition: "color 0.4s",
+        }}>
+          {big ? value : formatTime(value)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function CyborgDog() {
   const tan = "#C9844B", dkTan = "#9A6030", metal = "#7A99BB", dkMetal = "#3A5570";
   const legXs = [56, 76, 116, 136];
@@ -326,30 +381,23 @@ function ReviewScreen({ blob, quote, onReset }) {
   return (
     <div style={{ maxWidth: 680, margin: "0 auto", animation: "fadeUp 0.6s ease both" }}>
       {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-        <div style={{
-          fontFamily: "'Space Mono', monospace", fontSize: "0.75rem",
-          letterSpacing: "0.2em", textTransform: "uppercase", color: "#4ade80", marginBottom: "0.5rem",
-        }}>
+      <div style={{ textAlign: "center", marginBottom: "2.25rem" }}>
+        <div className="eyebrow" style={{ color: "var(--good)", marginBottom: "0.6rem" }}>
           ✓ Speech Complete
         </div>
         <h2 style={{
-          fontFamily: "'Crimson Text', Georgia, serif", fontSize: "2rem",
-          color: "#f0e8d0", fontWeight: 400, marginBottom: "0.4rem",
+          fontFamily: "var(--font-serif)", fontSize: "2rem",
+          color: "var(--text)", fontWeight: 400, marginBottom: "0.4rem",
         }}>
           Nice work. Review your recording.
         </h2>
-        <p style={{ color: "#5a5040", fontFamily: "'Crimson Text', Georgia, serif", fontSize: "1rem", fontStyle: "italic" }}>
+        <p style={{ color: "var(--text-dim)", fontFamily: "var(--font-serif)", fontSize: "1rem", fontStyle: "italic" }}>
           Watch it back, then download and send to your coach.
         </p>
       </div>
 
       {/* Video Player */}
-      <div style={{
-        background: "#060504", borderRadius: "8px", overflow: "hidden",
-        border: "1px solid #2a2010", marginBottom: "1.5rem",
-        boxShadow: "0 0 40px #00000060",
-      }}>
+      <div className="card" style={{ overflow: "hidden", marginBottom: "1.5rem" }}>
         {videoUrl ? (
           <video
             src={videoUrl}
@@ -357,7 +405,7 @@ function ReviewScreen({ blob, quote, onReset }) {
             style={{ width: "100%", display: "block", maxHeight: 380, background: "#000" }}
           />
         ) : (
-          <div style={{ padding: "3rem", textAlign: "center", color: "#5a5040", fontFamily: "'Space Mono', monospace", fontSize: "0.8rem" }}>
+          <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: "0.8rem" }}>
             Recording not available — camera may have been blocked.
           </div>
         )}
@@ -365,50 +413,29 @@ function ReviewScreen({ blob, quote, onReset }) {
 
       {/* Quote reminder */}
       {quote && (
-        <div style={{
-          background: "#0f0d08", border: "1px solid #2a2010", borderRadius: "6px",
-          padding: "1rem 1.5rem", marginBottom: "1.5rem",
-        }}>
-          <p style={{ fontFamily: "'Crimson Text', Georgia, serif", fontSize: "1rem", color: "#9a8a6a", fontStyle: "italic", margin: 0 }}>
+        <div className="card card--flat" style={{ padding: "1.1rem 1.5rem", marginBottom: "1.5rem" }}>
+          <p style={{ fontFamily: "var(--font-serif)", fontSize: "1rem", color: "var(--text-dim)", fontStyle: "italic", margin: 0 }}>
             "{quote.text}" — {quote.author}
           </p>
         </div>
       )}
 
       {/* Student Info */}
-      <div style={{
-        background: "#0f0d08", border: "1px solid #2a2010", borderRadius: "8px",
-        padding: "1.5rem", marginBottom: "1.5rem",
-      }}>
-        <div style={{ marginBottom: "1.2rem" }}>
-          <label style={reviewLabelStyle}>Your Name</label>
+      <div className="card" style={{ padding: "1.75rem", marginBottom: "1.5rem" }}>
+        <div style={{ marginBottom: "1.3rem" }}>
+          <label className="label">Your Name</label>
           <input
             type="text"
+            className="input"
             value={studentName}
             onChange={e => setStudentName(e.target.value)}
             placeholder="e.g. Edward Kent"
-            style={{ ...reviewInputStyle }}
           />
         </div>
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-            <label style={reviewLabelStyle}>Send To Coach</label>
-            <button
-              onClick={selectAll}
-              style={{
-                background: allSelected ? "#e8c97a22" : "transparent",
-                color: allSelected ? "#e8c97a" : "#5a5040",
-                border: `1px solid ${allSelected ? "#e8c97a" : "#3a2f00"}`,
-                borderRadius: "3px",
-                fontFamily: "'Space Mono', monospace",
-                fontSize: "0.62rem",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                padding: "0.25rem 0.6rem",
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-            >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem" }}>
+            <label className="label" style={{ marginBottom: 0 }}>Send To Coach</label>
+            <button onClick={selectAll} className={`chip-toggle ${allSelected ? "chip-toggle--active" : ""}`}>
               {allSelected ? "✓ All Selected" : "Select All"}
             </button>
           </div>
@@ -419,19 +446,7 @@ function ReviewScreen({ blob, quote, onReset }) {
                 <button
                   key={c}
                   onClick={() => toggleCoach(c)}
-                  style={{
-                    padding: "0.5rem 1.1rem",
-                    background: active ? "#e8c97a" : "transparent",
-                    color: active ? "#0a0a0a" : "#9a8a6a",
-                    border: `1.5px solid ${active ? "#e8c97a" : "#3a2f00"}`,
-                    borderRadius: "4px",
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: "0.72rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    letterSpacing: "0.04em",
-                  }}
+                  className={`btn-pill ${active ? "btn-pill--active" : ""}`}
                 >
                   {c}
                 </button>
@@ -446,80 +461,26 @@ function ReviewScreen({ blob, quote, onReset }) {
         <button
           onClick={handleDownload}
           disabled={!blob}
-          style={{
-            flex: 1,
-            padding: "0.9rem",
-            background: blob ? "#e8c97a" : "#2a2010",
-            color: blob ? "#0a0a0a" : "#5a5040",
-            border: "none",
-            borderRadius: "4px",
-            fontFamily: "'Space Mono', monospace",
-            fontSize: "0.82rem",
-            fontWeight: 700,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            cursor: blob ? "pointer" : "not-allowed",
-            boxShadow: blob ? "0 0 20px #e8c97a20" : "none",
-            transition: "all 0.2s",
-          }}
+          className="btn btn-primary"
+          style={{ flex: 1, padding: "0.95rem", opacity: blob ? 1 : 0.5, cursor: blob ? "pointer" : "not-allowed" }}
         >
           ↓ Download Recording
         </button>
-        <button
-          onClick={onReset}
-          style={{
-            padding: "0.9rem 1.5rem",
-            background: "transparent",
-            color: "#5a5040",
-            border: "1px solid #2a2010",
-            borderRadius: "4px",
-            fontFamily: "'Space Mono', monospace",
-            fontSize: "0.82rem",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            cursor: "pointer",
-            transition: "all 0.2s",
-          }}
-          onMouseEnter={e => { e.target.style.color = "#e8c97a"; e.target.style.borderColor = "#e8c97a"; }}
-          onMouseLeave={e => { e.target.style.color = "#5a5040"; e.target.style.borderColor = "#2a2010"; }}
-        >
+        <button onClick={onReset} className="btn btn-ghost" style={{ padding: "0.95rem 1.5rem" }}>
           ← New Session
         </button>
       </div>
 
       <p style={{
-        marginTop: "1rem", textAlign: "center",
-        fontFamily: "'Crimson Text', Georgia, serif", fontSize: "0.9rem",
-        color: "#3a3020", fontStyle: "italic",
+        marginTop: "1.1rem", textAlign: "center",
+        fontFamily: "var(--font-serif)", fontSize: "0.9rem",
+        color: "var(--text-faint)", fontStyle: "italic",
       }}>
         Download your recording and send it to {selectedCoaches.length === 0 ? "your coach" : selectedCoaches.join(", ")} for feedback.
       </p>
     </div>
   );
 }
-
-const reviewLabelStyle = {
-  display: "block",
-  fontFamily: "'Space Mono', monospace",
-  fontSize: "0.68rem",
-  letterSpacing: "0.15em",
-  textTransform: "uppercase",
-  color: "#9a8a6a",
-  marginBottom: "0.5rem",
-};
-
-const reviewInputStyle = {
-  width: "100%",
-  background: "#060504",
-  border: "1px solid #2a2010",
-  borderRadius: "4px",
-  padding: "0.75rem 1rem",
-  color: "#f0e8d0",
-  fontFamily: "'Crimson Text', Georgia, serif",
-  fontSize: "1.05rem",
-  outline: "none",
-  boxSizing: "border-box",
-};
 
 function PracticeTab({ allQuotes, onPhaseChange }) {
   const [difficulty, setDifficulty] = useState("Random");
@@ -651,14 +612,17 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const isUrgent = phase === PHASES.SPEAKING && countdown <= 30;
   const isMedium = phase === PHASES.SPEAKING && countdown <= 60 && countdown > 30;
 
-  const timerColor = isUrgent ? "#ef4444" : isMedium ? "#f97316" : "#e8c97a";
+  const timerColor = isUrgent ? "var(--danger)" : isMedium ? "var(--warn)" : "var(--accent)";
+  const timerMax = phase === PHASES.BUFFER || phase === PHASES.READING ? 10 : 420;
+
+  const stepIndex = { [PHASES.BUFFER]: 0, [PHASES.READING]: 1, [PHASES.SPEAKING]: 2, [PHASES.DONE]: 3 }[phase] ?? -1;
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "2rem 1.5rem" }}>
       {/* Difficulty Selector */}
       {phase === PHASES.IDLE && (
         <div style={{ marginBottom: "3rem", animation: "fadeUp 0.6s ease both" }}>
-          <p style={{ fontFamily: "'Crimson Text', Georgia, serif", color: "#9a8a6a", fontSize: "1rem", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: "1.2rem", textAlign: "center" }}>
+          <p className="eyebrow" style={{ marginBottom: "1.2rem", textAlign: "center" }}>
             Select Difficulty
           </p>
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
@@ -671,19 +635,11 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
                   className="diff-btn"
                   onClick={() => setDifficulty(d)}
                   style={{
-                    padding: "0.6rem 1.4rem",
+                    "--diff-color": cfg.color,
+                    "--diff-glow": cfg.glow,
                     background: active ? cfg.color : "transparent",
-                    color: active ? "#0a0a0a" : cfg.color,
-                    border: `1.5px solid ${cfg.color}`,
-                    borderRadius: "4px",
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: "0.78rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    letterSpacing: "0.05em",
-                    transition: "all 0.2s",
+                    color: active ? "#0a0a08" : cfg.color,
                     boxShadow: active ? `0 0 18px ${cfg.glow}` : "none",
-                    textTransform: "uppercase",
                   }}
                 >
                   {d}
@@ -697,54 +653,38 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
       {/* Main Area */}
       {phase === PHASES.IDLE ? (
         <div style={{ textAlign: "center", animation: "fadeUp 0.8s ease 0.2s both" }}>
-          <div style={{
-            width: 200, height: 200, borderRadius: "50%", margin: "0 auto 3rem",
-            background: "radial-gradient(circle, #2a1f00 0%, #0a0a0a 70%)",
-            border: "1px solid #3a2f00",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 0 60px #e8c97a18, inset 0 0 40px #00000080",
-            position: "relative",
-          }}>
-            <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
-              <circle cx="32" cy="32" r="30" stroke="#e8c97a" strokeWidth="1" opacity="0.3" />
-              <path d="M26 20 L26 44 L48 32 Z" fill="#e8c97a" opacity="0.8" />
+          <div className="start-orb" aria-hidden="true">
+            <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="30" stroke="var(--accent)" strokeWidth="1" opacity="0.35" />
+              <path d="M26 20 L26 44 L48 32 Z" fill="var(--accent)" opacity="0.9" />
             </svg>
           </div>
-          <button
-            onClick={startSession}
-            style={{
-              padding: "1.1rem 3.5rem",
-              background: "#e8c97a",
-              color: "#0a0a0a",
-              border: "none",
-              borderRadius: "4px",
-              fontFamily: "'Space Mono', monospace",
-              fontSize: "1rem",
-              fontWeight: 700,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              cursor: "pointer",
-              transition: "all 0.2s",
-              boxShadow: "0 0 30px #e8c97a30",
-            }}
-            onMouseEnter={e => e.target.style.boxShadow = "0 0 50px #e8c97a60"}
-            onMouseLeave={e => e.target.style.boxShadow = "0 0 30px #e8c97a30"}
-          >
-            Start Session
-          </button>
-          <p style={{ marginTop: "1.5rem", fontFamily: "'Crimson Text', Georgia, serif", color: "#5a5040", fontSize: "0.95rem", fontStyle: "italic" }}>
+          <div>
+            <button onClick={startSession} className="btn btn-primary start-btn">
+              Start Session
+            </button>
+          </div>
+          <p style={{ marginTop: "1.5rem", fontFamily: "var(--font-serif)", color: "var(--text-dim)", fontSize: "0.95rem", fontStyle: "italic" }}>
             {difficulty === "Random" ? "Any difficulty" : `${difficulty} quotes only`} · {allQuotes.filter(q => difficulty === "Random" || q.difficulty === difficulty).length} available
           </p>
         </div>
       ) : (
         <div style={{ textAlign: "center" }}>
+          {/* Step indicator */}
+          {phase !== PHASES.REVIEW && (
+            <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginBottom: "1.1rem" }}>
+              {["Ready", "Read", "Speak"].map((label, i) => (
+                <span key={label} className="step-dot" style={{
+                  background: i <= stepIndex ? timerColor : "var(--border-soft)",
+                  boxShadow: i === stepIndex ? `0 0 10px ${timerColor}` : "none",
+                }} />
+              ))}
+            </div>
+          )}
+
           {/* Phase Label */}
-          <div style={{
-            fontFamily: "'Space Mono', monospace",
-            fontSize: "0.75rem",
-            letterSpacing: "0.25em",
-            textTransform: "uppercase",
-            color: phase === PHASES.DONE ? "#e8c97a" : isUrgent ? "#ef4444" : "#9a8a6a",
+          <div className="eyebrow" style={{
+            color: phase === PHASES.DONE ? "var(--accent)" : isUrgent ? "var(--danger)" : "var(--text-dim)",
             marginBottom: "2rem",
             animation: "pulse 1s ease infinite",
           }}>
@@ -753,71 +693,49 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
           {/* Timer Ring */}
           {phase !== PHASES.DONE && (
-            <div className="timer-ring" style={{
-              width: 220, height: 220, margin: "0 auto 2.5rem",
-              borderRadius: "50%",
-              background: "radial-gradient(circle, #1a1205 0%, #0a0a0a 70%)",
-              border: `2px solid ${timerColor}22`,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: `0 0 60px ${timerColor}20, inset 0 0 30px #00000060`,
-              position: "relative",
-            }}>
-              <span className={phase === PHASES.BUFFER || phase === PHASES.READING ? "timer-text-big" : "timer-text-small"} style={{
-                fontFamily: "'Space Mono', monospace",
-                fontSize: phase === PHASES.BUFFER || phase === PHASES.READING ? "5rem" : "3.8rem",
-                fontWeight: 700,
-                color: timerColor,
-                letterSpacing: "-0.02em",
-                textShadow: `0 0 30px ${timerColor}80`,
-                transition: "color 0.5s",
-              }}>
-                {phase === PHASES.BUFFER || phase === PHASES.READING ? countdown : formatTime(countdown)}
-              </span>
-            </div>
+            <CircularTimer
+              value={countdown}
+              max={timerMax}
+              color={timerColor}
+              size={220}
+              big={phase === PHASES.BUFFER || phase === PHASES.READING}
+              urgent={isUrgent}
+            />
           )}
 
           {/* Quote Display */}
           {(phase === PHASES.READING || phase === PHASES.SPEAKING || phase === PHASES.DONE) && currentQuote && (
-            <div className="quote-box" style={{
-              background: "#0f0d08",
-              border: "1px solid #2a2010",
-              borderRadius: "8px",
+            <div className="card quote-box" style={{
               padding: "2.5rem 2rem",
               marginBottom: "2rem",
               animation: "fadeUp 0.5s ease both",
-              boxShadow: "0 0 40px #00000060, inset 0 0 30px #0a080400",
               position: "relative",
             }}>
-              <div style={{ color: "#e8c97a", fontSize: "4rem", lineHeight: 0.5, fontFamily: "Georgia, serif", opacity: 0.4, marginBottom: "0.5rem" }}>"</div>
+              <div style={{ color: "var(--accent)", fontSize: "4rem", lineHeight: 0.5, fontFamily: "Georgia, serif", opacity: 0.35, marginBottom: "0.5rem" }}>"</div>
               <p className="quote-text" style={{
-                fontFamily: "'Crimson Text', Georgia, serif",
+                fontFamily: "var(--font-serif)",
                 fontSize: "1.55rem",
                 lineHeight: 1.6,
-                color: "#f0e8d0",
+                color: "var(--text)",
                 fontStyle: "italic",
                 margin: "0 0 1.5rem",
               }}>
                 {currentQuote.text}
               </p>
               <p style={{
-                fontFamily: "'Space Mono', monospace",
+                fontFamily: "var(--font-mono)",
                 fontSize: "0.8rem",
-                color: "#9a8a6a",
+                color: "var(--text-dim)",
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
               }}>
                 — {currentQuote.author}
               </p>
-              <div style={{
+              <div className="tag-pill" style={{
                 position: "absolute", top: "1rem", right: "1rem",
-                padding: "0.25rem 0.6rem",
                 background: `${DIFFICULTY_CONFIG[currentQuote.difficulty]?.color}18`,
-                border: `1px solid ${DIFFICULTY_CONFIG[currentQuote.difficulty]?.color}50`,
-                borderRadius: "3px",
-                fontFamily: "'Space Mono', monospace",
-                fontSize: "0.65rem",
+                borderColor: `${DIFFICULTY_CONFIG[currentQuote.difficulty]?.color}50`,
                 color: DIFFICULTY_CONFIG[currentQuote.difficulty]?.color,
-                letterSpacing: "0.05em",
               }}>
                 {currentQuote.difficulty}
               </div>
@@ -827,9 +745,9 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
           {phase === PHASES.DONE && (
             <div style={{ animation: "fadeUp 0.5s ease both", textAlign: "center" }}>
               <p style={{
-                fontFamily: "'Crimson Text', Georgia, serif",
+                fontFamily: "var(--font-serif)",
                 fontSize: "1.3rem",
-                color: "#e8c97a",
+                color: "var(--accent)",
                 fontStyle: "italic",
                 marginBottom: "2rem",
               }}>
@@ -849,28 +767,24 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
           {/* Live Camera Preview — shown during session, hidden on IDLE/REVIEW */}
           {phase !== PHASES.IDLE && phase !== PHASES.REVIEW && (
-            <div style={{
-              position: "fixed", bottom: "1.5rem", right: "1.5rem",
-              width: 180, borderRadius: "8px", overflow: "hidden",
-              border: phase === PHASES.SPEAKING ? "2px solid #ef4444" : "2px solid #3a2f00",
-              boxShadow: phase === PHASES.SPEAKING ? "0 0 20px #ef444440" : "0 0 12px #00000080",
-              zIndex: 50,
-              background: "#0a0a08",
+            <div className="camera-preview" style={{
+              borderColor: phase === PHASES.SPEAKING ? "var(--danger)" : "var(--border)",
+              boxShadow: phase === PHASES.SPEAKING ? "0 0 24px #ef444440" : "0 8px 24px #00000080",
             }}>
               {phase === PHASES.SPEAKING && (
                 <div style={{
-                  position: "absolute", top: 6, left: 8, zIndex: 10,
+                  position: "absolute", top: 8, left: 10, zIndex: 10,
                   display: "flex", alignItems: "center", gap: 5,
                 }}>
                   <div style={{
-                    width: 8, height: 8, borderRadius: "50%", background: "#ef4444",
+                    width: 8, height: 8, borderRadius: "50%", background: "var(--danger)",
                     animation: "pulse 1s ease infinite",
                   }} />
-                  <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.6rem", color: "#ef4444", letterSpacing: "0.1em" }}>REC</span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--danger)", letterSpacing: "0.1em" }}>REC</span>
                 </div>
               )}
               {cameraError ? (
-                <div style={{ padding: "1rem", textAlign: "center", color: "#5a5040", fontFamily: "'Space Mono', monospace", fontSize: "0.65rem" }}>
+                <div style={{ padding: "1rem", textAlign: "center", color: "var(--text-dim)", fontFamily: "var(--font-mono)", fontSize: "0.65rem" }}>
                   Camera unavailable
                 </div>
               ) : (
@@ -888,7 +802,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
           {/* Progress Indicator for Speaking */}
           {phase === PHASES.SPEAKING && (
             <div style={{ margin: "0 auto 2rem", maxWidth: 400 }}>
-              <div style={{ height: 3, background: "#1a1a1a", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{ height: 3, background: "var(--border-soft)", borderRadius: 2, overflow: "hidden" }}>
                 <div style={{
                   height: "100%",
                   width: `${(countdown / 420) * 100}%`,
@@ -901,26 +815,9 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
           )}
 
           {phase !== PHASES.REVIEW && (
-          <button
-            onClick={reset}
-            style={{
-              padding: "0.65rem 2rem",
-              background: "transparent",
-              color: "#5a5040",
-              border: "1px solid #2a2010",
-              borderRadius: "4px",
-              fontFamily: "'Space Mono', monospace",
-              fontSize: "0.75rem",
-              letterSpacing: "0.1em",
-              cursor: "pointer",
-              textTransform: "uppercase",
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={e => { e.target.style.color = "#e8c97a"; e.target.style.borderColor = "#e8c97a"; }}
-            onMouseLeave={e => { e.target.style.color = "#5a5040"; e.target.style.borderColor = "#2a2010"; }}
-          >
-            ← Reset
-          </button>
+            <button onClick={reset} className="btn btn-ghost" style={{ padding: "0.65rem 2rem" }}>
+              ← Reset
+            </button>
           )}
         </div>
       )}
@@ -954,57 +851,56 @@ function SubmitTab({ onSubmit }) {
         setForm({ text: "", author: "", difficulty: "Medium" });
       }, 3000);
     } catch (e) {
-      setError("Failed to save. Check your connection and try again.");
+      console.error("Failed to save quote:", e);
+      setError(
+        e?.code === "permission-denied"
+          ? "Saving is temporarily disabled by the site's database rules. Let Edward know."
+          : "Failed to save. Check your connection and try again."
+      );
       setSaving(false);
     }
   };
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto", padding: "2rem 1.5rem", animation: "fadeUp 0.6s ease both" }}>
-      <div className="submit-card" style={{
-        background: "#0f0d08",
-        border: "1px solid #2a2010",
-        borderRadius: "8px",
-        padding: "2.5rem",
-        boxShadow: "0 0 40px #00000060",
-      }}>
+      <div className="card submit-card" style={{ padding: "2.5rem" }}>
         <h2 style={{
-          fontFamily: "'Crimson Text', Georgia, serif",
+          fontFamily: "var(--font-serif)",
           fontSize: "1.8rem",
-          color: "#e8c97a",
+          color: "var(--accent)",
           fontWeight: 400,
           marginBottom: "0.4rem",
         }}>
           Contribute a Quotation
         </h2>
-        <p style={{ fontFamily: "'Crimson Text', Georgia, serif", color: "#5a5040", fontSize: "1rem", fontStyle: "italic", marginBottom: "2rem" }}>
+        <p style={{ fontFamily: "var(--font-serif)", color: "var(--text-dim)", fontSize: "1rem", fontStyle: "italic", marginBottom: "2rem" }}>
           Help grow the practice pool for everyone.
         </p>
 
         <div style={{ marginBottom: "1.5rem" }}>
-          <label style={labelStyle}>The Quotation</label>
+          <label className="label">The Quotation</label>
           <textarea
             value={form.text}
             onChange={e => setForm(f => ({ ...f, text: e.target.value }))}
             placeholder="Enter the full quotation..."
             rows={4}
-            style={inputStyle}
+            className="input"
           />
         </div>
 
         <div style={{ marginBottom: "1.5rem" }}>
-          <label style={labelStyle}>Who Said It</label>
+          <label className="label">Who Said It</label>
           <input
             type="text"
             value={form.author}
             onChange={e => setForm(f => ({ ...f, author: e.target.value }))}
             placeholder="e.g. Maya Angelou"
-            style={inputStyle}
+            className="input"
           />
         </div>
 
         <div style={{ marginBottom: "2rem" }}>
-          <label style={labelStyle}>Difficulty</label>
+          <label className="label">Difficulty</label>
           <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
             {["Easy", "Medium", "Hard", "Insaneo CRAZY"].map(d => {
               const active = form.difficulty === d;
@@ -1013,19 +909,11 @@ function SubmitTab({ onSubmit }) {
                 <button
                   key={d}
                   onClick={() => setForm(f => ({ ...f, difficulty: d }))}
+                  className="diff-btn diff-btn--sm"
                   style={{
-                    padding: "0.5rem 1.1rem",
                     background: active ? cfg.color : "transparent",
-                    color: active ? "#0a0a0a" : cfg.color,
-                    border: `1.5px solid ${cfg.color}`,
-                    borderRadius: "4px",
-                    fontFamily: "'Space Mono', monospace",
-                    fontSize: "0.72rem",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    transition: "all 0.2s",
+                    color: active ? "#0a0a08" : cfg.color,
+                    borderColor: cfg.color,
                     boxShadow: active ? `0 0 14px ${cfg.glow}` : "none",
                   }}
                 >
@@ -1036,7 +924,7 @@ function SubmitTab({ onSubmit }) {
           </div>
           <div style={{ marginTop: "0.75rem" }}>
             {["Easy", "Medium", "Hard", "Insaneo CRAZY"].map(d => (
-              <p key={d} style={{ color: "#4a4030", fontFamily: "'Crimson Text', Georgia, serif", fontSize: "0.85rem", margin: "0.2rem 0" }}>
+              <p key={d} style={{ color: "var(--text-faint)", fontFamily: "var(--font-serif)", fontSize: "0.85rem", margin: "0.2rem 0" }}>
                 <span style={{ color: DIFFICULTY_CONFIG[d].color, fontWeight: 700 }}>{d}</span>{" "}
                 {{
                   Easy: "— Straightforward, motivational, universally relatable.",
@@ -1050,7 +938,7 @@ function SubmitTab({ onSubmit }) {
         </div>
 
         {error && (
-          <p style={{ color: "#ef4444", fontFamily: "'Space Mono', monospace", fontSize: "0.78rem", marginBottom: "1rem" }}>
+          <p style={{ color: "var(--danger)", fontFamily: "var(--font-mono)", fontSize: "0.78rem", marginBottom: "1rem" }}>
             ⚠ {error}
           </p>
         )}
@@ -1058,20 +946,15 @@ function SubmitTab({ onSubmit }) {
         <button
           onClick={handleSubmit}
           disabled={saving}
+          className="btn"
           style={{
             width: "100%",
-            padding: "0.9rem",
-            background: submitted ? "#1a3a1a" : saving ? "#2a2010" : "#e8c97a",
-            color: submitted ? "#4ade80" : saving ? "#9a8a6a" : "#0a0a0a",
-            border: submitted ? "1px solid #4ade80" : "none",
-            borderRadius: "4px",
-            fontFamily: "'Space Mono', monospace",
-            fontSize: "0.85rem",
+            padding: "0.95rem",
+            background: submitted ? "#1a3a1a" : saving ? "var(--border-soft)" : "var(--accent)",
+            color: submitted ? "var(--good)" : saving ? "var(--text-dim)" : "#0a0a08",
+            border: submitted ? "1px solid var(--good)" : "none",
             fontWeight: 700,
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
             cursor: saving ? "not-allowed" : "pointer",
-            transition: "all 0.3s",
             boxShadow: submitted ? "0 0 20px #4ade8030" : saving ? "none" : "0 0 20px #e8c97a20",
           }}
         >
@@ -1082,45 +965,30 @@ function SubmitTab({ onSubmit }) {
   );
 }
 
-const labelStyle = {
-  display: "block",
-  fontFamily: "'Space Mono', monospace",
-  fontSize: "0.7rem",
-  letterSpacing: "0.15em",
-  textTransform: "uppercase",
-  color: "#9a8a6a",
-  marginBottom: "0.6rem",
-};
-
-const inputStyle = {
-  width: "100%",
-  background: "#060504",
-  border: "1px solid #2a2010",
-  borderRadius: "4px",
-  padding: "0.85rem 1rem",
-  color: "#f0e8d0",
-  fontFamily: "'Crimson Text', Georgia, serif",
-  fontSize: "1.05rem",
-  outline: "none",
-  resize: "vertical",
-  boxSizing: "border-box",
-  transition: "border-color 0.2s",
-};
-
 export default function App() {
   const [activeTab, setActiveTab] = useState("practice");
   const [dogVisible, setDogVisible] = useState(true);
   const [userQuotes, setUserQuotes] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
+  const [dbError, setDbError] = useState(false);
 
   // Realtime listener — any new submission anywhere shows up for everyone instantly
   useEffect(() => {
     const q = query(collection(db, "quotes"), orderBy("createdAt", "asc"));
-    const unsub = onSnapshot(q, (snapshot) => {
-      const fetched = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setUserQuotes(fetched);
-      setDbLoading(false);
-    }, () => setDbLoading(false));
+    const unsub = onSnapshot(
+      q,
+      (snapshot) => {
+        const fetched = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setUserQuotes(fetched);
+        setDbLoading(false);
+        setDbError(false);
+      },
+      (err) => {
+        console.error("Firestore listener failed:", err);
+        setDbLoading(false);
+        setDbError(true);
+      }
+    );
     return () => unsub();
   }, []);
 
@@ -1137,11 +1005,181 @@ export default function App() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Space+Mono:wght@400;700&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body, #root { width: 100%; min-height: 100vh; }
-        body { background: #0a0a08; color: #f0e8d0; }
+
+        :root {
+          --bg: #0a0a08;
+          --bg-raised: #100d07;
+          --bg-input: #070604;
+          --border: #2a2010;
+          --border-soft: #1c1509;
+          --accent: #e8c97a;
+          --text: #f2ead6;
+          --text-dim: #9a8a6a;
+          --text-faint: #4a4030;
+          --good: #4ade80;
+          --warn: #f97316;
+          --danger: #ef4444;
+          --radius-sm: 6px;
+          --radius-md: 12px;
+          --radius-lg: 22px;
+          --font-serif: 'Crimson Text', Georgia, serif;
+          --font-mono: 'Space Mono', monospace;
+          --shadow-card: 0 1px 0 rgba(255,255,255,0.03) inset, 0 16px 40px -12px rgba(0,0,0,0.65);
+        }
+
+        .card {
+          background: var(--bg-raised);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-card);
+        }
+        .card--flat { box-shadow: none; background: #0d0a05; }
+
+        .btn {
+          font-family: var(--font-mono);
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          font-size: 0.82rem;
+          font-weight: 700;
+          border-radius: var(--radius-sm);
+          border: none;
+          cursor: pointer;
+          transition: box-shadow 0.2s ease, transform 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+        .btn-primary {
+          background: var(--accent);
+          color: #0a0a08;
+          box-shadow: 0 0 22px #e8c97a25;
+        }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 0 40px #e8c97a55; transform: translateY(-1px); }
+        .btn-ghost {
+          background: transparent;
+          color: var(--text-dim);
+          border: 1px solid var(--border);
+        }
+        .btn-ghost:hover { color: var(--accent); border-color: var(--accent); }
+
+        .input, textarea.input {
+          width: 100%;
+          background: var(--bg-input);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          padding: 0.85rem 1rem;
+          color: var(--text);
+          font-family: var(--font-serif);
+          font-size: 1.05rem;
+          outline: none;
+          resize: vertical;
+          box-sizing: border-box;
+          transition: border-color 0.2s;
+        }
+        .input:focus { border-color: #e8c97a80 !important; }
+
+        .label {
+          display: block;
+          font-family: var(--font-mono);
+          font-size: 0.68rem;
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+          color: var(--text-dim);
+          margin-bottom: 0.55rem;
+        }
+
+        .eyebrow {
+          font-family: var(--font-mono);
+          font-size: 0.75rem;
+          letter-spacing: 0.25em;
+          text-transform: uppercase;
+          color: var(--text-dim);
+        }
+
+        .tag-pill {
+          padding: 0.25rem 0.65rem;
+          border: 1px solid;
+          border-radius: var(--radius-sm);
+          font-family: var(--font-mono);
+          font-size: 0.65rem;
+          letter-spacing: 0.05em;
+        }
+
+        .chip-toggle {
+          background: transparent;
+          color: var(--text-dim);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-sm);
+          font-family: var(--font-mono);
+          font-size: 0.62rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          padding: 0.3rem 0.65rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .chip-toggle--active { background: #e8c97a1f; color: var(--accent); border-color: var(--accent); }
+
+        .btn-pill {
+          padding: 0.55rem 1.15rem;
+          background: transparent;
+          color: var(--text-dim);
+          border: 1.5px solid var(--border);
+          border-radius: var(--radius-sm);
+          font-family: var(--font-mono);
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.04em;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .btn-pill--active { background: var(--accent); color: #0a0a08; border-color: var(--accent); }
+
+        .diff-btn {
+          padding: 0.65rem 1.5rem;
+          border: 1.5px solid var(--diff-color, currentColor);
+          border-radius: var(--radius-sm);
+          font-family: var(--font-mono);
+          font-size: 0.78rem;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .diff-btn:hover { transform: translateY(-1px); }
+        .diff-btn--sm { padding: 0.5rem 1.1rem; font-size: 0.72rem; }
+
+        .start-orb {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 190px; height: 190px;
+          border-radius: 50%;
+          margin: 0 auto 2.75rem;
+          background: radial-gradient(circle, #241a06 0%, #0a0a08 72%);
+          border: 1px solid var(--border);
+          box-shadow: 0 0 70px #e8c97a1c, inset 0 0 40px #00000080;
+        }
+
+        .start-btn { padding: 1.05rem 3.5rem; font-size: 1rem; letter-spacing: 0.14em; }
+
+        .step-dot { width: 7px; height: 7px; border-radius: 50%; transition: all 0.3s ease; }
+
+        .quote-box { position: relative; }
+
+        .camera-preview {
+          position: fixed;
+          bottom: 1.5rem; right: 1.5rem;
+          width: 180px;
+          border-radius: var(--radius-md);
+          overflow: hidden;
+          border: 2px solid;
+          z-index: 50;
+          background: #0a0a08;
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg); color: var(--text); }
         textarea, input { color-scheme: dark; }
-        textarea:focus, input:focus { border-color: #e8c97a60 !important; outline: none; }
 
         /* ── Mobile ── */
         @media (max-width: 600px) {
@@ -1150,14 +1188,13 @@ export default function App() {
           .tab-btn { padding: 0.4rem 0.7rem !important; font-size: 0.62rem !important; }
           .hero-h1 { font-size: 1.8rem !important; }
           .hero-sub { font-size: 0.85rem !important; }
-          .diff-btn { padding: 0.45rem 0.8rem !important; font-size: 0.68rem !important; }
-          .timer-ring { width: 160px !important; height: 160px !important; }
-          .timer-text-big { font-size: 3.8rem !important; }
-          .timer-text-small { font-size: 2.8rem !important; }
+          .diff-btn { padding: 0.5rem 0.9rem !important; font-size: 0.68rem !important; }
+          .timer-ring { width: 168px !important; height: 168px !important; }
           .quote-box { padding: 1.5rem 1rem !important; }
           .quote-text { font-size: 1.2rem !important; }
           .flying-char { display: none !important; }
           .submit-card { padding: 1.5rem 1rem !important; }
+          .start-orb { width: 150px !important; height: 150px !important; }
         }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
@@ -1167,13 +1204,9 @@ export default function App() {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.6; }
         }
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
         ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0a0a08; }
-        ::-webkit-scrollbar-thumb { background: #2a2010; border-radius: 3px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
         @keyframes flyDog {
           0%   { transform: translate(6vw,  14vh); }
           13%  { transform: translate(35vw, 7vh);  }
@@ -1198,10 +1231,10 @@ export default function App() {
         }
       `}</style>
 
-      <div style={{ minHeight: "100vh", width: "100%", background: "#0a0a08", fontFamily: "'Crimson Text', Georgia, serif" }}>
+      <div style={{ minHeight: "100vh", width: "100%", background: "var(--bg)", fontFamily: "var(--font-serif)" }}>
         {/* Header */}
         <header style={{
-          borderBottom: "1px solid #1a1508",
+          borderBottom: "1px solid var(--border-soft)",
           padding: "1.5rem 2rem",
           display: "flex",
           alignItems: "center",
@@ -1214,10 +1247,10 @@ export default function App() {
         }}>
           <div>
             <div className="header-title" style={{
-              fontFamily: "'Crimson Text', Georgia, serif",
+              fontFamily: "var(--font-serif)",
               fontSize: "1.1rem",
               fontWeight: 600,
-              color: "#e8c97a",
+              color: "var(--accent)",
               letterSpacing: "0.02em",
               lineHeight: 1.2,
               maxWidth: 220,
@@ -1225,9 +1258,9 @@ export default function App() {
               Edward's really cool and awesome Impromptu practice website
             </div>
             <div className="header-subtitle" style={{
-              fontFamily: "'Space Mono', monospace",
+              fontFamily: "var(--font-mono)",
               fontSize: "0.62rem",
-              color: "#5a5040",
+              color: "var(--text-dim)",
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               marginTop: "0.25rem",
@@ -1245,11 +1278,11 @@ export default function App() {
                 onClick={() => { setActiveTab(id); if (id === "practice") setDogVisible(true); }}
                 style={{
                   padding: "0.5rem 1.2rem",
-                  background: activeTab === id ? "#1a1508" : "transparent",
-                  color: activeTab === id ? "#e8c97a" : "#5a5040",
-                  border: `1px solid ${activeTab === id ? "#3a2f00" : "transparent"}`,
-                  borderRadius: "4px",
-                  fontFamily: "'Space Mono', monospace",
+                  background: activeTab === id ? "var(--border-soft)" : "transparent",
+                  color: activeTab === id ? "var(--accent)" : "var(--text-dim)",
+                  border: `1px solid ${activeTab === id ? "var(--border)" : "transparent"}`,
+                  borderRadius: "var(--radius-sm)",
+                  fontFamily: "var(--font-mono)",
                   fontSize: "0.72rem",
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
@@ -1266,18 +1299,27 @@ export default function App() {
         {/* Pool Stats Bar */}
         <div style={{
           background: "#0d0b06",
-          borderBottom: "1px solid #151008",
-          padding: "0.6rem 2rem",
+          borderBottom: "1px solid var(--border-soft)",
+          padding: "0.7rem 2rem",
           display: "flex",
           gap: "2rem",
           justifyContent: "center",
+          position: "relative",
+          zIndex: 3,
         }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.95rem", color: "#e8c97a", fontWeight: 700 }}>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.95rem", color: "var(--accent)", fontWeight: 700 }}>
               {dbLoading ? "..." : allQuotes.length}
             </div>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "0.58rem", color: "#4a4030", letterSpacing: "0.12em", textTransform: "uppercase" }}>Quotes in Pool</div>
+            <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.58rem", color: "var(--text-faint)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Quotes in Pool</div>
           </div>
+          {dbError && (
+            <div style={{ textAlign: "center" }}>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: "0.62rem", color: "var(--danger)", letterSpacing: "0.05em" }}>
+                ⚠ Live pool unavailable — showing built-in quotes only
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Hero area */}
@@ -1287,20 +1329,22 @@ export default function App() {
             padding: "3rem 2rem 1rem",
             width: "100%",
             background: "radial-gradient(ellipse 80% 40% at 50% 0%, #1a1205 0%, #0a0a08 100%)",
+            position: "relative",
+            zIndex: 3,
           }}>
             <h1 className="hero-h1" style={{
-              fontFamily: "'Crimson Text', Georgia, serif",
+              fontFamily: "var(--font-serif)",
               fontSize: "clamp(2rem, 5vw, 3.2rem)",
               fontWeight: 400,
-              color: "#f0e8d0",
+              color: "var(--text)",
               lineHeight: 1.15,
               marginBottom: "0.75rem",
             }}>
               Good luck bro.<br />
-              <span style={{ color: "#e8c97a" }}>You got this gang.</span>
+              <span style={{ color: "var(--accent)" }}>You got this gang.</span>
             </h1>
             <p className="hero-sub" style={{
-              color: "#5a5040",
+              color: "var(--text-dim)",
               fontSize: "1rem",
               fontStyle: "italic",
               maxWidth: 460,
@@ -1317,35 +1361,37 @@ export default function App() {
             padding: "3rem 2rem 1rem",
             width: "100%",
             background: "radial-gradient(ellipse 80% 40% at 50% 0%, #1a1205 0%, #0a0a08 100%)",
+            position: "relative",
+            zIndex: 3,
           }}>
             <h1 className="hero-h1" style={{
-              fontFamily: "'Crimson Text', Georgia, serif",
+              fontFamily: "var(--font-serif)",
               fontSize: "clamp(2rem, 5vw, 3.2rem)",
               fontWeight: 400,
-              color: "#f0e8d0",
+              color: "var(--text)",
               lineHeight: 1.15,
               marginBottom: "0.75rem",
             }}>
               Submit whatever quotation,<br />
-              <span style={{ color: "#e8c97a" }}>Just make sure someone said it at some point lol</span>
+              <span style={{ color: "var(--accent)" }}>Just make sure someone said it at some point lol</span>
             </h1>
-            <p style={{ color: "#5a5040", fontSize: "1rem", fontStyle: "italic" }}>
-              Your submissions are saved locally and added instantly.
+            <p style={{ color: "var(--text-dim)", fontSize: "1rem", fontStyle: "italic" }}>
+              Your submissions are saved instantly for everyone.
             </p>
           </div>
         )}
 
         {/* Floating Characters */}
         {activeTab === "practice" && dogVisible && (
-          <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 2, overflow: "visible" }}>
-            <div style={{ position: "absolute", top: 0, left: 0, animation: "flyDog 22s linear infinite", willChange: "transform", opacity: 0.82 }}>
+          <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, overflow: "visible" }}>
+            <div style={{ position: "absolute", top: 0, left: 0, animation: "flyDog 22s linear infinite", willChange: "transform", opacity: 0.55 }}>
               <CyborgDog />
             </div>
           </div>
         )}
         {activeTab === "submit" && (
-          <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 2, overflow: "visible" }}>
-            <div style={{ position: "absolute", top: 0, left: 0, animation: "flyDragon 26s linear infinite", willChange: "transform", opacity: 0.82 }}>
+          <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, overflow: "visible" }}>
+            <div style={{ position: "absolute", top: 0, left: 0, animation: "flyDragon 26s linear infinite", willChange: "transform", opacity: 0.55 }}>
               <ImprovDragon />
             </div>
           </div>
@@ -1359,14 +1405,16 @@ export default function App() {
 
         {/* Footer */}
         <footer style={{
-          borderTop: "1px solid #1a1508",
+          borderTop: "1px solid var(--border-soft)",
           padding: "1.5rem 2rem",
           textAlign: "center",
-          fontFamily: "'Space Mono', monospace",
+          fontFamily: "var(--font-mono)",
           fontSize: "0.65rem",
-          color: "#3a3020",
+          color: "var(--text-faint)",
           letterSpacing: "0.1em",
           textTransform: "uppercase",
+          position: "relative",
+          zIndex: 3,
         }}>
           Built for collegiate impromptu speakers · {allQuotes.length} quotes in the pool
         </footer>

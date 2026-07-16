@@ -7,7 +7,7 @@ import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey:            "AIzaSyCcoPMh_tKHPdpBaDogmH6BhQDkg-uBxsE",
-  authDomain:        "edwardsimpromputsite.firebaseapp.com",
+  authDomain:        "edwardsimpromptusite.firebaseapp.com",
   projectId:         "edwardsimpromptusite",
   storageBucket:     "edwardsimpromptusite.firebasestorage.app",
   messagingSenderId: "656166939097",
