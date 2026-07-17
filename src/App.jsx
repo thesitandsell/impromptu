@@ -51,18 +51,18 @@ const BUILTIN_QUOTES = [
   { text: "Bro WHAT ARE YOU DOING??", author: "CS:GO Players", difficulty: "Insane-O Crazy" },
   { text: "Rush B, no wait, go A, actually why is nobody talking", author: "Every CS:GO Team, Every Round", difficulty: "Insane-O Crazy" },
   { text: "It's not the fall that kills you. It's the fall damage.", author: "Minecraft Logic", difficulty: "Insane-O Crazy" },
-  { text: "I'm not owned, I'm testing the floor.", author: "A Guy Who Just Respawned", difficulty: "Insane-O Crazy" },
+  { text: "I'm not owned, I'm testing the floor.", author: "Every Fortnite Player After Dying", difficulty: "Insane-O Crazy" },
   { text: "This is fine.", author: "A Dog, Sitting In A Burning Room", difficulty: "Insane-O Crazy" },
   { text: "Sir, this is a Wendy's.", author: "Every Group Chat, Eventually", difficulty: "Insane-O Crazy" },
-  { text: "The floor is lava. It always has been.", author: "Ancient Astronaut Theorists", difficulty: "Insane-O Crazy" },
+  { text: "The floor is lava. It always has been.", author: "Every Little Sibling, Ever", difficulty: "Insane-O Crazy" },
   { text: "Bro said 'trust me' and immediately fell off.", author: "My Group Project Partner", difficulty: "Insane-O Crazy" },
   { text: "It is what it is, but also it isn't, but also it kind of is.", author: "A Discord Mod At 3AM", difficulty: "Insane-O Crazy" },
   { text: "Skill issue.", author: "Anonymous, Constantly", difficulty: "Insane-O Crazy" },
-  { text: "Why is the bread hot?", author: "A Man, Screaming, About Nothing", difficulty: "Insane-O Crazy" },
-  { text: "One does not simply walk into the dining hall after 8pm.", author: "Boromir, If He Went To College", difficulty: "Insane-O Crazy" },
+  { text: "Why is the bread hot?", author: "Someone's Little Brother, Randomly", difficulty: "Insane-O Crazy" },
+  { text: "One does not simply walk into the dining hall after 8pm.", author: "Boromir, Lord of the Rings", difficulty: "Insane-O Crazy" },
   { text: "I didn't lag, the server just chose violence.", author: "Every Ranked Player Ever", difficulty: "Insane-O Crazy" },
   { text: "Objection! I don't have a reason, I just wanted to say it.", author: "A Freshman In Mock Trial", difficulty: "Insane-O Crazy" },
-  { text: "We were on a break!", author: "Ross, Probably", difficulty: "Insane-O Crazy" },
+  { text: "We were on a break!", author: "Ross, From Friends", difficulty: "Insane-O Crazy" },
 ];
 
 const DIFFICULTY_CONFIG = {
