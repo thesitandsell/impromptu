@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { db } from "./firebaseConfig";
 import {
   collection,
@@ -388,11 +388,66 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const [phase, setPhase] = useState(PHASES.IDLE);
   const [countdown, setCountdown] = useState(0);
   const [currentQuote, setCurrentQuote] = useState(null);
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [consentGiven, setConsentGiven] = useState(false);
+  const [recordingEnabled, setRecordingEnabled] = useState(false);
+  const [cameraError, setCameraError] = useState(false);
+  const [recordingBlob, setRecordingBlob] = useState(null);
 
   const intervalRef = useRef(null);
   const phaseRef = useRef(phase);
   const lastQuoteRef = useRef(null);
+  const streamRef = useRef(null);
+  const liveVideoRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const chunksRef = useRef([]);
   phaseRef.current = phase;
+
+  // Attach the live stream to the preview <video> once it's mounted
+  useEffect(() => {
+    if (liveVideoRef.current && streamRef.current) {
+      liveVideoRef.current.srcObject = streamRef.current;
+    }
+  });
+
+  // Release the camera if the user navigates away from this tab
+  useEffect(() => () => {
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
+  }, []);
+
+  const initCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      streamRef.current = stream;
+      setRecordingEnabled(true);
+      if (liveVideoRef.current) liveVideoRef.current.srcObject = stream;
+    } catch (e) {
+      setCameraError(true);
+    }
+  };
+
+  const startRecording = () => {
+    if (!streamRef.current) return;
+    chunksRef.current = [];
+    const options = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? { mimeType: "video/webm;codecs=vp9" }
+      : MediaRecorder.isTypeSupported("video/webm")
+      ? { mimeType: "video/webm" }
+      : {};
+    const recorder = new MediaRecorder(streamRef.current, options);
+    recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+    recorder.onstop = () => {
+      setRecordingBlob(new Blob(chunksRef.current, { type: "video/webm" }));
+    };
+    recorder.start(1000);
+    mediaRecorderRef.current = recorder;
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  };
 
   const clearTimer = () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -416,19 +471,37 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     setPhase(PHASES.READING);
     startCountdown(10, () => {
       setPhase(PHASES.SPEAKING);
+      startRecording();
       startCountdown(420, () => {
+        stopRecording();
         setPhase(PHASES.DONE);
       });
     });
   }, [startCountdown]);
 
-  const startSession = () => {
+  const launchSession = () => {
     const quote = getRandomQuote(difficulty, allQuotes, lastQuoteRef.current);
     lastQuoteRef.current = quote.text;
     onPhaseChange && onPhaseChange("ACTIVE");
     setCurrentQuote(quote);
+    setRecordingBlob(null);
     setPhase(PHASES.BUFFER);
     startCountdown(10, beginReading);
+  };
+
+  const startSession = () => {
+    if (!consentGiven) {
+      setShowConsentModal(true);
+      return;
+    }
+    launchSession();
+  };
+
+  const handleConsentChoice = async (allow) => {
+    setConsentGiven(true);
+    setShowConsentModal(false);
+    if (allow) await initCamera();
+    launchSession();
   };
 
   const skipBuffer = () => {
@@ -439,6 +512,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
   const reset = () => {
     clearTimer();
+    stopRecording();
     setPhase(PHASES.IDLE);
     setCurrentQuote(null);
     setCountdown(0);
@@ -446,6 +520,16 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   };
 
   useEffect(() => () => clearTimer(), []);
+
+  const videoUrl = useMemo(() => (recordingBlob ? URL.createObjectURL(recordingBlob) : null), [recordingBlob]);
+
+  const handleDownload = () => {
+    if (!videoUrl) return;
+    const a = document.createElement("a");
+    a.href = videoUrl;
+    a.download = `impromptu-speech-${Date.now()}.webm`;
+    a.click();
+  };
 
   const phaseLabel = {
     [PHASES.BUFFER]: "GET READY",
@@ -465,6 +549,36 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "2rem 1.5rem" }}>
+      {showConsentModal && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 300,
+          background: "rgba(5,6,10,0.75)",
+          backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "1.5rem",
+        }}>
+          <div className="card" style={{ maxWidth: 460, padding: "2rem", textAlign: "center", animation: "fadeUp 0.3s ease both" }}>
+            <div className="eyebrow" style={{ color: "var(--accent-2)", marginBottom: "0.9rem" }}>
+              Before we turn on your camera
+            </div>
+            <p style={{ fontFamily: "var(--font-body)", color: "var(--text)", fontSize: "1rem", lineHeight: 1.6, marginBottom: "1rem" }}>
+              We'll record your speech so you can download it and send it to Marisa, Tiana, or any other coach or UGA for feedback.
+            </p>
+            <p style={{ fontFamily: "var(--font-body)", color: "var(--text-dim)", fontSize: "0.9rem", lineHeight: 1.6, marginBottom: "1.75rem" }}>
+              Nothing is uploaded anywhere — your recording lives only in this browser tab and is automatically deleted the moment you refresh or leave this page.
+            </p>
+            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
+              <button onClick={() => handleConsentChoice(true)} className="btn btn-primary" style={{ padding: "0.85rem 1.75rem" }}>
+                Allow Camera & Start
+              </button>
+              <button onClick={() => handleConsentChoice(false)} className="btn btn-ghost" style={{ padding: "0.85rem 1.5rem" }}>
+                Practice Without Recording
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {phase === PHASES.IDLE && (
         <div style={{ marginBottom: "3rem", animation: "fadeUp 0.6s ease both" }}>
           <p className="eyebrow" style={{ marginBottom: "1.2rem", textAlign: "center" }}>
@@ -591,6 +705,12 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
             </button>
           )}
 
+          {cameraError && (phase === PHASES.BUFFER || phase === PHASES.READING) && (
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem", color: "var(--text-faint)", letterSpacing: "0.04em", marginBottom: "1.5rem" }}>
+              Camera/mic access wasn't granted — this session won't be recorded.
+            </p>
+          )}
+
           {phase === PHASES.DONE && (
             <div className="card" style={{ padding: "2.5rem 2rem", marginBottom: "2rem", animation: "fadeUp 0.5s ease both", textAlign: "center" }}>
               <div className="eyebrow" style={{ color: "var(--good)", marginBottom: "0.75rem" }}>
@@ -601,10 +721,27 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
                 fontSize: "1.5rem",
                 fontWeight: 600,
                 color: "var(--text)",
-                marginBottom: "1.75rem",
+                marginBottom: recordingBlob ? "1.5rem" : "1.75rem",
               }}>
-                Nice work. Ready for another one?
+                Nice work. {recordingBlob ? "Here's your recording." : "Ready for another one?"}
               </p>
+
+              {recordingBlob && videoUrl && (
+                <div style={{ marginBottom: "1.5rem" }}>
+                  <video
+                    src={videoUrl}
+                    controls
+                    style={{ width: "100%", maxHeight: 340, borderRadius: "var(--radius-sm)", background: "#000", display: "block" }}
+                  />
+                  <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem", color: "var(--text-faint)", letterSpacing: "0.04em", margin: "0.85rem 0 1.25rem" }}>
+                    Download it now — this recording disappears the moment you refresh or leave this page.
+                  </p>
+                  <button onClick={handleDownload} className="btn btn-primary" style={{ padding: "0.85rem 2rem", width: "100%" }}>
+                    ↓ Download Recording
+                  </button>
+                </div>
+              )}
+
               <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
                 <button onClick={startSession} className="btn btn-primary" style={{ padding: "0.9rem 2rem" }}>
                   Practice Again
@@ -613,6 +750,33 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
                   Done
                 </button>
               </div>
+            </div>
+          )}
+
+          {recordingEnabled && (phase === PHASES.BUFFER || phase === PHASES.READING || phase === PHASES.SPEAKING) && (
+            <div className="camera-preview" style={{
+              borderColor: phase === PHASES.SPEAKING ? "var(--danger)" : "var(--border)",
+              boxShadow: phase === PHASES.SPEAKING ? "0 0 24px #f8717140" : "0 8px 24px #00000080",
+            }}>
+              {phase === PHASES.SPEAKING && (
+                <div style={{
+                  position: "absolute", top: 8, left: 10, zIndex: 10,
+                  display: "flex", alignItems: "center", gap: 5,
+                }}>
+                  <div style={{
+                    width: 8, height: 8, borderRadius: "50%", background: "var(--danger)",
+                    animation: "pulse 1s ease infinite",
+                  }} />
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6rem", color: "var(--danger)", letterSpacing: "0.1em" }}>REC</span>
+                </div>
+              )}
+              <video
+                ref={liveVideoRef}
+                autoPlay
+                muted
+                playsInline
+                style={{ width: "100%", display: "block", transform: "scaleX(-1)" }}
+              />
             </div>
           )}
 
@@ -1182,6 +1346,18 @@ export default function App() {
         }
 
         .quote-box { position: relative; }
+
+        .camera-preview {
+          position: fixed;
+          bottom: 1.5rem; right: 1.5rem;
+          width: 180px;
+          border-radius: var(--radius-md);
+          overflow: hidden;
+          border: 2px solid;
+          z-index: 50;
+          background: #0a0a12;
+          transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
 
         /* ── Mobile ── */
         @media (max-width: 600px) {
