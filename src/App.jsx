@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { db } from "./firebaseConfig";
 import {
   collection,
@@ -49,20 +50,20 @@ const BUILTIN_QUOTES = [
   { text: "The unleashed power of the atom has changed everything save our modes of thinking, and we thus drift toward unparalleled catastrophe.", author: "Albert Einstein", difficulty: "Hard" },
   // Insane-O Crazy — completely unhinged, barely makes sense, that's the point
   { text: "Bro WHAT ARE YOU DOING??", author: "CS:GO Players", difficulty: "Insane-O Crazy" },
-  { text: "Rush B, no wait, go A, actually why is nobody talking", author: "Every CS:GO Team, Every Round", difficulty: "Insane-O Crazy" },
-  { text: "It's not the fall that kills you. It's the fall damage.", author: "Minecraft Logic", difficulty: "Insane-O Crazy" },
-  { text: "I'm not owned, I'm testing the floor.", author: "Every Fortnite Player After Dying", difficulty: "Insane-O Crazy" },
-  { text: "This is fine.", author: "A Dog, Sitting In A Burning Room", difficulty: "Insane-O Crazy" },
-  { text: "Sir, this is a Wendy's.", author: "Every Group Chat, Eventually", difficulty: "Insane-O Crazy" },
-  { text: "The floor is lava. It always has been.", author: "Every Little Sibling, Ever", difficulty: "Insane-O Crazy" },
-  { text: "Bro said 'trust me' and immediately fell off.", author: "My Group Project Partner", difficulty: "Insane-O Crazy" },
-  { text: "It is what it is, but also it isn't, but also it kind of is.", author: "A Discord Mod At 3AM", difficulty: "Insane-O Crazy" },
+  { text: "Bruh, bruh.", author: "Oliver, Invincible", difficulty: "Insane-O Crazy" },
+  { text: "Numbers, Mason. What do they mean?", author: "Call of Duty: Black Ops", difficulty: "Insane-O Crazy" },
+  { text: "It's Wednesday, my dudes.", author: "The Bushy-Brow Kid, Vine", difficulty: "Insane-O Crazy" },
+  { text: "Road work ahead? Uh, yeah, I sure hope it does.", author: "Vine", difficulty: "Insane-O Crazy" },
+  { text: "Hi, welcome to Chili's.", author: "Vine", difficulty: "Insane-O Crazy" },
+  { text: "This is fine.", author: "The Dog, Sitting In A Burning Room", difficulty: "Insane-O Crazy" },
+  { text: "Big Chungus.", author: "Bugs Bunny, Probably", difficulty: "Insane-O Crazy" },
+  { text: "Ight, imma head out.", author: "SpongeBob SquarePants", difficulty: "Insane-O Crazy" },
   { text: "Skill issue.", author: "Anonymous, Constantly", difficulty: "Insane-O Crazy" },
-  { text: "Why is the bread hot?", author: "Someone's Little Brother, Randomly", difficulty: "Insane-O Crazy" },
+  { text: "Sir, this is a Wendy's.", author: "Every Group Chat, Eventually", difficulty: "Insane-O Crazy" },
+  { text: "Poggers.", author: "Twitch Chat, Always", difficulty: "Insane-O Crazy" },
+  { text: "E.", author: "Someone, Somewhere, For No Reason", difficulty: "Insane-O Crazy" },
+  { text: "The floor is lava. It always has been.", author: "Every Little Sibling, Ever", difficulty: "Insane-O Crazy" },
   { text: "One does not simply walk into the dining hall after 8pm.", author: "Boromir, Lord of the Rings", difficulty: "Insane-O Crazy" },
-  { text: "I didn't lag, the server just chose violence.", author: "Every Ranked Player Ever", difficulty: "Insane-O Crazy" },
-  { text: "Objection! I don't have a reason, I just wanted to say it.", author: "A Freshman In Mock Trial", difficulty: "Insane-O Crazy" },
-  { text: "We were on a break!", author: "Ross, From Friends", difficulty: "Insane-O Crazy" },
 ];
 
 const DIFFICULTY_CONFIG = {
@@ -415,7 +416,20 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     let cancelled = false;
     (async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30 },
+            facingMode: "user",
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000,
+          },
+        });
         if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
         streamRef.current = stream;
         setRecordingEnabled(true);
@@ -435,11 +449,18 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const startRecording = () => {
     if (!streamRef.current) return;
     chunksRef.current = [];
-    const options = MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-      ? { mimeType: "video/webm;codecs=vp9" }
+    const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
+      ? "video/webm;codecs=vp9,opus"
+      : MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+      ? "video/webm;codecs=vp9"
       : MediaRecorder.isTypeSupported("video/webm")
-      ? { mimeType: "video/webm" }
-      : {};
+      ? "video/webm"
+      : "";
+    const options = {
+      ...(mimeType ? { mimeType } : {}),
+      videoBitsPerSecond: 5_000_000,
+      audioBitsPerSecond: 128_000,
+    };
     const recorder = new MediaRecorder(streamRef.current, options);
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
     recorder.onstop = () => {
@@ -551,7 +572,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "2rem 1.5rem" }}>
-      {showCameraNotice && (
+      {showCameraNotice && createPortal(
         <div className="camera-notice" role="status">
           <div className="eyebrow" style={{ color: "var(--accent-2)", marginBottom: "0.5rem", fontSize: "0.65rem" }}>
             ↑ Allow camera & mic up here
@@ -565,7 +586,8 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
           <button onClick={() => setShowCameraNotice(false)} className="chip-toggle">
             Got it
           </button>
-        </div>
+        </div>,
+        document.body
       )}
 
       {phase === PHASES.IDLE && (
@@ -1358,8 +1380,8 @@ export default function App() {
         .camera-notice {
           position: fixed;
           top: 1.25rem;
-          right: 1.25rem;
-          z-index: 300;
+          left: 1.25rem;
+          z-index: 9999;
           width: min(300px, calc(100vw - 2.5rem));
           padding: 1.1rem 1.25rem;
           border-radius: var(--radius-md);
