@@ -384,6 +384,28 @@ function ImprovDragon() {
   );
 }
 
+// ── Cute little burst shown when a mascot gets clicked ────────────
+function MascotReaction({ label, emojis }) {
+  return (
+    <>
+      <div className="mascot-label">{label}</div>
+      {emojis.map((e, i) => (
+        <span
+          key={i}
+          className="mascot-particle"
+          style={{
+            left: `${22 + i * (56 / Math.max(emojis.length - 1, 1))}%`,
+            "--dx": `${(i - (emojis.length - 1) / 2) * 22}px`,
+            animationDelay: `${i * 0.07}s`,
+          }}
+        >
+          {e}
+        </span>
+      ))}
+    </>
+  );
+}
+
 function PracticeTab({ allQuotes, onPhaseChange }) {
   const [difficulty, setDifficulty] = useState("Random");
   const [phase, setPhase] = useState(PHASES.IDLE);
@@ -1138,6 +1160,31 @@ export default function App() {
   const [userQuotes, setUserQuotes] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
   const [dbError, setDbError] = useState(false);
+  const [dogReacting, setDogReacting] = useState(false);
+  const [dogReactKey, setDogReactKey] = useState(0);
+  const [dragonReacting, setDragonReacting] = useState(false);
+  const [dragonReactKey, setDragonReactKey] = useState(0);
+  const dogReactTimer = useRef(null);
+  const dragonReactTimer = useRef(null);
+
+  const petDog = () => {
+    clearTimeout(dogReactTimer.current);
+    setDogReacting(true);
+    setDogReactKey(k => k + 1);
+    dogReactTimer.current = setTimeout(() => setDogReacting(false), 1400);
+  };
+
+  const petDragon = () => {
+    clearTimeout(dragonReactTimer.current);
+    setDragonReacting(true);
+    setDragonReactKey(k => k + 1);
+    dragonReactTimer.current = setTimeout(() => setDragonReacting(false), 1400);
+  };
+
+  useEffect(() => () => {
+    clearTimeout(dogReactTimer.current);
+    clearTimeout(dragonReactTimer.current);
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, "quotes"), orderBy("createdAt", "asc"));
@@ -1446,6 +1493,60 @@ export default function App() {
           91%  { transform: translate(82vw, 38vh); }
           100% { transform: translate(68vw, 9vh);  }
         }
+
+        .mascot {
+          position: relative;
+          display: inline-block;
+          pointer-events: auto;
+          cursor: pointer;
+          transform-origin: 50% 50%;
+          transition: opacity 0.3s ease;
+        }
+        .mascot-pop { animation: mascotPop 0.6s cubic-bezier(.34,1.56,.64,1) both; }
+        @keyframes mascotPop {
+          0%   { transform: scale(1) rotate(0deg); }
+          30%  { transform: scale(1.25) rotate(-6deg); }
+          55%  { transform: scale(0.92) rotate(4deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+
+        .mascot-label {
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          margin-bottom: 0.5rem;
+          white-space: nowrap;
+          background: var(--bg-raised);
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          padding: 0.35rem 0.85rem;
+          font-family: var(--font-mono);
+          font-size: 0.72rem;
+          font-weight: 700;
+          color: var(--text);
+          box-shadow: 0 10px 24px -8px rgba(0,0,0,0.7);
+          pointer-events: none;
+          animation: labelPop 1.4s ease both;
+        }
+        @keyframes labelPop {
+          0%   { opacity: 0; transform: translateX(-50%) translateY(8px) scale(0.85); }
+          15%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+          80%  { opacity: 1; }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(1); }
+        }
+
+        .mascot-particle {
+          position: absolute;
+          top: 20%;
+          font-size: 1.15rem;
+          pointer-events: none;
+          animation: particleFloat 1.2s ease-out both;
+        }
+        @keyframes particleFloat {
+          0%   { transform: translate(0, 0) scale(0.6); opacity: 0; }
+          15%  { opacity: 1; }
+          100% { transform: translate(var(--dx), -70px) scale(1); opacity: 0; }
+        }
       `}</style>
 
       <div style={{ minHeight: "100vh", width: "100%", fontFamily: "var(--font-body)" }}>
@@ -1610,15 +1711,35 @@ export default function App() {
         {/* Floating Characters */}
         {activeTab === "practice" && dogVisible && (
           <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, overflow: "visible" }}>
-            <div style={{ position: "absolute", top: 0, left: 0, animation: "flyDog 22s linear infinite", willChange: "transform", opacity: 0.55 }}>
-              <CyborgDog />
+            <div style={{ position: "absolute", top: 0, left: 0, animation: "flyDog 22s linear infinite", willChange: "transform" }}>
+              <div
+                key={dogReactKey}
+                onClick={petDog}
+                className={dogReacting ? "mascot mascot-pop" : "mascot"}
+                style={{ opacity: dogReacting ? 1 : 0.55 }}
+                role="button"
+                aria-label="Pet Atlas"
+              >
+                <CyborgDog />
+                {dogReacting && <MascotReaction label="Atlas says hi! 🐾" emojis={["🦴", "✨", "🐾"]} />}
+              </div>
             </div>
           </div>
         )}
         {activeTab === "submit" && (
           <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, overflow: "visible" }}>
-            <div style={{ position: "absolute", top: 0, left: 0, animation: "flyDragon 26s linear infinite", willChange: "transform", opacity: 0.55 }}>
-              <ImprovDragon />
+            <div style={{ position: "absolute", top: 0, left: 0, animation: "flyDragon 26s linear infinite", willChange: "transform" }}>
+              <div
+                key={dragonReactKey}
+                onClick={petDragon}
+                className={dragonReacting ? "mascot mascot-pop" : "mascot"}
+                style={{ opacity: dragonReacting ? 1 : 0.55 }}
+                role="button"
+                aria-label="Cheer on the dragon"
+              >
+                <ImprovDragon />
+                {dragonReacting && <MascotReaction label="GG! 🏆" emojis={["🔥", "⭐", "🔥"]} />}
+              </div>
             </div>
           </div>
         )}
