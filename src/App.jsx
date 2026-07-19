@@ -406,6 +406,43 @@ function MascotReaction({ label, emojis }) {
   );
 }
 
+// ── The dragon's click reaction: a little dance + a fire-breath ──
+// that spells out "HENRY", letter by letter, made of flame ────────
+const HENRY_LETTERS = ["H", "E", "N", "R", "Y"];
+
+function DragonFireBreath() {
+  return (
+    <div className="dragon-fire" aria-hidden="true">
+      {/* Ember puffs licking out ahead of the letters */}
+      {["🔥", "✨", "🔥", "✨"].map((e, i) => (
+        <span
+          key={`ember-${i}`}
+          className="fire-ember"
+          style={{
+            left: `${i * 14}px`,
+            top: `${(i % 2) * 10 - 6}px`,
+            animationDelay: `${i * 0.09}s`,
+          }}
+        >
+          {e}
+        </span>
+      ))}
+      {/* The word itself, ignited one letter at a time */}
+      <div className="fire-word">
+        {HENRY_LETTERS.map((ch, i) => (
+          <span
+            key={ch + i}
+            className="fire-letter"
+            style={{ animationDelay: `${0.35 + i * 0.14}s` }}
+          >
+            {ch}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PracticeTab({ allQuotes, onPhaseChange }) {
   const [difficulty, setDifficulty] = useState("Random");
   const [phase, setPhase] = useState(PHASES.IDLE);
@@ -1178,7 +1215,7 @@ export default function App() {
     clearTimeout(dragonReactTimer.current);
     setDragonReacting(true);
     setDragonReactKey(k => k + 1);
-    dragonReactTimer.current = setTimeout(() => setDragonReacting(false), 1400);
+    dragonReactTimer.current = setTimeout(() => setDragonReacting(false), 2600);
   };
 
   useEffect(() => () => {
@@ -1547,6 +1584,70 @@ export default function App() {
           15%  { opacity: 1; }
           100% { transform: translate(var(--dx), -70px) scale(1); opacity: 0; }
         }
+
+        /* ── Dragon click reaction: a little dance + fire breath ── */
+        .dragon-dance { animation: dragonDance 1.8s ease-in-out both; }
+        @keyframes dragonDance {
+          0%   { transform: scale(1)    rotate(0deg)  translateY(0); }
+          8%   { transform: scale(1.08) rotate(-7deg) translateY(-5px); }
+          16%  { transform: scale(1.04) rotate(7deg)  translateY(-9px); }
+          24%  { transform: scale(1.1)  rotate(-6deg) translateY(-3px); }
+          32%  { transform: scale(1.04) rotate(6deg)  translateY(-10px); }
+          40%  { transform: scale(1.08) rotate(-4deg) translateY(-4px); }
+          50%  { transform: scale(1.03) rotate(3deg)  translateY(-7px); }
+          62%  { transform: scale(1.05) rotate(-2deg) translateY(-2px); }
+          75%  { transform: scale(1.02) rotate(1deg)  translateY(-4px); }
+          100% { transform: scale(1)    rotate(0deg)  translateY(0); }
+        }
+
+        .dragon-fire {
+          position: absolute;
+          left: 82%;
+          top: 34%;
+          display: flex;
+          align-items: center;
+          pointer-events: none;
+        }
+
+        .fire-word { display: flex; gap: 0.08em; }
+
+        .fire-letter {
+          position: relative;
+          font-family: var(--font-display);
+          font-weight: 800;
+          font-size: 1.5rem;
+          line-height: 1;
+          background: linear-gradient(180deg, #fff8d6 0%, #ffd23f 22%, #ff9d1a 50%, #ff4d00 75%, #b31500 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          filter: drop-shadow(0 0 5px #ff7a0090) drop-shadow(0 0 12px #ff3d0060);
+          opacity: 0;
+          white-space: nowrap;
+          animation: fireLetterIn 1.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes fireLetterIn {
+          0%   { opacity: 0; transform: translateY(10px) scale(0.3) rotate(-12deg); filter: blur(3px) drop-shadow(0 0 0 transparent); }
+          14%  { opacity: 1; transform: translateY(-5px) scale(1.2) rotate(5deg); filter: blur(0) drop-shadow(0 0 10px #ff8a0acc); }
+          24%  { transform: translateY(0) scale(1) rotate(-2deg); }
+          36%  { transform: translateY(-2px) scale(1.04) rotate(2deg); }
+          48%  { transform: translateY(0) scale(0.98) rotate(-1deg); }
+          60%  { transform: translateY(-3px) scale(1.02) rotate(1deg); }
+          78%  { opacity: 1; transform: translateY(-4px) scale(1) rotate(0deg); }
+          100% { opacity: 0; transform: translateY(-30px) scale(0.82) rotate(3deg); filter: blur(4px) drop-shadow(0 0 0 transparent); }
+        }
+
+        .fire-ember {
+          position: absolute;
+          font-size: 0.85rem;
+          pointer-events: none;
+          animation: emberPuff 1s ease-out both;
+        }
+        @keyframes emberPuff {
+          0%   { opacity: 0; transform: translate(0, 0) scale(0.4); }
+          20%  { opacity: 1; transform: translate(6px, -8px) scale(1); }
+          100% { opacity: 0; transform: translate(26px, -22px) scale(0.6); }
+        }
       `}</style>
 
       <div style={{ minHeight: "100vh", width: "100%", fontFamily: "var(--font-body)" }}>
@@ -1710,7 +1811,7 @@ export default function App() {
 
         {/* Floating Characters */}
         {activeTab === "practice" && dogVisible && (
-          <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, overflow: "visible" }}>
+          <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 4, overflow: "visible" }}>
             <div style={{ position: "absolute", top: 0, left: 0, animation: "flyDog 22s linear infinite", willChange: "transform" }}>
               <div
                 key={dogReactKey}
@@ -1727,18 +1828,18 @@ export default function App() {
           </div>
         )}
         {activeTab === "submit" && (
-          <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 1, overflow: "visible" }}>
+          <div className="flying-char" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 4, overflow: "visible" }}>
             <div style={{ position: "absolute", top: 0, left: 0, animation: "flyDragon 26s linear infinite", willChange: "transform" }}>
               <div
                 key={dragonReactKey}
                 onClick={petDragon}
-                className={dragonReacting ? "mascot mascot-pop" : "mascot"}
+                className={dragonReacting ? "mascot dragon-dance" : "mascot"}
                 style={{ opacity: dragonReacting ? 1 : 0.55 }}
                 role="button"
                 aria-label="Cheer on the dragon"
               >
                 <ImprovDragon />
-                {dragonReacting && <MascotReaction label="GG! 🏆" emojis={["🔥", "⭐", "🔥"]} />}
+                {dragonReacting && <DragonFireBreath />}
               </div>
             </div>
           </div>
