@@ -2,11 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "impromptu-anim-check",
+      "name": "impromptu-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "--port", "5199", "--strictPort"],
-      "port": 5199,
-      "autoPort": false
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173,
+      "autoPort": true
     }
   ]
 }
