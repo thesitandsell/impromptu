@@ -504,10 +504,13 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const [recordingBlob, setRecordingBlob] = useState(null);
   const [tipIndex, setTipIndex] = useState(0);
   const [launching, setLaunching] = useState(false);
+  const [showFlash, setShowFlash] = useState(false);
+  const [readingSeconds, setReadingSeconds] = useState(10);
 
   const intervalRef = useRef(null);
-  const tipIntervalRef = useRef(null);
   const launchTimerRef = useRef(null);
+  const flashTimerRef = useRef(null);
+  const audioCtxRef = useRef(null);
   const phaseRef = useRef(phase);
   const lastQuoteRef = useRef(null);
   const streamRef = useRef(null);
@@ -593,17 +596,14 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     if (intervalRef.current) clearInterval(intervalRef.current);
   };
 
-  const clearTipTimer = () => {
-    if (tipIntervalRef.current) clearInterval(tipIntervalRef.current);
-  };
-
-  const startCountdown = useCallback((seconds, onDone) => {
+  const startCountdown = useCallback((seconds, onDone, onTick) => {
     clearTimer();
     setCountdown(seconds);
     let remaining = seconds;
     intervalRef.current = setInterval(() => {
       remaining -= 1;
       setCountdown(remaining);
+      onTick && onTick(remaining);
       if (remaining <= 0) {
         clearInterval(intervalRef.current);
         onDone();
@@ -611,18 +611,47 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     }, 1000);
   }, []);
 
+  const unlockAudio = () => {
+    try {
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtxRef.current.state === "suspended") audioCtxRef.current.resume();
+    } catch (e) { /* Web Audio unsupported — beeps just won't play */ }
+  };
+
+  const playBeep = () => {
+    try {
+      const ctx = audioCtxRef.current;
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.22);
+    } catch (e) { /* ignore playback errors */ }
+  };
+
   const beginReading = useCallback(() => {
-    clearTipTimer();
     setPhase(PHASES.READING);
     startRecording();
-    startCountdown(10, () => {
+    startCountdown(readingSeconds, () => {
       setPhase(PHASES.SPEAKING);
       startCountdown(420, () => {
         stopRecording();
         setPhase(PHASES.DONE);
+      }, (remaining) => {
+        // Beep every 30s, but only within the first 90s of the speech
+        const elapsed = 420 - remaining;
+        if (elapsed > 0 && elapsed <= 90 && elapsed % 30 === 0) playBeep();
       });
     });
-  }, [startCountdown]);
+  }, [startCountdown, readingSeconds]);
 
   const launchSession = () => {
     const quote = getRandomQuote(difficulty, allQuotes, lastQuoteRef.current);
@@ -632,21 +661,23 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     setRecordingBlob(null);
     setPhase(PHASES.BUFFER);
     setTipIndex(Math.floor(Math.random() * IMPROMPTU_TIPS.length));
-    clearTipTimer();
-    tipIntervalRef.current = setInterval(() => {
-      setTipIndex(i => (i + 1) % IMPROMPTU_TIPS.length);
-    }, 2200);
     startCountdown(10, beginReading);
   };
 
   const startSession = () => {
     if (launching) return;
+    unlockAudio();
     setLaunching(true);
+    setShowFlash(true);
     clearTimeout(launchTimerRef.current);
+    clearTimeout(flashTimerRef.current);
+    // The phase swap happens while the flash is still covering the screen —
+    // that's what makes it read as one continuous wipe instead of a hard cut.
     launchTimerRef.current = setTimeout(() => {
       setLaunching(false);
       launchSession();
-    }, 900);
+    }, 420);
+    flashTimerRef.current = setTimeout(() => setShowFlash(false), 700);
   };
 
   const skipBuffer = () => {
@@ -664,7 +695,6 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
   const reset = () => {
     clearTimer();
-    clearTipTimer();
     stopRecording();
     setPhase(PHASES.IDLE);
     setCurrentQuote(null);
@@ -672,7 +702,11 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     onPhaseChange && onPhaseChange("IDLE");
   };
 
-  useEffect(() => () => { clearTimer(); clearTipTimer(); clearTimeout(launchTimerRef.current); }, []);
+  useEffect(() => () => {
+    clearTimer();
+    clearTimeout(launchTimerRef.current);
+    clearTimeout(flashTimerRef.current);
+  }, []);
 
   const videoUrl = useMemo(() => (recordingBlob ? URL.createObjectURL(recordingBlob) : null), [recordingBlob]);
 
@@ -696,7 +730,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
   const timerColor = isUrgent ? "var(--danger)" : isMedium ? "var(--warn)" : "var(--accent-2)";
   const timerCalm = !isUrgent && !isMedium;
-  const timerMax = phase === PHASES.BUFFER || phase === PHASES.READING ? 10 : 420;
+  const timerMax = phase === PHASES.BUFFER ? 10 : phase === PHASES.READING ? readingSeconds : 420;
 
   const stepIndex = { [PHASES.BUFFER]: 0, [PHASES.READING]: 1, [PHASES.SPEAKING]: 2, [PHASES.DONE]: 3 }[phase] ?? -1;
 
@@ -720,14 +754,19 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
         document.body
       )}
 
-      {launching && createPortal(<div className="launch-flash" />, document.body)}
+      {showFlash && createPortal(<div className="launch-flash" />, document.body)}
 
       {phase === PHASES.IDLE && (
-        <div style={{ marginBottom: "3rem", animation: "fadeUp 0.6s ease both" }}>
+        <div style={{
+          marginBottom: "3rem",
+          animation: "fadeUp 0.6s ease both",
+          opacity: launching ? 0 : 1,
+          transition: "opacity 0.3s ease",
+        }}>
           <p className="eyebrow" style={{ marginBottom: "1.2rem", textAlign: "center" }}>
             Select Difficulty
           </p>
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center", marginBottom: "2rem" }}>
             {Object.keys(DIFFICULTY_CONFIG).map((d) => {
               const active = difficulty === d;
               const cfg = DIFFICULTY_CONFIG[d];
@@ -744,6 +783,30 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
                   }}
                 >
                   {d}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="eyebrow" style={{ marginBottom: "1.2rem", textAlign: "center" }}>
+            Reading Time
+          </p>
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
+            {[10, 15, 20, 30].map((secs) => {
+              const active = readingSeconds === secs;
+              return (
+                <button
+                  key={secs}
+                  className="diff-btn diff-btn--sm"
+                  onClick={() => setReadingSeconds(secs)}
+                  style={{
+                    background: active ? "var(--accent-2)" : "transparent",
+                    color: active ? "#05060a" : "var(--accent-2)",
+                    borderColor: "var(--accent-2)",
+                    boxShadow: active ? "0 0 14px #22d3ee40" : "none",
+                  }}
+                >
+                  {secs}s
                 </button>
               );
             })}
@@ -782,7 +845,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
           </p>
         </div>
       ) : (
-        <div style={{ textAlign: "center" }}>
+        <div className="buffer-content" style={{ textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center", gap: "0.4rem", marginBottom: "1.1rem" }}>
             {["Ready", "Read", "Speak"].map((label, i) => (
               <span key={label} className="step-dot" style={{
@@ -853,6 +916,22 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
                 {IMPROMPTU_TIPS[tipIndex]}
               </p>
             </div>
+          )}
+
+          {phase === PHASES.BUFFER && (
+            <p style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "0.68rem",
+              color: "var(--text-faint)",
+              letterSpacing: "0.03em",
+              lineHeight: 1.6,
+              marginBottom: "2rem",
+              maxWidth: 420,
+              marginLeft: "auto",
+              marginRight: "auto",
+            }}>
+              🔔 You'll hear a beep every 30 seconds for the first 90 seconds of your speech — then it stops.
+            </p>
           )}
 
           {(phase === PHASES.READING || phase === PHASES.SPEAKING || phase === PHASES.DONE) && currentQuote && (
@@ -1543,13 +1622,12 @@ export default function App() {
         }
 
         .start-orb--launch {
-          animation: orbLaunchPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: orbLaunchPulse 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
         @keyframes orbLaunchPulse {
           0%   { box-shadow: 0 0 80px #8b5cf622, inset 0 0 40px #00000080; transform: scale(1); }
-          30%  { box-shadow: 0 0 140px #8b5cf680, inset 0 0 40px #00000040; transform: scale(1.12); }
-          60%  { box-shadow: 0 0 200px #22d3ee90, inset 0 0 20px #00000020; transform: scale(1.22); }
-          100% { box-shadow: 0 0 260px #22d3eeb0, inset 0 0 0 transparent; transform: scale(1.35); opacity: 0; }
+          40%  { box-shadow: 0 0 160px #8b5cf690, inset 0 0 20px #00000030; transform: scale(1.16); }
+          100% { box-shadow: 0 0 260px #22d3eeb0, inset 0 0 0 transparent; transform: scale(1.32); opacity: 0; }
         }
 
         .launch-ring {
@@ -1558,24 +1636,24 @@ export default function App() {
           border-radius: 50%;
           border: 2px solid var(--accent-2);
           opacity: 0;
-          animation: launchRing 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: launchRing 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
           pointer-events: none;
         }
         .launch-ring-1 { animation-delay: 0s; }
-        .launch-ring-2 { animation-delay: 0.12s; }
-        .launch-ring-3 { animation-delay: 0.24s; }
+        .launch-ring-2 { animation-delay: 0.06s; }
+        .launch-ring-3 { animation-delay: 0.12s; }
         @keyframes launchRing {
           0%   { transform: scale(0.9); opacity: 0.9; border-color: var(--accent); }
-          100% { transform: scale(2.6); opacity: 0; border-color: var(--accent-2); }
+          100% { transform: scale(2.4); opacity: 0; border-color: var(--accent-2); }
         }
 
         .launch-icon {
-          animation: launchIconSpin 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: launchIconSpin 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
         @keyframes launchIconSpin {
           0%   { transform: rotate(0deg) scale(1); opacity: 1; }
-          60%  { transform: rotate(220deg) scale(1.3); opacity: 1; }
-          100% { transform: rotate(340deg) scale(0.2); opacity: 0; }
+          60%  { transform: rotate(200deg) scale(1.25); opacity: 1; }
+          100% { transform: rotate(320deg) scale(0.2); opacity: 0; }
         }
 
         .launch-flash {
@@ -1584,13 +1662,15 @@ export default function App() {
           z-index: 500;
           pointer-events: none;
           background: radial-gradient(circle at 50% 55%, #ffffff 0%, #8b5cf6aa 18%, #22d3ee55 38%, transparent 70%);
-          animation: launchFlash 0.9s ease both;
+          animation: launchFlash 0.7s ease both;
         }
         @keyframes launchFlash {
           0%   { opacity: 0; }
-          35%  { opacity: 0.9; }
+          55%  { opacity: 0.88; }
           100% { opacity: 0; }
         }
+
+        .buffer-content { animation: fadeUp 0.45s ease both; }
 
         .start-btn { padding: 1.05rem 3.5rem; font-size: 1rem; letter-spacing: 0.14em; }
 
