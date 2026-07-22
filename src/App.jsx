@@ -637,21 +637,28 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     } catch (e) { /* ignore playback errors */ }
   };
 
-  const beginReading = useCallback(() => {
-    setPhase(PHASES.READING);
-    startRecording();
-    startCountdown(readingSeconds, () => {
-      setPhase(PHASES.SPEAKING);
-      startCountdown(420, () => {
-        stopRecording();
-        setPhase(PHASES.DONE);
-      }, (remaining) => {
-        // Beep every 30s, but only within the first 90s of the speech
-        const elapsed = 420 - remaining;
-        if (elapsed > 0 && elapsed <= 90 && elapsed % 30 === 0) playBeep();
-      });
+  const beginSpeaking = useCallback(() => {
+    setPhase(PHASES.SPEAKING);
+    startCountdown(420, () => {
+      stopRecording();
+      setPhase(PHASES.DONE);
+    }, (remaining) => {
+      // Beep every 30s, but only within the first 90s of the speech
+      const elapsed = 420 - remaining;
+      if (elapsed > 0 && elapsed <= 90 && elapsed % 30 === 0) playBeep();
     });
-  }, [startCountdown, readingSeconds]);
+  }, [startCountdown]);
+
+  const beginReading = useCallback(() => {
+    startRecording();
+    if (readingSeconds <= 0) {
+      // No reading time — go straight into speaking
+      beginSpeaking();
+      return;
+    }
+    setPhase(PHASES.READING);
+    startCountdown(readingSeconds, beginSpeaking);
+  }, [startCountdown, readingSeconds, beginSpeaking]);
 
   const launchSession = () => {
     const quote = getRandomQuote(difficulty, allQuotes, lastQuoteRef.current);
@@ -792,7 +799,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
             Reading Time
           </p>
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", justifyContent: "center" }}>
-            {[10, 15, 20, 30].map((secs) => {
+            {[0, 5, 10, 15].map((secs) => {
               const active = readingSeconds === secs;
               return (
                 <button
@@ -806,7 +813,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
                     boxShadow: active ? "0 0 14px #22d3ee40" : "none",
                   }}
                 >
-                  {secs}s
+                  {secs === 0 ? "None" : `${secs}s`}
                 </button>
               );
             })}
