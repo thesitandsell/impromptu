@@ -82,6 +82,56 @@ const PHASES = {
   DONE: "DONE",
 };
 
+// Rotating tips shown during the "get ready" buffer, researched from
+// real NFA/college-circuit impromptu coaching resources
+const IMPROMPTU_TIPS = [
+  "Remember to say quotation, not quote — quote is a verb!",
+  "Open with a hook, not a summary — grab them in the first ten seconds.",
+  "Signpost your roadmap in minute one so the judge knows exactly where you're headed.",
+  "Pick your structure fast — chronological, categorical, or compare-contrast — then commit.",
+  "Budget your 7 minutes evenly so your conclusion doesn't get rushed at the end.",
+  "Every point needs a \"so what\" — tell them why it actually matters.",
+  "Try the PREP method: Point, Reason, Example, Point.",
+  "Concrete examples beat abstract claims every time — get specific.",
+  "Bridge your points with real transitions, like \"which brings me to...\"",
+  "Your notecard is a backup, not a script — talk to the judge, don't read to them.",
+  "Eye contact equals confidence — look up, not down at your card.",
+  "Swap \"um\" for a confident pause — silence beats a filler word.",
+  "Nail your thesis in one clear sentence before you dive into your points.",
+  "Take a breath. You've got this — the timer starts soon.",
+  "Make sure you're ready to go — you'll start speaking any second.",
+];
+
+const LEGAL_CONTENT = {
+  terms: {
+    label: "Terms",
+    title: "Terms of Service",
+    body: [
+      "This site is a free practice tool built for the Simpson College Speech & Debate team. Use it to practice — that's it.",
+      "It's provided as-is, with no guarantees of uptime, accuracy, or availability. Things may change, break, or disappear without notice.",
+      "Don't submit offensive, harassing, or inappropriate content through the quotation submission form. Submissions are visible to everyone using the site and may be removed at any time.",
+    ],
+  },
+  privacy: {
+    label: "Privacy",
+    title: "Privacy",
+    body: [
+      "There are no accounts, logins, or tracking on this site. We don't collect analytics or personal data.",
+      "The only data we store is what you type into the \"Submit a Quotation\" form (the quote text and author) — that's saved to a shared database visible to everyone using the site.",
+      "Practice recordings (video/audio) never leave your browser. Nothing is uploaded or stored anywhere — the recording exists only in your browser tab and is gone for good the moment you refresh or close the page.",
+    ],
+  },
+  copyright: {
+    label: "Copyright",
+    title: "Copyright",
+    body: [
+      "This site's design, code, and original artwork (including Atlas and the dragon mascots) belong to the Simpson College Speech & Debate team.",
+      "Quotations submitted or included on this site remain the property of their original speakers or authors. They're used here for practice and educational purposes, not for commercial gain.",
+      "If you believe something on this site infringes your rights, let us know and we'll take a look.",
+    ],
+  },
+};
+
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
@@ -452,8 +502,12 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const [recordingEnabled, setRecordingEnabled] = useState(false);
   const [cameraError, setCameraError] = useState(false);
   const [recordingBlob, setRecordingBlob] = useState(null);
+  const [tipIndex, setTipIndex] = useState(0);
+  const [launching, setLaunching] = useState(false);
 
   const intervalRef = useRef(null);
+  const tipIntervalRef = useRef(null);
+  const launchTimerRef = useRef(null);
   const phaseRef = useRef(phase);
   const lastQuoteRef = useRef(null);
   const streamRef = useRef(null);
@@ -539,6 +593,10 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     if (intervalRef.current) clearInterval(intervalRef.current);
   };
 
+  const clearTipTimer = () => {
+    if (tipIntervalRef.current) clearInterval(tipIntervalRef.current);
+  };
+
   const startCountdown = useCallback((seconds, onDone) => {
     clearTimer();
     setCountdown(seconds);
@@ -554,10 +612,11 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   }, []);
 
   const beginReading = useCallback(() => {
+    clearTipTimer();
     setPhase(PHASES.READING);
+    startRecording();
     startCountdown(10, () => {
       setPhase(PHASES.SPEAKING);
-      startRecording();
       startCountdown(420, () => {
         stopRecording();
         setPhase(PHASES.DONE);
@@ -572,11 +631,22 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     setCurrentQuote(quote);
     setRecordingBlob(null);
     setPhase(PHASES.BUFFER);
+    setTipIndex(Math.floor(Math.random() * IMPROMPTU_TIPS.length));
+    clearTipTimer();
+    tipIntervalRef.current = setInterval(() => {
+      setTipIndex(i => (i + 1) % IMPROMPTU_TIPS.length);
+    }, 2200);
     startCountdown(10, beginReading);
   };
 
   const startSession = () => {
-    launchSession();
+    if (launching) return;
+    setLaunching(true);
+    clearTimeout(launchTimerRef.current);
+    launchTimerRef.current = setTimeout(() => {
+      setLaunching(false);
+      launchSession();
+    }, 900);
   };
 
   const skipBuffer = () => {
@@ -594,6 +664,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
   const reset = () => {
     clearTimer();
+    clearTipTimer();
     stopRecording();
     setPhase(PHASES.IDLE);
     setCurrentQuote(null);
@@ -601,7 +672,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     onPhaseChange && onPhaseChange("IDLE");
   };
 
-  useEffect(() => () => clearTimer(), []);
+  useEffect(() => () => { clearTimer(); clearTipTimer(); clearTimeout(launchTimerRef.current); }, []);
 
   const videoUrl = useMemo(() => (recordingBlob ? URL.createObjectURL(recordingBlob) : null), [recordingBlob]);
 
@@ -649,6 +720,8 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
         document.body
       )}
 
+      {launching && createPortal(<div className="launch-flash" />, document.body)}
+
       {phase === PHASES.IDLE && (
         <div style={{ marginBottom: "3rem", animation: "fadeUp 0.6s ease both" }}>
           <p className="eyebrow" style={{ marginBottom: "1.2rem", textAlign: "center" }}>
@@ -680,8 +753,15 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
       {phase === PHASES.IDLE ? (
         <div style={{ textAlign: "center", animation: "fadeUp 0.8s ease 0.2s both" }}>
-          <div className="start-orb" aria-hidden="true">
-            <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+          <div className={launching ? "start-orb start-orb--launch" : "start-orb"} aria-hidden="true">
+            {launching && (
+              <>
+                <span className="launch-ring launch-ring-1" />
+                <span className="launch-ring launch-ring-2" />
+                <span className="launch-ring launch-ring-3" />
+              </>
+            )}
+            <svg width="56" height="56" viewBox="0 0 64 64" fill="none" className={launching ? "launch-icon" : ""}>
               <circle cx="32" cy="32" r="30" stroke="var(--accent-2)" strokeWidth="1" opacity="0.4" />
               <path d="M26 20 L26 44 L48 32 Z" fill="url(#playGrad)" />
               <defs>
@@ -692,12 +772,12 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
               </defs>
             </svg>
           </div>
-          <div>
-            <button onClick={startSession} className="btn btn-primary start-btn">
-              Start Session
+          <div style={{ opacity: launching ? 0 : 1, transition: "opacity 0.35s ease" }}>
+            <button onClick={startSession} className="btn btn-primary start-btn" disabled={launching}>
+              {launching ? "Launching..." : "Start Session"}
             </button>
           </div>
-          <p style={{ marginTop: "1.5rem", fontFamily: "var(--font-body)", color: "var(--text-dim)", fontSize: "0.95rem" }}>
+          <p style={{ marginTop: "1.5rem", fontFamily: "var(--font-body)", color: "var(--text-dim)", fontSize: "0.95rem", opacity: launching ? 0 : 1, transition: "opacity 0.35s ease" }}>
             {difficulty === "Random" ? "Any difficulty" : `${difficulty} quotes only`} · {allQuotes.filter(q => difficulty === "Random" || q.difficulty === difficulty).length} available
           </p>
         </div>
@@ -714,10 +794,10 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
           {recordingEnabled && phase !== PHASES.DONE && (
             <div className="camera-preview" style={{
-              borderColor: phase === PHASES.SPEAKING ? "var(--danger)" : "var(--border)",
-              boxShadow: phase === PHASES.SPEAKING ? "0 0 24px #f8717140" : "0 8px 24px #00000080",
+              borderColor: (phase === PHASES.READING || phase === PHASES.SPEAKING) ? "var(--danger)" : "var(--border)",
+              boxShadow: (phase === PHASES.READING || phase === PHASES.SPEAKING) ? "0 0 24px #f8717140" : "0 8px 24px #00000080",
             }}>
-              {phase === PHASES.SPEAKING && (
+              {(phase === PHASES.READING || phase === PHASES.SPEAKING) && (
                 <div style={{
                   position: "absolute", top: 8, left: 10, zIndex: 10,
                   display: "flex", alignItems: "center", gap: 5,
@@ -756,6 +836,23 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
               big={phase === PHASES.BUFFER || phase === PHASES.READING}
               calm={timerCalm}
             />
+          )}
+
+          {phase === PHASES.BUFFER && (
+            <div className="card tip-card" style={{ padding: "1.5rem 1.75rem", marginBottom: "2rem" }}>
+              <div className="eyebrow" style={{ color: "var(--accent-2)", marginBottom: "0.6rem", fontSize: "0.62rem" }}>
+                💡 Tip
+              </div>
+              <p key={tipIndex} className="tip-text" style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "1.05rem",
+                lineHeight: 1.5,
+                color: "var(--text)",
+                margin: 0,
+              }}>
+                {IMPROMPTU_TIPS[tipIndex]}
+              </p>
+            </div>
           )}
 
           {(phase === PHASES.READING || phase === PHASES.SPEAKING || phase === PHASES.DONE) && currentQuote && (
@@ -1201,6 +1298,7 @@ export default function App() {
   const [dogReactKey, setDogReactKey] = useState(0);
   const [dragonReacting, setDragonReacting] = useState(false);
   const [dragonReactKey, setDragonReactKey] = useState(0);
+  const [legalTab, setLegalTab] = useState(null);
   const dogReactTimer = useRef(null);
   const dragonReactTimer = useRef(null);
 
@@ -1420,7 +1518,19 @@ export default function App() {
         .diff-btn:hover { transform: translateY(-1px); }
         .diff-btn--sm { padding: 0.5rem 1.1rem; font-size: 0.72rem; }
 
+        /* ── Universal press feedback ── */
+        .btn:active:not(:disabled),
+        .diff-btn:active,
+        .chip-toggle:active,
+        .btn-pill:active,
+        .tab-btn:active,
+        .jump-top-btn:active {
+          transform: scale(0.94) !important;
+          transition: transform 0.08s ease !important;
+        }
+
         .start-orb {
+          position: relative;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1430,6 +1540,56 @@ export default function App() {
           background: radial-gradient(circle, #171a2c 0%, #0a0a12 72%);
           border: 1px solid var(--border);
           box-shadow: 0 0 80px #8b5cf622, inset 0 0 40px #00000080;
+        }
+
+        .start-orb--launch {
+          animation: orbLaunchPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes orbLaunchPulse {
+          0%   { box-shadow: 0 0 80px #8b5cf622, inset 0 0 40px #00000080; transform: scale(1); }
+          30%  { box-shadow: 0 0 140px #8b5cf680, inset 0 0 40px #00000040; transform: scale(1.12); }
+          60%  { box-shadow: 0 0 200px #22d3ee90, inset 0 0 20px #00000020; transform: scale(1.22); }
+          100% { box-shadow: 0 0 260px #22d3eeb0, inset 0 0 0 transparent; transform: scale(1.35); opacity: 0; }
+        }
+
+        .launch-ring {
+          position: absolute;
+          inset: 0;
+          border-radius: 50%;
+          border: 2px solid var(--accent-2);
+          opacity: 0;
+          animation: launchRing 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+          pointer-events: none;
+        }
+        .launch-ring-1 { animation-delay: 0s; }
+        .launch-ring-2 { animation-delay: 0.12s; }
+        .launch-ring-3 { animation-delay: 0.24s; }
+        @keyframes launchRing {
+          0%   { transform: scale(0.9); opacity: 0.9; border-color: var(--accent); }
+          100% { transform: scale(2.6); opacity: 0; border-color: var(--accent-2); }
+        }
+
+        .launch-icon {
+          animation: launchIconSpin 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes launchIconSpin {
+          0%   { transform: rotate(0deg) scale(1); opacity: 1; }
+          60%  { transform: rotate(220deg) scale(1.3); opacity: 1; }
+          100% { transform: rotate(340deg) scale(0.2); opacity: 0; }
+        }
+
+        .launch-flash {
+          position: fixed;
+          inset: 0;
+          z-index: 500;
+          pointer-events: none;
+          background: radial-gradient(circle at 50% 55%, #ffffff 0%, #8b5cf6aa 18%, #22d3ee55 38%, transparent 70%);
+          animation: launchFlash 0.9s ease both;
+        }
+        @keyframes launchFlash {
+          0%   { opacity: 0; }
+          35%  { opacity: 0.9; }
+          100% { opacity: 0; }
         }
 
         .start-btn { padding: 1.05rem 3.5rem; font-size: 1rem; letter-spacing: 0.14em; }
@@ -1499,6 +1659,12 @@ export default function App() {
         }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .tip-card { animation: fadeUp 0.4s ease both; }
+        .tip-text { animation: tipFade 0.45s ease both; }
+        @keyframes tipFade {
+          from { opacity: 0; transform: translateY(6px); }
           to { opacity: 1; transform: translateY(0); }
         }
         @keyframes pulse {
@@ -1865,8 +2031,65 @@ export default function App() {
           position: "relative",
           zIndex: 3,
         }}>
-          Built for collegiate impromptu speakers · {allQuotes.length} quotes in the pool
+          <div>Built for collegiate impromptu speakers · {allQuotes.length} quotes in the pool</div>
+          <div style={{ marginTop: "0.75rem", display: "flex", gap: "1rem", justifyContent: "center" }}>
+            {Object.entries(LEGAL_CONTENT).map(([key, section]) => (
+              <button
+                key={key}
+                onClick={() => setLegalTab(key)}
+                style={{
+                  background: "none", border: "none", padding: 0,
+                  fontFamily: "var(--font-mono)", fontSize: "0.65rem",
+                  color: "var(--text-faint)", letterSpacing: "0.1em", textTransform: "uppercase",
+                  cursor: "pointer", textDecoration: "underline", textUnderlineOffset: "3px",
+                }}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
         </footer>
+
+        {legalTab && createPortal(
+          <div
+            style={{
+              position: "fixed", inset: 0, zIndex: 400,
+              background: "rgba(5,6,10,0.75)", backdropFilter: "blur(4px)",
+              display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem",
+            }}
+            onClick={() => setLegalTab(null)}
+          >
+            <div
+              className="card"
+              style={{ maxWidth: 520, width: "100%", padding: "2rem", animation: "fadeUp 0.3s ease both", maxHeight: "80vh", overflowY: "auto" }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
+                {Object.entries(LEGAL_CONTENT).map(([key, section]) => (
+                  <button
+                    key={key}
+                    onClick={() => setLegalTab(key)}
+                    className={`chip-toggle ${legalTab === key ? "chip-toggle--active" : ""}`}
+                  >
+                    {section.label}
+                  </button>
+                ))}
+              </div>
+              <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", color: "var(--text)", fontWeight: 700, marginBottom: "1rem" }}>
+                {LEGAL_CONTENT[legalTab].title}
+              </h3>
+              {LEGAL_CONTENT[legalTab].body.map((p, i) => (
+                <p key={i} style={{ fontFamily: "var(--font-body)", fontSize: "0.92rem", lineHeight: 1.65, color: "var(--text-dim)", marginBottom: "0.9rem" }}>
+                  {p}
+                </p>
+              ))}
+              <button onClick={() => setLegalTab(null)} className="btn btn-ghost" style={{ padding: "0.65rem 1.5rem", marginTop: "0.5rem" }}>
+                Close
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
       </div>
     </>
   );
