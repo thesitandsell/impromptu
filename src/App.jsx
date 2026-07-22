@@ -1374,6 +1374,21 @@ function SubmitTab({ onSubmit }) {
   );
 }
 
+function AboutTab() {
+  return (
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "2rem 1.5rem", animation: "fadeUp 0.6s ease both" }}>
+      <div className="card" style={{ padding: "2.5rem", textAlign: "center" }}>
+        <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.6rem", color: "var(--text)", fontWeight: 700, marginBottom: "0.75rem" }}>
+          About <span className="grad-text">this site</span>
+        </h2>
+        <p style={{ fontFamily: "var(--font-body)", color: "var(--text-dim)", fontSize: "1rem", lineHeight: 1.6 }}>
+          Content coming soon.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [activeTab, setActiveTab] = useState("practice");
   const [dogVisible, setDogVisible] = useState(true);
@@ -1945,7 +1960,7 @@ export default function App() {
             </div>
 
             <nav className="header-nav" style={{ display: "flex", gap: "0.4rem" }}>
-              {[["practice", "Practice"], ["browse", "All Quotations"], ["submit", "Submit A Quotation"]].map(([id, label]) => (
+              {[["practice", "Practice"], ["browse", "All Quotations"], ["submit", "Submit A Quotation"], ["about", "About"]].map(([id, label]) => (
                 <button
                   className="tab-btn"
                   key={id}
@@ -2103,6 +2118,7 @@ export default function App() {
           {activeTab === "practice" && <PracticeTab allQuotes={allQuotes} onPhaseChange={p => setDogVisible(p === "IDLE")} />}
           {activeTab === "browse" && <BrowseTab allQuotes={allQuotes} />}
           {activeTab === "submit" && <SubmitTab onSubmit={handleSubmit} />}
+          {activeTab === "about" && <AboutTab />}
         </main>
 
         {/* Footer */}
