@@ -9,7 +9,7 @@ service cloud.firestore {
                     && request.resource.data.author is string
                     && request.resource.data.author.size() > 0
                     && request.resource.data.author.size() < 200
-                    && request.resource.data.difficulty in ['Easy', 'Medium', 'Hard', 'Insaneo CRAZY'];
+                    && request.resource.data.difficulty in ['Easy', 'Medium', 'Hard', 'Insane-O Crazy'];
       allow update, delete: if false;
     }
   }

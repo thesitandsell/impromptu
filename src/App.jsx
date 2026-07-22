@@ -74,6 +74,16 @@ const DIFFICULTY_CONFIG = {
   Random: { color: "#22d3ee", glow: "#22d3ee40" },
 };
 
+// Quotes saved before the tier was renamed still carry the old spelling in
+// Firestore. The rules forbid update/delete, so those documents can never be
+// rewritten — remap them on read instead, or they belong to no tier at all
+// and show up in "All" while being unreachable from every difficulty filter.
+const LEGACY_DIFFICULTY = {
+  "Insaneo CRAZY": "Insane-O Crazy",
+  "Insane-o Crazy": "Insane-O Crazy",
+  "Insane-O crazy": "Insane-O Crazy",
+};
+
 const PHASES = {
   IDLE: "IDLE",
   BUFFER: "BUFFER",
@@ -510,6 +520,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const intervalRef = useRef(null);
   const launchTimerRef = useRef(null);
   const flashTimerRef = useRef(null);
+  const orbRef = useRef(null);
   const audioCtxRef = useRef(null);
   const phaseRef = useRef(phase);
   const lastQuoteRef = useRef(null);
@@ -674,17 +685,44 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const startSession = () => {
     if (launching) return;
     unlockAudio();
+
+    // The orb can sit below the fold on short viewports. Bring it into view
+    // first, and anchor the iris wipe to wherever it actually ends up, so the
+    // transition always radiates out of the thing the user just pressed.
+    const orb = orbRef.current;
+    if (orb) {
+      const r = orb.getBoundingClientRect();
+      if (r.bottom > window.innerHeight || r.top < 0) {
+        orb.scrollIntoView({ block: "center", behavior: "auto" });
+      }
+      const after = orb.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const cx = ((after.left + after.width / 2) / vw) * 100;
+      const cy = ((after.top + after.height / 2) / vh) * 100;
+      const root = document.documentElement.style;
+      if (Number.isFinite(cx) && Number.isFinite(cy)) {
+        root.setProperty("--iris-x", `${cx.toFixed(2)}%`);
+        root.setProperty("--iris-y", `${cy.toFixed(2)}%`);
+      } else {
+        // Degenerate viewport — drop the vars so the CSS fallback centre applies.
+        root.removeProperty("--iris-x");
+        root.removeProperty("--iris-y");
+      }
+    }
+
     setLaunching(true);
     setShowFlash(true);
     clearTimeout(launchTimerRef.current);
     clearTimeout(flashTimerRef.current);
     // The phase swap happens while the flash is still covering the screen —
     // that's what makes it read as one continuous wipe instead of a hard cut.
+    // Swap phases at the moment the iris is fully covering the viewport.
     launchTimerRef.current = setTimeout(() => {
       setLaunching(false);
       launchSession();
-    }, 420);
-    flashTimerRef.current = setTimeout(() => setShowFlash(false), 700);
+    }, 400);
+    flashTimerRef.current = setTimeout(() => setShowFlash(false), 660);
   };
 
   const skipBuffer = () => {
@@ -823,12 +861,11 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
       {phase === PHASES.IDLE ? (
         <div style={{ textAlign: "center", animation: "fadeUp 0.8s ease 0.2s both" }}>
-          <div className={launching ? "start-orb start-orb--launch" : "start-orb"} aria-hidden="true">
+          <div ref={orbRef} className={launching ? "start-orb start-orb--launch" : "start-orb"} aria-hidden="true">
             {launching && (
               <>
                 <span className="launch-ring launch-ring-1" />
                 <span className="launch-ring launch-ring-2" />
-                <span className="launch-ring launch-ring-3" />
               </>
             )}
             <svg width="56" height="56" viewBox="0 0 64 64" fill="none" className={launching ? "launch-icon" : ""}>
@@ -1427,7 +1464,14 @@ export default function App() {
     const unsub = onSnapshot(
       q,
       (snapshot) => {
-        const fetched = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const fetched = snapshot.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            difficulty: LEGACY_DIFFICULTY[data.difficulty] || data.difficulty,
+          };
+        });
         setUserQuotes(fetched);
         setDbLoading(false);
         setDbError(false);
@@ -1643,53 +1687,85 @@ export default function App() {
           box-shadow: 0 0 80px #8b5cf622, inset 0 0 40px #00000080;
         }
 
+        /* ── Launch sequence ──
+           Reads as: coil (anticipation) → release → an iris wipe in the site's
+           own background colour. Deliberately no white flash and no spin. */
         .start-orb--launch {
-          animation: orbLaunchPulse 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: orbCoilRelease 0.36s cubic-bezier(0.34, 1.4, 0.44, 1) both;
         }
-        @keyframes orbLaunchPulse {
-          0%   { box-shadow: 0 0 80px #8b5cf622, inset 0 0 40px #00000080; transform: scale(1); }
-          40%  { box-shadow: 0 0 160px #8b5cf690, inset 0 0 20px #00000030; transform: scale(1.16); }
-          100% { box-shadow: 0 0 260px #22d3eeb0, inset 0 0 0 transparent; transform: scale(1.32); opacity: 0; }
+        @keyframes orbCoilRelease {
+          0%   { transform: scale(1);    border-color: var(--border); box-shadow: 0 0 80px #8b5cf622, inset 0 0 40px #00000080; }
+          30%  { transform: scale(0.93); border-color: #8b5cf6aa;     box-shadow: 0 0 40px #8b5cf644, inset 0 0 60px #00000090; }
+          70%  { transform: scale(1.06); border-color: #22d3eeee;     box-shadow: 0 0 90px #22d3ee55, inset 0 0 10px #00000040; opacity: 1; }
+          100% { transform: scale(1.1);  border-color: #22d3ee00;     box-shadow: 0 0 0 #22d3ee00, inset 0 0 0 transparent; opacity: 0; }
         }
 
+        /* One thin shockwave, plus a softer echo — not a three-ring pileup. */
         .launch-ring {
           position: absolute;
           inset: 0;
           border-radius: 50%;
-          border: 2px solid var(--accent-2);
+          border: 1.5px solid var(--accent-2);
           opacity: 0;
-          animation: launchRing 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
           pointer-events: none;
+          animation: launchRing 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
-        .launch-ring-1 { animation-delay: 0s; }
-        .launch-ring-2 { animation-delay: 0.06s; }
-        .launch-ring-3 { animation-delay: 0.12s; }
+        .launch-ring-1 { animation-delay: 0.11s; }
+        .launch-ring-2 { animation-delay: 0.19s; border-color: var(--accent); }
         @keyframes launchRing {
-          0%   { transform: scale(0.9); opacity: 0.9; border-color: var(--accent); }
-          100% { transform: scale(2.4); opacity: 0; border-color: var(--accent-2); }
+          0%   { transform: scale(0.96); opacity: 0.75; }
+          70%  { opacity: 0.18; }
+          100% { transform: scale(2.1); opacity: 0; }
         }
 
+        /* The play triangle takes off in the direction it points, instead of
+           spinning like a stuck loading indicator. */
         .launch-icon {
-          animation: launchIconSpin 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: launchIconGo 0.36s cubic-bezier(0.5, 0, 0.75, 0) both;
         }
-        @keyframes launchIconSpin {
-          0%   { transform: rotate(0deg) scale(1); opacity: 1; }
-          60%  { transform: rotate(200deg) scale(1.25); opacity: 1; }
-          100% { transform: rotate(320deg) scale(0.2); opacity: 0; }
+        @keyframes launchIconGo {
+          0%   { transform: translateX(0) scale(1); opacity: 1; }
+          30%  { transform: translateX(-7px) scale(0.96); opacity: 1; }
+          100% { transform: translateX(70px) scale(1.06); opacity: 0; }
         }
 
+        /* Iris wipe: a disc of the page's own background grows out of the orb
+           and covers the screen, so the phase swap underneath is invisible.
+           Tinted only at its leading edge — no full-screen white blowout. */
         .launch-flash {
           position: fixed;
           inset: 0;
           z-index: 500;
           pointer-events: none;
-          background: radial-gradient(circle at 50% 55%, #ffffff 0%, #8b5cf6aa 18%, #22d3ee55 38%, transparent 70%);
-          animation: launchFlash 0.7s ease both;
+          /* Anchored to the orb's live position (set in startSession) so the
+             scale-up doesn't drag the wipe's origin off the button. */
+          transform-origin: var(--iris-x, 50%) var(--iris-y, 44%);
+          background: radial-gradient(circle at var(--iris-x, 50%) var(--iris-y, 44%),
+            var(--bg) 0%,
+            var(--bg) 52%,
+            #8b5cf633 62%,
+            #22d3ee22 68%,
+            transparent 74%);
+          animation: launchIris 0.66s linear both;
         }
-        @keyframes launchFlash {
-          0%   { opacity: 0; }
-          55%  { opacity: 0.88; }
-          100% { opacity: 0; }
+        /* Held invisible for the first ~165ms so the orb's coil-and-release
+           beat plays in the clear, then rushes out and covers by 400ms —
+           exactly when the phase swap happens underneath. */
+        @keyframes launchIris {
+          0%   { transform: scale(0.05); opacity: 0; }
+          25%  { transform: scale(0.3);  opacity: 0; }
+          40%  { transform: scale(1.15); opacity: 0.9; }
+          60%  { transform: scale(3.4);  opacity: 1; }
+          100% { transform: scale(3.6);  opacity: 0; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .start-orb--launch,
+          .launch-ring,
+          .launch-icon { animation: none; }
+          .start-orb--launch { opacity: 0; transition: opacity 0.2s linear; }
+          .launch-flash { animation: launchFade 0.5s linear both; transform: scale(4); }
+          @keyframes launchFade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
         }
 
         .buffer-content { animation: fadeUp 0.45s ease both; }
