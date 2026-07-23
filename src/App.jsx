@@ -1541,6 +1541,8 @@ const LEVELS = [
     ],
     hazards: [{ x: 1600, y: 366, w: 70, h: 24 }],
     gems: [[220, 340], [660, 340], [1000, 290], [1260, 235], [1560, 340], [1930, 285], [2180, 225], [2520, 340]],
+    pads: [[680, 390]],
+    powers: [[1250, 240, 'magnet']],
     goal: { x: 2680, y: 310, w: 44, h: 80 },
   },
   {
@@ -1564,6 +1566,8 @@ const LEVELS = [
       { x: 2560, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 150, speed: 60 } },
     ],
     gems: [[180, 340], [490, 300], [725, 250], [955, 200], [1185, 270], [1450, 340], [1785, 290], [2020, 250], [2240, 190], [2700, 340]],
+    pads: [[1500, 390]],
+    powers: [[1450, 335, 'overdrive']],
     goal: { x: 2800, y: 310, w: 44, h: 80 },
   },
   {
@@ -1590,6 +1594,8 @@ const LEVELS = [
       { x: 2700, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 170, speed: 70 } },
     ],
     gems: [[160, 340], [460, 300], [625, 255], [785, 210], [960, 255], [1135, 205], [1310, 260], [1560, 340], [1855, 290], [2070, 240], [2245, 190], [2420, 245], [2900, 340]],
+    pads: [[1620, 390]],
+    powers: [[1550, 335, 'jet']],
     goal: { x: 2960, y: 310, w: 44, h: 80 },
   },
   {
@@ -1619,6 +1625,8 @@ const LEVELS = [
       { x: 2930, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 140, speed: 75 } },
     ],
     gems: [[150, 340], [440, 305], [640, 260], [840, 215], [1050, 270], [1370, 230], [1650, 340], [1920, 290], [2130, 240], [2325, 190], [2505, 140], [2700, 200], [3050, 340]],
+    pads: [[1700, 390]],
+    powers: [[1650, 335, 'ironhide']],
     goal: { x: 3050, y: 310, w: 44, h: 80 },
   },
   {
@@ -1647,6 +1655,8 @@ const LEVELS = [
       { x: 3150, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 160, speed: 70 } },
     ],
     gems: [[140, 340], [440, 295], [615, 245], [795, 195], [980, 255], [1160, 205], [1345, 155], [1530, 225], [1780, 340], [2080, 285], [2390, 235], [2565, 185], [2735, 135], [2920, 205], [3320, 340]],
+    pads: [[1850, 390]],
+    powers: [[1780, 335, 'titan']],
     goal: { x: 3320, y: 310, w: 44, h: 80 },
   },
   {
@@ -1677,6 +1687,8 @@ const LEVELS = [
       { x: 3450, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 150, speed: 95, phase: 2.1 } },
     ],
     gems: [[120, 340], [430, 300], [610, 255], [790, 210], [970, 165], [1150, 235], [1330, 190], [1510, 145], [1760, 340], [2040, 285], [2370, 225], [2550, 170], [2730, 115], [2910, 185], [3090, 255], [3400, 340]],
+    pads: [[1800, 390]],
+    powers: [[1740, 335, 'overdrive'], [3300, 335, 'jet']],
     goal: { x: 3500, y: 310, w: 44, h: 80 },
   },
 ];
@@ -1697,17 +1709,38 @@ const GC = {
   tan: "#F0B27A", tanMid: "#C9844B", tanDark: "#8A5A2C",
   eye: "#22d3ee",
 };
+// Every round gets its own sky. The run reads as one journey across a
+// burning scrapyard sea: dawn, noon, storm, dusk, night, and the final
+// blazing showdown.
+const SKIES = [
+  { name: "dawn",   top: "#2b1055", mid: "#7b2d8e", low: "#ff7b54", sun: "#ffd166", sea: "#3a1a5c", accent: "#ffd166", rim: "#ff7b54" },
+  { name: "noon",   top: "#0b4f6c", mid: "#01baef", low: "#ffe66d", sun: "#fffbe6", sea: "#07394f", accent: "#01baef", rim: "#ffe66d" },
+  { name: "storm",  top: "#16123a", mid: "#3a2f7d", low: "#6d5bd0", sun: "#c9b6ff", sea: "#0f0c2b", accent: "#a78bfa", rim: "#e0d4ff" },
+  { name: "dusk",   top: "#3d1052", mid: "#c1256d", low: "#ff8c42", sun: "#ffe3a3", sea: "#2a0b3a", accent: "#ff4d9d", rim: "#ff8c42" },
+  { name: "night",  top: "#050b2e", mid: "#12295e", low: "#2e6f9e", sun: "#bfe9ff", sea: "#03071f", accent: "#38bdf8", rim: "#a5f3fc" },
+  { name: "final",  top: "#2a0505", mid: "#a11212", low: "#ff9d00", sun: "#fff3b0", sea: "#1a0303", accent: "#ff3d3d", rim: "#ffd000" },
+];
+
+// Temporary Kirby-style powers. Each one changes how she plays *and* how she
+// looks, and arrives with its own banner and colour so the pickup lands.
+const POWERS = {
+  overdrive: { name: "OVERDRIVE",  cry: "GO GO GO!",        col: "#ff3d6e", col2: "#ffd166", dur: 8,  blurb: "Speed doubled" },
+  jet:       { name: "JET STREAM", cry: "TO THE SKY!",      col: "#38bdf8", col2: "#e0f2fe", dur: 9,  blurb: "Endless air jumps" },
+  ironhide:  { name: "IRON HIDE",  cry: "UNBREAKABLE!",     col: "#fbbf24", col2: "#fff7cc", dur: 7,  blurb: "Nothing can hurt her" },
+  magnet:    { name: "MAGNETIZE",  cry: "COME HERE!",       col: "#a78bfa", col2: "#f0abfc", dur: 10, blurb: "Parts fly to her" },
+  titan:     { name: "TITAN CORE", cry: "FULL POWER!",      col: "#22d3ee", col2: "#bbf7d0", dur: 8,  blurb: "Colossal jump" },
+};
 
 // Each cleared round bolts one more system onto Atlas, and every one of them
 // is a piece the mascot on the site already has. Finish all six and the dog
 // you are running around as *is* the dog flying across the Practice tab.
 const UPGRADES = [
-  { key: "servo",   name: "Servo Legs",       blurb: "Reinforced hydraulics. Jump higher." },
-  { key: "thruster",name: "Thruster Pack",    blurb: "Her boosters. Double jump unlocked." },
-  { key: "gyro",    name: "Gyro Core",        blurb: "Stabilised spin. Sharper control in the air." },
-  { key: "plating", name: "Ablative Plating", blurb: "Her armour plate. Survive one hit per life." },
-  { key: "optics",  name: "Optic Lasers",     blurb: "Her laser ports. Mostly for the look." },
-  { key: "core",    name: "Fusion Core",      blurb: "Fully modified. She is complete." },
+  { key: "servo",    name: "Servo Legs",       blurb: "Reinforced hydraulics. She lands and the ground pushes back." },
+  { key: "thruster", name: "Thruster Pack",    blurb: "Her boosters. Double jump unlocked." },
+  { key: "gyro",     name: "Gyro Core",        blurb: "Stabilised spin. Sharper control in the air." },
+  { key: "plating",  name: "Ablative Plating", blurb: "Her armour plate. Survive one hit per life." },
+  { key: "optics",   name: "Optic Lasers",     blurb: "Her laser ports. Mostly for the look." },
+  { key: "core",     name: "Fusion Core",      blurb: "Fully modified. She is complete." },
 ];
 
 // Physics scales with how much of herself Atlas has rebuilt. Levels are all
@@ -1721,21 +1754,69 @@ const tuning = (u) => ({
   shield: u >= 4,
 });
 
-// A tiny flag decal, stencilled once on one crate in one round. Small enough
-// that you only find it if you are actually looking at the scenery.
+// Story beats. Index 0 plays before the first round; index n+1 plays when
+// round n is cleared. The dragon is the one from the Submit tab, and his
+// line is the quote that unlocks all of this in the first place.
+const STORY = [
+  [
+    { who: "", text: "The scrapyard sky is burning orange. Nothing down there has moved in a long time." },
+    { who: "", text: "Then something does." },
+    { who: "ATLAS", text: "...Where are my legs." },
+    { who: "ATLAS", text: "Where is any of me?" },
+    { who: "ATLAS", text: "Okay. One part at a time. Get up, Atlas." },
+  ],
+  [
+    { who: "ATLAS", text: "Servos. Real ones. I can feel the ground push back when I land." },
+    { who: "ATLAS", text: "That is one piece. Only the rest of me to go." },
+  ],
+  [
+    { who: "ATLAS", text: "Thrusters! I remember these. I remember the sky." },
+    { who: "DRAGON", text: "Rwar! So the scrap heap learned to hop." },
+    { who: "ATLAS", text: "...Who said that?" },
+  ],
+  [
+    { who: "DRAGON", text: "I am the dragon who always wins Duo Improv." },
+    { who: "DRAGON", text: "I took your parts. They looked better on my shelf." },
+    { who: "ATLAS", text: "Give them back." },
+    { who: "DRAGON", text: "Come and take them, puppy." },
+  ],
+  [
+    { who: "ATLAS", text: "Plating. And the burn marks on it line up with his claws." },
+    { who: "ATLAS", text: "So it really was him." },
+    { who: "ATLAS", text: "Keep talking, lizard. I am getting louder." },
+  ],
+  [
+    { who: "DRAGON", text: "You are actually doing it. Huh." },
+    { who: "DRAGON", text: "Nobody has ever gotten this far." },
+    { who: "ATLAS", text: "One more piece. Then we settle this." },
+  ],
+  [
+    { who: "ATLAS", text: "Core online. Every part. Every bolt. All of it back." },
+    { who: "DRAGON", text: "...You know I always win, right?" },
+    { who: "ATLAS", text: "You always won because I was in pieces." },
+    { who: "ATLAS", text: "I am not in pieces anymore." },
+    { who: "", text: "Atlas stands complete over the burning scrapyard." },
+    { who: "", text: "Somewhere on a practice website, a dog takes off." },
+  ],
+];
+
+const SPEAKERS = {
+  ATLAS:  { col: "#22d3ee", tag: "ATLAS" },
+  DRAGON: { col: "#ff3d3d", tag: "THE DRAGON WHO ALWAYS WINS" },
+};
+
 const ISRAELI_FLAG_LEVEL = 2;
 const ISRAELI_FLAG_AT = { x: 1472, y: 402 };
 
 function drawFlagDecal(ctx, x, y, w) {
   const h = w * 0.72;
   ctx.save();
-  ctx.globalAlpha = 0.5;
+  ctx.globalAlpha = 0.55;
   ctx.fillStyle = "#eef2f7";
   ctx.fillRect(x, y, w, h);
   ctx.fillStyle = "#0038b8";
   ctx.fillRect(x, y + h * 0.14, w, h * 0.16);
   ctx.fillRect(x, y + h * 0.70, w, h * 0.16);
-  // Star of David: two overlaid triangles, stroked so it stays legible tiny.
   const cx = x + w / 2, cy = y + h / 2, r = h * 0.26;
   ctx.strokeStyle = "#0038b8";
   ctx.lineWidth = Math.max(0.6, w * 0.05);
@@ -1752,28 +1833,42 @@ function drawFlagDecal(ctx, x, y, w) {
   ctx.restore();
 }
 
-// Deterministic scenery so a level's junk always sits in the same place.
 const rnd = (seed) => {
   let s = seed;
-  return () => {
-    s = (s * 1664525 + 1013904223) % 4294967296;
-    return s / 4294967296;
-  };
+  return () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
 };
 
+// Floating islands, not factory blocks: this is a sea of wreckage with
+// chunks of land hanging over it.
 function buildScenery(level, idx) {
   const r = rnd(idx * 7919 + 13);
-  const far = [], mid = [], near = [];
-  for (let x = -200; x < level.width + 400; x += 210 + r() * 120) {
-    far.push({ x, h: 90 + r() * 150, w: 50 + r() * 70, kind: r() > 0.55 ? "tower" : "stack" });
+  const isles = [], clouds = [], gears = [];
+  for (let x = -300; x < level.width + 500; x += 300 + r() * 260) {
+    isles.push({ x, y: 120 + r() * 150, w: 90 + r() * 150, h: 26 + r() * 34, depth: 0.2 + r() * 0.25 });
   }
-  for (let x = -150; x < level.width + 400; x += 260 + r() * 160) {
-    mid.push({ x, y: 150 + r() * 120, rad: 26 + r() * 30, teeth: 8 + Math.floor(r() * 6), spin: r() > 0.5 ? 1 : -1 });
+  for (let x = -300; x < level.width + 500; x += 240 + r() * 200) {
+    clouds.push({ x, y: 40 + r() * 160, w: 80 + r() * 130, h: 16 + r() * 22, depth: 0.1 + r() * 0.14 });
   }
-  for (let x = -100; x < level.width + 400; x += 320 + r() * 200) {
-    near.push({ x, w: 40 + r() * 40, h: 30 + r() * 26 });
+  for (let x = -200; x < level.width + 400; x += 380 + r() * 260) {
+    gears.push({ x, y: 150 + r() * 140, rad: 22 + r() * 26, teeth: 8 + Math.floor(r() * 5), spin: r() > 0.5 ? 1 : -1 });
   }
-  return { far, mid, near };
+  return { isles, clouds, gears };
+}
+
+// Types a line out character by character. Remounted per line via `key`, so
+// each new line starts from empty rather than continuing the previous one.
+function Typewriter({ text, speed = 22 }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      if (i >= text.length) clearInterval(id);
+      setN(Math.min(i, text.length));
+    }, speed);
+    return () => { clearInterval(id); };
+  }, [text, speed]);
+  return <>{text.slice(0, n)}<span className="dlg-caret">{n < text.length ? "▌" : ""}</span></>;
 }
 
 function SecretGame({ onClose }) {
@@ -1781,17 +1876,23 @@ function SecretGame({ onClose }) {
   const keysRef = useRef({ left: false, right: false, jump: false });
   const [levelIndex, setLevelIndex] = useState(0);
   const [runId, setRunId] = useState(0);
-  const [hud, setHud] = useState({ parts: 0, total: 0, deaths: 0, shield: false });
-  const [pending, setPending] = useState(null); // upgrade earned, awaiting install
+  const [hud, setHud] = useState({ parts: 0, deaths: 0, shield: false, power: null, powerLeft: 0 });
+  const [pending, setPending] = useState(null);
   const [won, setWon] = useState(false);
-  // State, not a ref: the help line and Atlas's sprite both have to redraw
-  // the moment a part is installed.
   const [upgrades, setUpgrades] = useState(0);
+  const [banner, setBanner] = useState(null);
+  const [story, setStory] = useState({ beat: 0, line: 0 }); // intro plays first
+  const bannerTimer = useRef(null);
+
+  const storyActive = story !== null;
+
+  useEffect(() => () => clearTimeout(bannerTimer.current), []);
 
   useEffect(() => {
     const down = (e) => {
       const k = e.key;
       if (k === "Escape") { onClose(); return; }
+      if (storyActive) return;
       if (k === "r" || k === "R") { setRunId((n) => n + 1); return; }
       if (k === "ArrowLeft" || k === "a" || k === "A") keysRef.current.left = true;
       if (k === "ArrowRight" || k === "d" || k === "D") keysRef.current.right = true;
@@ -1810,10 +1911,10 @@ function SecretGame({ onClose }) {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
     };
-  }, [onClose]);
+  }, [onClose, storyActive]);
 
   useEffect(() => {
-    if (won || pending) return undefined;
+    if (won || pending || storyActive) return undefined;
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     const ctx = canvas.getContext("2d");
@@ -1823,60 +1924,117 @@ function SecretGame({ onClose }) {
     ctx.scale(dpr, dpr);
 
     const level = LEVELS[levelIndex];
+    const sky = SKIES[levelIndex % SKIES.length];
     const scene = buildScenery(level, levelIndex);
     const plats = level.platforms.map((p) => ({ ...p, dx: 0, dy: 0, ox: p.x, oy: p.y, fuse: null, gone: false }));
     const hzds = level.hazards.map((h) => ({ ...h, ox: h.x, oy: h.y }));
-    const parts = level.gems.map(([x, y]) => ({ x, y, got: false }));
+    const parts = level.gems.map(([x, y]) => ({ x, y, got: false, vx: 0, vy: 0 }));
+    const pads = (level.pads || []).map(([x, y]) => ({ x, y, squash: 0 }));
+    const drops = (level.powers || []).map(([x, y, kind]) => ({ x, y, kind, taken: false }));
     const T = tuning(upgrades);
     const player = {
       x: level.spawn.x, y: level.spawn.y, w: 26, h: 30,
       vx: 0, vy: 0, onGround: false, face: 1, coyote: 0, buffer: 0, run: 0,
       standing: null, airJumps: 0, shield: T.shield, iframe: 0, thrust: 0,
+      power: null, powerLeft: 0,
     };
-    const bits = [];        // particles
-    const trail = [];       // afterimages
-    let shake = 0;
+    const bits = [];
+    const rings = [];   // expanding shockwave rings
+    const lines = [];   // manga speed lines
+    const pops = [];    // floating impact words
+    const trail = [];
+    let shake = 0, flash = 0, freeze = 0, zoom = 0;
     let deaths = 0, collected = 0, cam = 0, t = 0, raf = 0;
     let last = performance.now();
-    let finished = false;
-    let hudInit = false;
+    let finished = false, hudInit = false;
 
-    const spawn = (n, x, y, opt) => {
+    const syncHud = () => setHud({
+      parts: collected, deaths, shield: player.shield,
+      power: player.power, powerLeft: player.powerLeft,
+    });
+
+    const spawn = (n, x, y, o) => {
       for (let i = 0; i < n; i += 1) {
-        const a = opt.dir === undefined ? Math.random() * Math.PI * 2 : opt.dir + (Math.random() - 0.5) * (opt.spread || 1);
-        const sp = (opt.spd || 90) * (0.35 + Math.random());
+        const a = o.dir === undefined ? Math.random() * Math.PI * 2 : o.dir + (Math.random() - 0.5) * (o.spread || 1);
+        const sp = (o.spd || 90) * (0.35 + Math.random());
         bits.push({
-          x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (opt.lift || 0),
-          life: (opt.life || 0.5) * (0.6 + Math.random() * 0.8), max: opt.life || 0.5,
-          col: opt.col, size: (opt.size || 3) * (0.5 + Math.random()), grav: opt.grav === undefined ? 380 : opt.grav,
-          kind: opt.kind || "dot",
+          x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (o.lift || 0),
+          life: (o.life || 0.5) * (0.6 + Math.random() * 0.8), max: o.life || 0.5,
+          col: o.col, size: (o.size || 3) * (0.5 + Math.random()),
+          grav: o.grav === undefined ? 380 : o.grav, glow: !!o.glow,
         });
       }
     };
+    const ring = (x, y, col, max, w) => rings.push({ x, y, r: 6, max, col, w: w || 3, life: 1 });
+    const burstLines = (x, y, col, n) => {
+      for (let i = 0; i < n; i += 1) {
+        const a = (Math.PI * 2 * i) / n + Math.random() * 0.3;
+        lines.push({ x, y, a, len: 40 + Math.random() * 90, off: 20 + Math.random() * 30, life: 0.45, max: 0.45, col });
+      }
+    };
+    const popWord = (x, y, text, col) => pops.push({ x, y, text, col, life: 0.9, max: 0.9 });
+
+    const grantPower = (kind) => {
+      const P = POWERS[kind];
+      player.power = kind;
+      player.powerLeft = P.dur;
+      freeze = 0.14; flash = 1; shake = Math.max(shake, 12); zoom = 1;
+      ring(player.x + 13, player.y + 15, P.col, 190, 5);
+      ring(player.x + 13, player.y + 15, P.col2, 130, 3);
+      burstLines(player.x + 13, player.y + 15, P.col, 22);
+      spawn(60, player.x + 13, player.y + 15, { col: P.col, spd: 300, life: 0.85, size: 4, glow: true, grav: 120 });
+      spawn(34, player.x + 13, player.y + 15, { col: P.col2, spd: 190, life: 1.1, size: 3, glow: true, grav: 60 });
+      popWord(player.x + 13, player.y - 12, P.cry, P.col2);
+      clearTimeout(bannerTimer.current);
+      setBanner({ kind, name: P.name, blurb: P.blurb, col: P.col, col2: P.col2 });
+      bannerTimer.current = setTimeout(() => setBanner(null), 1900);
+      syncHud();
+    };
 
     const die = () => {
+      if (player.power === "ironhide") return;
       if (player.shield) {
-        player.shield = false; player.iframe = 1.1; shake = Math.max(shake, 9);
-        spawn(26, player.x + 13, player.y + 15, { col: GC.steel, spd: 190, life: 0.5, size: 3 });
-        player.y -= 12; player.vy = -260;
-        setHud({ parts: collected, total: parts.length, deaths, shield: false });
+        player.shield = false; player.iframe = 1.1;
+        shake = Math.max(shake, 10); flash = 0.5;
+        ring(player.x + 13, player.y + 15, "#fbbf24", 110, 4);
+        spawn(30, player.x + 13, player.y + 15, { col: "#fbbf24", spd: 220, life: 0.6, size: 3.5, glow: true });
+        popWord(player.x + 13, player.y - 6, "GUARD!", "#fff7cc");
+        player.y -= 12; player.vy = -280;
+        syncHud();
         return;
       }
       deaths += 1;
-      shake = Math.max(shake, 14);
-      spawn(40, player.x + 13, player.y + 15, { col: GC.ember, spd: 240, life: 0.7, size: 4 });
-      spawn(22, player.x + 13, player.y + 15, { col: GC.amber, spd: 150, life: 0.9, size: 2.5 });
+      shake = Math.max(shake, 16); flash = 0.75; freeze = 0.08;
+      ring(player.x + 13, player.y + 15, "#ff3d3d", 150, 4);
+      burstLines(player.x + 13, player.y + 15, "#ff8c42", 14);
+      spawn(50, player.x + 13, player.y + 15, { col: "#ff9d00", spd: 280, life: 0.8, size: 4.5, glow: true });
+      spawn(26, player.x + 13, player.y + 15, { col: "#ff3d3d", spd: 170, life: 1, size: 3, glow: true });
       player.x = level.spawn.x; player.y = level.spawn.y;
       player.vx = 0; player.vy = 0; player.standing = null;
-      player.shield = T.shield; player.iframe = 0.7;
+      player.shield = T.shield; player.iframe = 0.8;
+      player.power = null; player.powerLeft = 0;
       for (const p of plats) { p.fuse = null; p.gone = false; }
-      setHud({ parts: collected, total: parts.length, deaths, shield: T.shield });
+      syncHud();
     };
 
     const step = (dt) => {
       t += dt;
-      shake = Math.max(0, shake - dt * 42);
+      shake = Math.max(0, shake - dt * 46);
+      flash = Math.max(0, flash - dt * 3.2);
+      zoom = Math.max(0, zoom - dt * 2.4);
       player.iframe = Math.max(0, player.iframe - dt);
+
+      const P = player.power ? POWERS[player.power] : null;
+      if (player.power) {
+        player.powerLeft -= dt;
+        if (player.powerLeft <= 0) {
+          player.power = null; player.powerLeft = 0;
+          ring(player.x + 13, player.y + 15, "#ffffff", 80, 2);
+          syncHud();
+        } else if (Math.floor(player.powerLeft * 2) !== Math.floor((player.powerLeft + dt) * 2)) syncHud();
+      }
+      const spd = T.speed * (player.power === "overdrive" ? 1.8 : 1);
+      const jmp = T.jump * (player.power === "titan" ? 1.32 : 1);
 
       for (const h of hzds) {
         if (!h.mv) continue;
@@ -1893,13 +2051,13 @@ function SecretGame({ onClose }) {
       for (const p of plats) {
         if (!p.crumble || p.fuse === null || p.gone) continue;
         p.fuse -= dt;
-        if (p.fuse < CRUMBLE_TIME * 0.6 && Math.random() < 0.4) {
-          spawn(1, p.x + Math.random() * p.w, p.y + p.h, { col: GC.rustLit, spd: 30, life: 0.5, size: 2, grav: 260 });
+        if (p.fuse < CRUMBLE_TIME * 0.6 && Math.random() < 0.5) {
+          spawn(1, p.x + Math.random() * p.w, p.y + p.h, { col: sky.rim, spd: 30, life: 0.5, size: 2, grav: 260 });
         }
         if (p.fuse <= 0) {
           p.gone = true;
           if (player.standing === p) player.standing = null;
-          spawn(16, p.x + p.w / 2, p.y + 6, { col: GC.rust, spd: 120, life: 0.7, size: 3.5 });
+          spawn(18, p.x + p.w / 2, p.y + 6, { col: sky.rim, spd: 140, life: 0.7, size: 3.5, glow: true });
           shake = Math.max(shake, 4);
         }
       }
@@ -1907,23 +2065,25 @@ function SecretGame({ onClose }) {
 
       const k = keysRef.current;
       const dir = (k.right ? 1 : 0) - (k.left ? 1 : 0);
-      player.vx = dir * T.speed;
+      player.vx = dir * spd;
       if (dir !== 0) { player.face = dir; player.run += dt * 12; }
 
       const wasAir = !player.onGround;
+      const infinite = player.power === "jet";
       player.buffer = k.jump ? JUMP_BUFFER : Math.max(0, player.buffer - dt);
       player.coyote = player.onGround ? T.coyote : Math.max(0, player.coyote - dt);
       if (player.buffer > 0 && player.coyote > 0) {
-        player.vy = T.jump;
+        player.vy = jmp;
         player.buffer = 0; player.coyote = 0; player.onGround = false; player.standing = null;
         player.airJumps = T.airJumps;
-        spawn(9, player.x + 13, player.y + 30, { col: GC.amber, dir: Math.PI / 2, spread: 1.6, spd: 90, life: 0.32, size: 2.6 });
-      } else if (player.buffer > 0 && wasAir && player.airJumps > 0) {
-        // Thruster Pack: one mid-air relight, with the exhaust to match.
-        player.vy = T.jump * 0.92;
-        player.airJumps -= 1; player.buffer = 0; player.thrust = 0.32;
-        spawn(20, player.x + 13, player.y + 28, { col: GC.ember, dir: Math.PI / 2, spread: 1.1, spd: 200, life: 0.45, size: 3.4 });
-        spawn(10, player.x + 13, player.y + 28, { col: GC.amber, dir: Math.PI / 2, spread: 0.8, spd: 130, life: 0.3, size: 2.4 });
+        spawn(11, player.x + 13, player.y + 30, { col: sky.accent, dir: Math.PI / 2, spread: 1.6, spd: 100, life: 0.32, size: 2.6, glow: true });
+      } else if (player.buffer > 0 && wasAir && (infinite || player.airJumps > 0)) {
+        player.vy = jmp * 0.94;
+        if (!infinite) player.airJumps -= 1;
+        player.buffer = 0; player.thrust = 0.32;
+        const c = infinite ? POWERS.jet.col : sky.rim;
+        ring(player.x + 13, player.y + 26, c, 46, 2);
+        spawn(22, player.x + 13, player.y + 28, { col: c, dir: Math.PI / 2, spread: 1.1, spd: 230, life: 0.45, size: 3.4, glow: true });
         shake = Math.max(shake, 3);
       }
       player.thrust = Math.max(0, player.thrust - dt);
@@ -1948,7 +2108,7 @@ function SecretGame({ onClose }) {
           player.onGround = true; player.standing = p;
           if (p.crumble && p.fuse === null) p.fuse = CRUMBLE_TIME;
           if (fell > 420) {
-            spawn(10, player.x + 13, player.y + 30, { col: GC.steel, dir: 0, spread: 6.3, spd: 70, life: 0.3, size: 2.2 });
+            spawn(12, player.x + 13, player.y + 30, { col: sky.accent, dir: 0, spread: 6.3, spd: 80, life: 0.3, size: 2.2 });
             shake = Math.max(shake, 2.5);
           }
         } else if (player.vy < 0) player.y = p.y + p.h;
@@ -1956,75 +2116,118 @@ function SecretGame({ onClose }) {
       }
       if (player.onGround) player.airJumps = T.airJumps;
 
+      // bounce pads: a big free launch, with the squash to sell it
+      for (const pd of pads) {
+        pd.squash = Math.max(0, pd.squash - dt * 4);
+        if (player.vy >= 0 && overlaps(player, { x: pd.x - 18, y: pd.y - 10, w: 36, h: 16 })) {
+          player.vy = jmp * 1.55;
+          player.onGround = false; player.standing = null;
+          player.airJumps = T.airJumps;
+          pd.squash = 1;
+          shake = Math.max(shake, 6); 
+          ring(pd.x, pd.y, sky.accent, 90, 3);
+          spawn(26, pd.x, pd.y, { col: sky.accent, dir: -Math.PI / 2, spread: 1.6, spd: 220, life: 0.5, size: 3, glow: true });
+          popWord(pd.x, pd.y - 26, "BOING!", sky.rim);
+        }
+      }
+
       if (player.x < 0) player.x = 0;
       if (player.x + player.w > level.width) player.x = level.width - player.w;
 
       if (player.iframe <= 0) for (const h of hzds) if (overlaps(player, h)) { die(); break; }
       if (player.y > DEATH_Y) die();
 
+      for (const d of drops) {
+        if (d.taken) continue;
+        if (overlaps(player, { x: d.x - 16, y: d.y - 16, w: 32, h: 32 })) { d.taken = true; grantPower(d.kind); }
+      }
+
+      const magnet = player.power === "magnet";
       for (const g of parts) {
         if (g.got) continue;
+        if (magnet) {
+          const dx = player.x + 13 - g.x, dy = player.y + 15 - g.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 260) { g.x += (dx / dist) * 420 * dt; g.y += (dy / dist) * 420 * dt; }
+        }
         if (overlaps(player, { x: g.x - 12, y: g.y - 12, w: 24, h: 24 })) {
           g.got = true; collected += 1;
-          spawn(18, g.x, g.y, { col: GC.amber, spd: 150, life: 0.5, size: 3 });
-          spawn(8, g.x, g.y, { col: GC.acid, spd: 90, life: 0.7, size: 2 });
+          ring(g.x, g.y, sky.accent, 44, 2);
+          spawn(20, g.x, g.y, { col: sky.accent, spd: 170, life: 0.5, size: 3, glow: true });
+          spawn(10, g.x, g.y, { col: "#ffffff", spd: 100, life: 0.7, size: 2, glow: true });
           shake = Math.max(shake, 2);
-          setHud({ parts: collected, total: parts.length, deaths, shield: player.shield });
+          syncHud();
         }
       }
 
       if (!finished && overlaps(player, level.goal)) {
         finished = true;
-        spawn(46, level.goal.x + 22, level.goal.y + 40, { col: GC.acid, spd: 220, life: 0.9, size: 3.4 });
+        flash = 1; shake = Math.max(shake, 14);
+        ring(level.goal.x + 22, level.goal.y + 40, sky.accent, 240, 6);
+        burstLines(level.goal.x + 22, level.goal.y + 40, sky.rim, 26);
+        spawn(70, level.goal.x + 22, level.goal.y + 40, { col: sky.accent, spd: 280, life: 1, size: 4, glow: true, grav: 80 });
         setPending({ level: levelIndex, parts: collected, total: parts.length });
+        setStory({ beat: levelIndex + 1, line: 0 });
       }
 
-      if (Math.abs(player.vx) > 10 && t % 0.05 < dt) trail.push({ x: player.x, y: player.y, f: player.face, life: 0.22 });
+      if (Math.abs(player.vx) > 10 && t % 0.045 < dt) trail.push({ x: player.x, y: player.y, f: player.face, life: 0.24 });
       for (let i = trail.length - 1; i >= 0; i -= 1) { trail[i].life -= dt; if (trail[i].life <= 0) trail.splice(i, 1); }
       for (let i = bits.length - 1; i >= 0; i -= 1) {
-        const b = bits[i];
-        b.life -= dt;
+        const b = bits[i]; b.life -= dt;
         if (b.life <= 0) { bits.splice(i, 1); continue; }
         b.vy += b.grav * dt; b.x += b.vx * dt; b.y += b.vy * dt;
       }
+      for (let i = rings.length - 1; i >= 0; i -= 1) {
+        const rg = rings[i]; rg.r += (rg.max - rg.r) * Math.min(1, dt * 7); rg.life -= dt * 1.7;
+        if (rg.life <= 0) rings.splice(i, 1);
+      }
+      for (let i = lines.length - 1; i >= 0; i -= 1) { lines[i].life -= dt; if (lines[i].life <= 0) lines.splice(i, 1); }
+      for (let i = pops.length - 1; i >= 0; i -= 1) { pops[i].life -= dt; pops[i].y -= dt * 34; if (pops[i].life <= 0) pops.splice(i, 1); }
 
       const target = player.x + player.w / 2 - GAME_W / 2;
       cam += (Math.max(0, Math.min(target, level.width - GAME_W)) - cam) * Math.min(1, dt * 8);
     };
 
-    // Atlas herself. `u` is how many systems she has recovered, so the same
-    // routine draws the stripped-down dog in round one and the full mascot
-    // by the end. Ghost mode is reused for the motion trail.
-    const drawAtlas = (px, py, face, u, opts = {}) => {
-      const a = opts.alpha === undefined ? 1 : opts.alpha;
+    const drawAtlas = (px, py, face, u, alpha) => {
+      const P = player.power ? POWERS[player.power] : null;
+      const big = player.power === "titan" ? 1.28 : 1;
       ctx.save();
-      ctx.globalAlpha = a;
+      ctx.globalAlpha = alpha;
       ctx.translate(px + 13, py + 15);
-      ctx.scale(face, 1);
+      ctx.scale(face * big, big);
       const bob = player.onGround ? Math.sin(player.run) * 1.4 : 0;
       const swing = player.onGround ? Math.sin(player.run) * 4 : 2.5;
 
-      if (u >= 2 && (player.thrust > 0 || !player.onGround)) {
-        const heat = player.thrust > 0 ? 1 : 0.42;
+      if (P && alpha > 0.5) { // power aura
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const au = ctx.createRadialGradient(0, 0, 4, 0, 0, 34);
+        au.addColorStop(0, `${P.col}66`); au.addColorStop(1, "#00000000");
+        ctx.fillStyle = au;
+        ctx.beginPath(); ctx.arc(0, 0, 30 + Math.sin(t * 9) * 3, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+
+      if ((u >= 2 && !player.onGround) || player.thrust > 0) {
+        const heat = player.thrust > 0 ? 1 : 0.45;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
         for (const lx of [-7, 5]) {
-          const fl = (10 + Math.random() * 12) * heat;
+          const fl = (12 + Math.random() * 14) * heat;
           const g = ctx.createLinearGradient(0, 14, 0, 14 + fl);
-          g.addColorStop(0, GC.amber); g.addColorStop(1, "#ff550000");
+          g.addColorStop(0, P ? P.col2 : "#ffe66d"); g.addColorStop(1, "#ff550000");
           ctx.fillStyle = g;
           ctx.beginPath();
           ctx.moveTo(lx - 3, 14); ctx.lineTo(lx + 3, 14); ctx.lineTo(lx, 14 + fl);
           ctx.closePath(); ctx.fill();
         }
+        ctx.restore();
       }
 
-      // tail
       ctx.strokeStyle = GC.tanDark; ctx.lineWidth = 4.5; ctx.lineCap = "round";
       ctx.beginPath();
-      ctx.moveTo(-12, -4 + bob);
-      ctx.quadraticCurveTo(-21, -9 + bob, -18, -17 + bob);
-      ctx.stroke();
+      ctx.moveTo(-12, -4 + bob); ctx.quadraticCurveTo(-21, -9 + bob, -18, -17 + bob); ctx.stroke();
 
-      // legs
       ctx.fillStyle = GC.tanDark;
       ctx.fillRect(-9 + swing, 7 + bob, 5, 8);
       ctx.fillRect(4 - swing, 7 + bob, 5, 8);
@@ -2039,58 +2242,54 @@ function SecretGame({ onClose }) {
         ctx.fillRect(3 - swing, 14 + bob, 7, 3);
       }
 
-      // body
       const bg = ctx.createLinearGradient(0, -12 + bob, 0, 9 + bob);
       bg.addColorStop(0, GC.tan); bg.addColorStop(1, GC.tanMid);
       ctx.fillStyle = bg;
       ctx.beginPath(); ctx.roundRect(-13, -10 + bob, 25, 19, 8); ctx.fill();
 
-      if (u >= 3) { // gyro core
-        ctx.save();
-        ctx.translate(-3, -1 + bob); ctx.rotate(t * 3);
+      if (u >= 3) {
+        ctx.save(); ctx.translate(-3, -1 + bob); ctx.rotate(t * 3);
         ctx.strokeStyle = GC.eye; ctx.lineWidth = 1.2;
         ctx.beginPath(); ctx.ellipse(0, 0, 6, 2.4, 0, 0, Math.PI * 2); ctx.stroke();
         ctx.restore();
       }
-      if (u >= 4) { // armour plate
-        ctx.fillStyle = GC.steel;
+      if (u >= 4) {
+        ctx.fillStyle = player.power === "ironhide" ? POWERS.ironhide.col : GC.steel;
         ctx.beginPath(); ctx.roundRect(-11, -8 + bob, 15, 13, 3); ctx.fill();
-        ctx.fillStyle = GC.steelDark;
-        ctx.fillRect(-11, -8 + bob, 15, 3.5);
+        ctx.fillStyle = GC.steelDark; ctx.fillRect(-11, -8 + bob, 15, 3.5);
         for (const bx of [-9, 1]) for (const by of [-5, 2]) {
           ctx.beginPath(); ctx.arc(bx, by + bob, 1, 0, Math.PI * 2); ctx.fill();
         }
       }
 
-      // head + snout + ear
       ctx.fillStyle = GC.tan;
       ctx.beginPath(); ctx.roundRect(4, -15 + bob, 13, 13, 5); ctx.fill();
       ctx.fillStyle = GC.tanDark;
       ctx.beginPath(); ctx.roundRect(13, -8 + bob, 6, 5, 2.5); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(6, -14 + bob); ctx.lineTo(10, -22 + bob); ctx.lineTo(14, -13 + bob);
+      ctx.beginPath(); ctx.moveTo(6, -14 + bob); ctx.lineTo(10, -22 + bob); ctx.lineTo(14, -13 + bob);
       ctx.closePath(); ctx.fill();
 
-      if (u >= 5) { // laser emitter
+      if (u >= 5) {
         ctx.fillStyle = GC.steelDark;
         ctx.beginPath(); ctx.arc(-13, -2 + bob, 3, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = GC.danger;
+        ctx.fillStyle = "#ff3d3d";
         ctx.beginPath(); ctx.arc(-13, -2 + bob, 1.6, 0, Math.PI * 2); ctx.fill();
         if (Math.sin(t * 2.4) > 0.72) {
-          ctx.strokeStyle = "#ef444488"; ctx.lineWidth = 1.6;
-          ctx.beginPath(); ctx.moveTo(-15, -2 + bob); ctx.lineTo(-120, -2 + bob); ctx.stroke();
+          ctx.save(); ctx.globalCompositeOperation = "lighter";
+          ctx.strokeStyle = "#ff3d3daa"; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.moveTo(-15, -2 + bob); ctx.lineTo(-140, -2 + bob); ctx.stroke();
+          ctx.restore();
         }
       }
 
-      // cyborg eye
       ctx.fillStyle = "#0A0A12";
       ctx.beginPath(); ctx.arc(9, -9 + bob, 4, 0, Math.PI * 2); ctx.fill();
       const eg = ctx.createRadialGradient(9, -9 + bob, 0, 9, -9 + bob, 4);
-      eg.addColorStop(0, "#e0f7ff"); eg.addColorStop(0.45, GC.eye); eg.addColorStop(1, "#8b5cf6");
+      eg.addColorStop(0, "#ffffff"); eg.addColorStop(0.45, P ? P.col : GC.eye); eg.addColorStop(1, "#8b5cf6");
       ctx.fillStyle = eg;
       ctx.beginPath(); ctx.arc(9, -9 + bob, 3, 0, Math.PI * 2); ctx.fill();
       if (u >= 6) {
-        ctx.strokeStyle = GC.acid; ctx.lineWidth = 1;
+        ctx.strokeStyle = "#ffd000"; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.arc(9, -9 + bob, 6 + Math.sin(t * 5) * 1.2, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.restore();
@@ -2101,66 +2300,96 @@ function SecretGame({ onClose }) {
       const sy = shake > 0 ? (Math.random() - 0.5) * shake : 0;
       const u = upgrades;
 
-      const sky = ctx.createLinearGradient(0, 0, 0, GAME_H);
-      sky.addColorStop(0, GC.bg1); sky.addColorStop(0.6, GC.bg0); sky.addColorStop(1, "#06050400");
-      ctx.fillStyle = GC.bg0; ctx.fillRect(0, 0, GAME_W, GAME_H);
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, GAME_W, GAME_H);
+      // ── sky ──
+      const g = ctx.createLinearGradient(0, 0, 0, GAME_H);
+      g.addColorStop(0, sky.top); g.addColorStop(0.45, sky.mid); g.addColorStop(0.82, sky.low);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-      // warm haze low on the screen, like a forge somewhere off-frame
-      const haze = ctx.createRadialGradient(GAME_W * 0.5, GAME_H, 0, GAME_W * 0.5, GAME_H, GAME_H * 0.9);
-      haze.addColorStop(0, "#c2410c22"); haze.addColorStop(1, "#00000000");
-      ctx.fillStyle = haze; ctx.fillRect(0, 0, GAME_W, GAME_H);
+      // sun disc with god rays
+      const sunX = GAME_W * 0.72 - cam * 0.04, sunY = GAME_H * 0.36;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      const sg = ctx.createRadialGradient(sunX, sunY, 4, sunX, sunY, 190);
+      sg.addColorStop(0, sky.sun); sg.addColorStop(0.25, `${sky.rim}55`); sg.addColorStop(1, "#00000000");
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sunX, sunY, 190, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.16;
+      for (let i = 0; i < 12; i += 1) {
+        const a = (Math.PI * 2 * i) / 12 + t * 0.06;
+        ctx.fillStyle = sky.sun;
+        ctx.beginPath();
+        ctx.moveTo(sunX, sunY);
+        ctx.lineTo(sunX + Math.cos(a - 0.05) * 420, sunY + Math.sin(a - 0.05) * 420);
+        ctx.lineTo(sunX + Math.cos(a + 0.05) * 420, sunY + Math.sin(a + 0.05) * 420);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
 
       ctx.save();
       ctx.translate(sx, sy);
 
-      // far silhouettes
-      ctx.fillStyle = "#171310";
-      for (const f of scene.far) {
-        const x = f.x - cam * 0.25;
-        if (x < -160 || x > GAME_W + 160) continue;
-        ctx.fillRect(x, GAME_H - f.h, f.w, f.h);
-        if (f.kind === "tower") {
-          ctx.fillRect(x + f.w * 0.3, GAME_H - f.h - 16, f.w * 0.4, 16);
-          ctx.fillStyle = "#3a2a1e";
-          ctx.fillRect(x + 6, GAME_H - f.h + 14, f.w - 12, 3);
-          ctx.fillStyle = "#171310";
-        }
+      for (const c of scene.clouds) {
+        const x = c.x - cam * c.depth;
+        if (x < -260 || x > GAME_W + 260) continue;
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = sky.sun;
+        ctx.beginPath(); ctx.ellipse(x, c.y + Math.sin(t * 0.3 + c.x) * 4, c.w, c.h, 0, 0, Math.PI * 2); ctx.fill();
       }
-      // mid gears
-      for (const g of scene.mid) {
-        const x = g.x - cam * 0.45;
+      ctx.globalAlpha = 1;
+
+      for (const g2 of scene.gears) {
+        const x = g2.x - cam * 0.3;
         if (x < -120 || x > GAME_W + 120) continue;
         ctx.save();
-        ctx.translate(x, g.y); ctx.rotate(t * 0.32 * g.spin);
-        ctx.strokeStyle = "#241b14"; ctx.lineWidth = 7;
-        ctx.beginPath(); ctx.arc(0, 0, g.rad, 0, Math.PI * 2); ctx.stroke();
-        ctx.strokeStyle = "#2e231a"; ctx.lineWidth = 5;
-        for (let i = 0; i < g.teeth; i += 1) {
-          const a = (Math.PI * 2 * i) / g.teeth;
+        ctx.translate(x, g2.y); ctx.rotate(t * 0.3 * g2.spin);
+        ctx.globalAlpha = 0.28;
+        ctx.strokeStyle = sky.top; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.arc(0, 0, g2.rad, 0, Math.PI * 2); ctx.stroke();
+        for (let i = 0; i < g2.teeth; i += 1) {
+          const a = (Math.PI * 2 * i) / g2.teeth;
           ctx.beginPath();
-          ctx.moveTo(Math.cos(a) * g.rad, Math.sin(a) * g.rad);
-          ctx.lineTo(Math.cos(a) * (g.rad + 8), Math.sin(a) * (g.rad + 8));
+          ctx.moveTo(Math.cos(a) * g2.rad, Math.sin(a) * g2.rad);
+          ctx.lineTo(Math.cos(a) * (g2.rad + 8), Math.sin(a) * (g2.rad + 8));
           ctx.stroke();
         }
         ctx.restore();
       }
-      // near crates, one of which is stencilled
-      for (const c of scene.near) {
-        const x = c.x - cam * 0.75;
-        if (x < -120 || x > GAME_W + 120) continue;
-        ctx.fillStyle = "#2a1f17";
-        ctx.fillRect(x, GAME_H - 46 - c.h, c.w, c.h);
-        ctx.strokeStyle = "#3d2c20"; ctx.lineWidth = 2;
-        ctx.strokeRect(x, GAME_H - 46 - c.h, c.w, c.h);
+
+      // floating islands
+      for (const is of scene.isles) {
+        const x = is.x - cam * is.depth;
+        if (x < -320 || x > GAME_W + 320) continue;
+        const yy = is.y + Math.sin(t * 0.5 + is.x * 0.01) * 5;
+        ctx.fillStyle = sky.sea;
+        ctx.beginPath();
+        ctx.moveTo(x, yy);
+        ctx.lineTo(x + is.w, yy);
+        ctx.lineTo(x + is.w * 0.62, yy + is.h * 2.1);
+        ctx.lineTo(x + is.w * 0.3, yy + is.h * 1.4);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = sky.rim;
+        ctx.globalAlpha = 0.6; ctx.fillRect(x, yy - 3, is.w, 3); ctx.globalAlpha = 1;
       }
+
+      // the sea of wreckage below everything
+      const seaY = GAME_H - 54;
+      const sgd = ctx.createLinearGradient(0, seaY, 0, GAME_H);
+      sgd.addColorStop(0, `${sky.sea}00`); sgd.addColorStop(1, sky.sea);
+      ctx.fillStyle = sgd; ctx.fillRect(0, seaY, GAME_W, 54);
+      ctx.globalAlpha = 0.5; ctx.strokeStyle = sky.rim; ctx.lineWidth = 1.5;
+      for (let i = 0; i < 3; i += 1) {
+        ctx.beginPath();
+        for (let x = 0; x <= GAME_W; x += 20) {
+          const yy = seaY + 12 + i * 13 + Math.sin((x + cam * 0.5) * 0.02 + t * 1.6 + i) * 3;
+          if (x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+        }
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
 
       ctx.save();
       ctx.translate(-cam, 0);
 
-      if (levelIndex === ISRAELI_FLAG_LEVEL) {
-        drawFlagDecal(ctx, ISRAELI_FLAG_AT.x, ISRAELI_FLAG_AT.y, 13);
-      }
+      if (levelIndex === ISRAELI_FLAG_LEVEL) drawFlagDecal(ctx, ISRAELI_FLAG_AT.x, ISRAELI_FLAG_AT.y, 13);
 
       for (const p of plats) {
         if (p.gone) continue;
@@ -2168,149 +2397,237 @@ function SecretGame({ onClose }) {
         const sh = lit ? Math.sin(t * 45) * 1.8 : 0;
         ctx.save();
         ctx.globalAlpha = lit ? 0.5 + 0.5 * (p.fuse / CRUMBLE_TIME) : 1;
-        // riveted steel decking
         const grd = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
-        grd.addColorStop(0, GC.bg2); grd.addColorStop(1, "#140f0b");
+        grd.addColorStop(0, "#2a2340"); grd.addColorStop(1, "#12101f");
         ctx.fillStyle = grd;
         ctx.fillRect(p.x + sh, p.y, p.w, p.h);
-        ctx.fillStyle = p.crumble ? (lit ? GC.ember : GC.amber) : p.mv ? GC.acid : GC.rustLit;
-        ctx.fillRect(p.x + sh, p.y, p.w, 3);
-        ctx.globalAlpha *= 0.5;
-        ctx.fillStyle = GC.steelDark;
-        for (let bx = p.x + 7; bx < p.x + p.w - 4; bx += 18) {
-          ctx.beginPath(); ctx.arc(bx + sh, p.y + 9, 1.4, 0, Math.PI * 2); ctx.fill();
-        }
+        const edge = p.crumble ? (lit ? "#ff6b6b" : "#ffd166") : p.mv ? "#7bf1a8" : sky.accent;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = edge; ctx.fillRect(p.x + sh, p.y, p.w, 3);
+        ctx.globalAlpha *= 0.28; ctx.fillRect(p.x + sh, p.y + 3, p.w, 9);
+        ctx.restore();
+        ctx.restore();
+      }
+
+      for (const pd of pads) {
+        const sq = pd.squash;
+        ctx.save();
+        ctx.translate(pd.x, pd.y);
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = sky.accent;
+        ctx.beginPath();
+        ctx.ellipse(0, -4 + sq * 4, 17, 7 - sq * 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.5;
+        ctx.fillRect(-14, -2 + sq * 3, 28, 3);
         ctx.restore();
       }
 
       for (const h of hzds) {
-        ctx.fillStyle = GC.danger;
-        ctx.shadowColor = GC.danger; ctx.shadowBlur = 8;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.fillStyle = "#ff3d3d";
         const n = Math.max(1, Math.floor(h.w / 14));
         for (let i = 0; i < n; i += 1) {
           const hx = h.x + (i * h.w) / n;
           ctx.beginPath();
           ctx.moveTo(hx, h.y + h.h);
-          ctx.lineTo(hx + h.w / n / 2, h.y);
+          ctx.lineTo(hx + h.w / n / 2, h.y - Math.sin(t * 6 + i) * 2);
           ctx.lineTo(hx + h.w / n, h.y + h.h);
           ctx.closePath(); ctx.fill();
         }
-        ctx.shadowBlur = 0;
+        ctx.restore();
       }
 
-      // parts: spinning cogs, not gems
-      for (const g of parts) {
-        if (g.got) continue;
-        const bobp = Math.sin(t * 3 + g.x) * 4;
+      for (const g2 of parts) {
+        if (g2.got) continue;
+        const bp = Math.sin(t * 3 + g2.x) * 4;
         ctx.save();
-        ctx.translate(g.x, g.y + bobp);
+        ctx.translate(g2.x, g2.y + bp);
         ctx.rotate(t * 1.6);
-        ctx.shadowColor = GC.amber; ctx.shadowBlur = 14;
-        ctx.strokeStyle = GC.amber; ctx.lineWidth = 2.4;
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = sky.accent; ctx.lineWidth = 2.6;
         ctx.beginPath(); ctx.arc(0, 0, 5.4, 0, Math.PI * 2); ctx.stroke();
         for (let i = 0; i < 6; i += 1) {
           const a = (Math.PI * 2 * i) / 6;
           ctx.beginPath();
           ctx.moveTo(Math.cos(a) * 5.4, Math.sin(a) * 5.4);
-          ctx.lineTo(Math.cos(a) * 9, Math.sin(a) * 9);
+          ctx.lineTo(Math.cos(a) * 9.5, Math.sin(a) * 9.5);
           ctx.stroke();
         }
         ctx.restore();
       }
 
-      // goal: an upgrade bay
-      const gl = level.goal;
-      ctx.save();
-      ctx.shadowColor = GC.acid; ctx.shadowBlur = 20;
-      ctx.strokeStyle = GC.acid; ctx.lineWidth = 2;
-      ctx.strokeRect(gl.x, gl.y, gl.w, gl.h);
-      ctx.globalAlpha = 0.35 + Math.sin(t * 4) * 0.25;
-      ctx.fillStyle = GC.acid;
-      ctx.fillRect(gl.x + 4, gl.y + 4, gl.w - 8, gl.h - 8);
-      ctx.globalAlpha = 1;
-      for (let i = 0; i < 3; i += 1) {
-        const yy = gl.y + ((t * 40 + i * 27) % gl.h);
-        ctx.fillStyle = "#a3e63566";
-        ctx.fillRect(gl.x, yy, gl.w, 2);
-      }
-      ctx.restore();
-
-      for (const g of trail) {
-        drawAtlas(g.x, g.y, g.f, u, { alpha: (g.life / 0.22) * 0.22 });
-      }
-      if (player.iframe <= 0 || Math.sin(t * 40) > 0) {
-        drawAtlas(player.x, player.y, player.face, u);
-      }
-      if (player.shield) {
+      // power-up capsules, pulsing hard so you want them
+      for (const d of drops) {
+        if (d.taken) continue;
+        const P = POWERS[d.kind];
+        const bp = Math.sin(t * 3.4 + d.x) * 5;
         ctx.save();
-        ctx.strokeStyle = GC.steel; ctx.globalAlpha = 0.45 + Math.sin(t * 3) * 0.2;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.arc(player.x + 13, player.y + 15, 22, 0, Math.PI * 2); ctx.stroke();
+        ctx.translate(d.x, d.y + bp);
+        ctx.globalCompositeOperation = "lighter";
+        const gl = ctx.createRadialGradient(0, 0, 2, 0, 0, 30);
+        gl.addColorStop(0, `${P.col}cc`); gl.addColorStop(1, "#00000000");
+        ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI * 2); ctx.fill();
+        ctx.rotate(t * 1.1);
+        ctx.fillStyle = P.col2;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i += 1) {
+          const a = (Math.PI * 2 * i) / 6;
+          const rr = i % 2 ? 7 : 12;
+          const px2 = Math.cos(a) * rr, py2 = Math.sin(a) * rr;
+          if (i === 0) ctx.moveTo(px2, py2); else ctx.lineTo(px2, py2);
+        }
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = P.col;
+        ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
       }
 
+      const gl2 = level.goal;
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      const pg = ctx.createLinearGradient(gl2.x, gl2.y, gl2.x, gl2.y + gl2.h);
+      pg.addColorStop(0, `${sky.accent}00`); pg.addColorStop(0.5, `${sky.accent}aa`); pg.addColorStop(1, `${sky.accent}00`);
+      ctx.fillStyle = pg; ctx.fillRect(gl2.x, gl2.y - 60, gl2.w, gl2.h + 120);
+      ctx.strokeStyle = sky.rim; ctx.lineWidth = 2;
+      ctx.strokeRect(gl2.x, gl2.y, gl2.w, gl2.h);
+      for (let i = 0; i < 4; i += 1) {
+        const yy = gl2.y + ((t * 60 + i * 22) % gl2.h);
+        ctx.fillStyle = `${sky.rim}88`;
+        ctx.fillRect(gl2.x, yy, gl2.w, 2);
+      }
+      ctx.restore();
+
+      for (const gt of trail) drawAtlas(gt.x, gt.y, gt.f, u, (gt.life / 0.24) * 0.26);
+      if (player.iframe <= 0 || Math.sin(t * 40) > 0) drawAtlas(player.x, player.y, player.face, u, 1);
+      if (player.shield) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.strokeStyle = "#fbbf24"; ctx.globalAlpha = 0.5 + Math.sin(t * 3) * 0.2; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(player.x + 13, player.y + 15, 23, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
       for (const b of bits) {
         ctx.globalAlpha = Math.max(0, Math.min(1, b.life / b.max));
         ctx.fillStyle = b.col;
+        if (b.glow) { ctx.shadowColor = b.col; ctx.shadowBlur = 9; }
         ctx.fillRect(b.x, b.y, b.size, b.size);
+        ctx.shadowBlur = 0;
       }
+      for (const rg of rings) {
+        ctx.globalAlpha = Math.max(0, rg.life) * 0.85;
+        ctx.strokeStyle = rg.col; ctx.lineWidth = rg.w;
+        ctx.beginPath(); ctx.arc(rg.x, rg.y, rg.r, 0, Math.PI * 2); ctx.stroke();
+      }
+      for (const ln of lines) {
+        const k2 = ln.life / ln.max;
+        ctx.globalAlpha = k2 * 0.9;
+        ctx.strokeStyle = ln.col; ctx.lineWidth = 3 * k2;
+        const x1 = ln.x + Math.cos(ln.a) * (ln.off + (1 - k2) * 90);
+        const y1 = ln.y + Math.sin(ln.a) * (ln.off + (1 - k2) * 90);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x1 + Math.cos(ln.a) * ln.len * k2, y1 + Math.sin(ln.a) * ln.len * k2);
+        ctx.stroke();
+      }
+      ctx.restore();
+
       ctx.globalAlpha = 1;
+      for (const pw of pops) {
+        const k2 = pw.life / pw.max;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, k2 * 1.6);
+        ctx.font = "900 20px 'Space Mono', monospace";
+        ctx.textAlign = "center";
+        ctx.lineWidth = 4; ctx.strokeStyle = "#000";
+        ctx.strokeText(pw.text, pw.x, pw.y);
+        ctx.fillStyle = pw.col;
+        ctx.fillText(pw.text, pw.x, pw.y);
+        ctx.restore();
+      }
 
       ctx.restore(); // world
       ctx.restore(); // shake
 
-      // CRT: scanlines and a soft vignette, drawn last over everything
-      ctx.save();
-      ctx.globalAlpha = 0.16;
-      ctx.fillStyle = "#000";
-      for (let y = 0; y < GAME_H; y += 3) ctx.fillRect(0, y, GAME_W, 1);
-      ctx.globalAlpha = 1;
-      const vig = ctx.createRadialGradient(GAME_W / 2, GAME_H / 2, GAME_H * 0.35, GAME_W / 2, GAME_H / 2, GAME_H * 0.85);
-      vig.addColorStop(0, "#00000000"); vig.addColorStop(1, "#000000cc");
+      if (flash > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = Math.min(0.85, flash);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, GAME_W, GAME_H);
+        ctx.restore();
+      }
+
+      // vignette keeps the eye centred once the colours get loud
+      const vig = ctx.createRadialGradient(GAME_W / 2, GAME_H / 2, GAME_H * 0.42, GAME_W / 2, GAME_H / 2, GAME_H * 0.95);
+      vig.addColorStop(0, "#00000000"); vig.addColorStop(1, "#000000aa");
       ctx.fillStyle = vig; ctx.fillRect(0, 0, GAME_W, GAME_H);
-      ctx.restore();
     };
 
     const loop = (now) => {
-      if (!hudInit) { hudInit = true; setHud({ parts: 0, total: parts.length, deaths: 0, shield: T.shield }); }
-      const dt = Math.min((now - last) / 1000, 1 / 30);
+      if (!hudInit) { hudInit = true; syncHud(); }
+      let dt = Math.min((now - last) / 1000, 1 / 30);
       last = now;
-      step(dt);
+      // hitstop: hold the world still for a beat so the power-up lands hard
+      if (freeze > 0) { freeze -= dt; dt = 0; }
+      if (dt > 0) step(dt);
       draw();
       if (!finished) raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [levelIndex, runId, won, pending, upgrades]);
+  }, [levelIndex, runId, won, pending, upgrades, storyActive]);
 
-  const hold = (key, val) => (e) => { e.preventDefault(); keysRef.current[key] = val; };
-
-  const install = () => {
-    const nextLevel = pending.level + 1;
-    setUpgrades(Math.min(nextLevel, UPGRADES.length));
-    setPending(null);
-    if (nextLevel < LEVELS.length) setLevelIndex(nextLevel);
-    else setWon(true);
+  const advanceStory = () => {
+    const beat = STORY[story.beat];
+    if (story.line + 1 < beat.length) { setStory({ beat: story.beat, line: story.line + 1 }); return; }
+    // beat finished
+    if (story.beat === 0) { setStory(null); return; }          // intro over, play round 1
+    if (pending) {
+      const next = pending.level + 1;
+      setUpgrades(Math.min(next, UPGRADES.length));
+      setPending(null);
+      setStory(null);
+      if (next < LEVELS.length) setLevelIndex(next); else setWon(true);
+    } else setStory(null);
   };
 
   const restartAll = () => {
-    setUpgrades(0);
-    setWon(false); setPending(null); setLevelIndex(0); setRunId((n) => n + 1);
+    setUpgrades(0); setWon(false); setPending(null); setBanner(null);
+    setLevelIndex(0); setRunId((n) => n + 1);
+    setStory({ beat: 0, line: 0 });
   };
 
+  const hold = (key, val) => (e) => { e.preventDefault(); keysRef.current[key] = val; };
+
+  const beat = story ? STORY[story.beat] : null;
+  const line = beat ? beat[story.line] : null;
+  const spk = line && line.who ? SPEAKERS[line.who] : null;
+  const last = beat ? story.line === beat.length - 1 : false;
+  const sky = SKIES[levelIndex % SKIES.length];
   const earned = pending ? UPGRADES[Math.min(pending.level, UPGRADES.length - 1)] : null;
 
   return createPortal(
-    <div className="game-overlay" role="dialog" aria-label="Atlas: Full Modification">
-      <div className="game-frame">
+    <div className="game-overlay" role="dialog" aria-label="Atlas: Scrapheart">
+      <div className="game-frame" style={{ "--sky": sky.accent, "--rim": sky.rim }}>
         <div className="game-bar">
           <span className="game-title">
-            {won ? "FULLY MODIFIED" : `BAY ${levelIndex + 1}/${LEVELS.length} · ${LEVELS[levelIndex].name.toUpperCase()}`}
+            {won ? "★ FULLY MODIFIED ★" : `ROUND ${levelIndex + 1}/${LEVELS.length} · ${LEVELS[levelIndex].name.toUpperCase()}`}
           </span>
           <span className="game-stats">
-            <span style={{ color: "#f59e0b" }}>⚙ {hud.parts}/{LEVELS[levelIndex].gems.length}</span>
-            {hud.shield && <span style={{ color: "#9fb3c8" }}>◈ PLATED</span>}
-            <span style={{ color: "#6b5a4a" }}>WRECKS {hud.deaths}</span>
+            <span style={{ color: sky.accent }}>⚙ {hud.parts}/{LEVELS[levelIndex].gems.length}</span>
+            {hud.shield && <span style={{ color: "#fbbf24" }}>◈ PLATE</span>}
+            {hud.power && (
+              <span style={{ color: POWERS[hud.power].col2 }}>
+                {POWERS[hud.power].name} {Math.ceil(hud.powerLeft)}s
+              </span>
+            )}
+            <span style={{ color: "#6b6480" }}>KO {hud.deaths}</span>
           </span>
           <button onClick={onClose} className="game-x" aria-label="Close game">✕</button>
         </div>
@@ -2318,24 +2635,41 @@ function SecretGame({ onClose }) {
         <div className="game-stage">
           <canvas ref={canvasRef} className="game-canvas" />
 
-          {earned && (
-            <div className="game-modal">
-              <p className="game-kicker">PART RECOVERED · {pending.parts}/{pending.total} COGS</p>
-              <h3 className="game-h">{earned.name}</h3>
-              <p className="game-sub">{earned.blurb}</p>
-              <button className="game-btn" onClick={install}>INSTALL</button>
+          {banner && (
+            <div className="pw-banner" style={{ "--pw": banner.col, "--pw2": banner.col2 }}>
+              <div className="pw-streak" />
+              <div className="pw-inner">
+                <span className="pw-name">{banner.name}</span>
+                <span className="pw-blurb">{banner.blurb}</span>
+              </div>
+            </div>
+          )}
+
+          {story && line && (
+            <div className="dlg" onClick={advanceStory}>
+              <div className="dlg-box" style={spk ? { "--spk": spk.col } : { "--spk": "#cbd5e1" }}>
+                {spk && <div className="dlg-who">{spk.tag}</div>}
+                <p className={spk ? "dlg-text" : "dlg-text dlg-text--narrate"}>
+                  <Typewriter key={`${story.beat}-${story.line}`} text={line.text} />
+                </p>
+                <div className="dlg-next">
+                  {last && story.beat > 0 && earned
+                    ? `▶ INSTALL ${earned.name.toUpperCase()}`
+                    : last && story.beat === 0 ? "▶ BEGIN" : "▶ CLICK TO CONTINUE"}
+                </div>
+              </div>
             </div>
           )}
 
           {won && (
             <div className="game-modal">
               <p className="game-kicker">ALL SYSTEMS ONLINE</p>
-              <h3 className="game-h">ATLAS IS COMPLETE</h3>
+              <h3 className="game-h">ATLAS IS WHOLE</h3>
               <p className="game-sub">
-                Every part recovered. She has the plating, the boosters and the lasers now.
+                Every part recovered. The plating, the boosters, the lasers, the core.
                 Go look at the dog flying across the Practice tab. That is her, finished.
               </p>
-              <button className="game-btn" onClick={restartAll}>STRIP HER DOWN AND GO AGAIN</button>
+              <button className="game-btn" onClick={restartAll}>RUN IT BACK</button>
             </div>
           )}
         </div>
@@ -2343,7 +2677,7 @@ function SecretGame({ onClose }) {
         <div className="game-help">
           <span><b>←</b> <b>→</b> MOVE</span>
           <span><b>SPACE</b> JUMP{upgrades >= 2 ? " ×2" : ""}</span>
-          <span><b>R</b> RESET BAY</span>
+          <span><b>R</b> RETRY</span>
           <span><b>ESC</b> QUIT</span>
         </div>
 
@@ -2879,186 +3213,195 @@ export default function App() {
           50%      { filter: drop-shadow(0 0 20px #22d3eeee); }
         }
 
-        /* ── Atlas: Full Modification ──
-           Intentionally nothing like the rest of the site. Warm metal,
-           amber readouts, hard edges and a CRT bezel: it should feel like
-           a cabinet someone wheeled into the room, not another page. */
+        /* ── Atlas: Scrapheart ──
+           A game, not a page. Saturated, high-contrast, loud on purpose,
+           and driven by a per-round --sky so all six look different. */
         .game-overlay {
-          position: fixed;
-          inset: 0;
-          z-index: 600;
-          background: radial-gradient(ellipse at 50% 50%, #1b1006ee 0%, #060504f8 70%);
-          backdrop-filter: blur(7px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          position: fixed; inset: 0; z-index: 600;
+          background: radial-gradient(ellipse at 50% 45%, #1b0a2ef2 0%, #04030af8 72%);
+          backdrop-filter: blur(8px);
+          display: flex; align-items: center; justify-content: center;
           padding: 1.5rem;
-          animation: gameBoot 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-        /* the cabinet powering on */
-        @keyframes gameBoot {
-          0%   { opacity: 0; }
-          40%  { opacity: 1; }
-          100% { opacity: 1; }
+          animation: fadeUp 0.3s ease both;
         }
         .game-frame {
-          width: 100%;
-          max-width: 880px;
-          background: linear-gradient(180deg, #241c16 0%, #140f0b 100%);
-          border: 1px solid #4a3524;
-          border-radius: 6px;
+          width: 100%; max-width: 900px;
+          background: #08060f;
+          border: 2px solid var(--sky, #ffd166);
+          border-radius: 8px;
           box-shadow:
-            0 0 0 1px #0000008c,
-            0 0 70px #c2410c33,
-            0 30px 70px -20px #000000e6;
+            0 0 0 4px #08060f,
+            0 0 44px var(--sky, #ffd166),
+            0 0 120px color-mix(in srgb, var(--rim, #ff7b54) 45%, transparent),
+            0 30px 80px -20px #000;
           overflow: hidden;
-          animation: gameFrameIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: gameIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
-        @keyframes gameFrameIn {
-          0%   { transform: scale(0.86) translateY(14px); opacity: 0; }
-          100% { transform: scale(1) translateY(0); opacity: 1; }
+        @keyframes gameIn {
+          0%   { transform: scale(0.9) rotate(-1deg); opacity: 0; }
+          60%  { transform: scale(1.02) rotate(0.3deg); }
+          100% { transform: scale(1) rotate(0); opacity: 1; }
         }
         .game-bar {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
+          display: flex; align-items: center; gap: 1rem;
           padding: 0.7rem 1rem;
-          background: linear-gradient(180deg, #2e231a 0%, #1d1610 100%);
-          border-bottom: 1px solid #4a3524;
+          background: linear-gradient(90deg, #140b26 0%, #23103d 50%, #140b26 100%);
+          border-bottom: 2px solid var(--sky, #ffd166);
         }
         .game-title {
-          font-family: var(--font-mono);
-          font-size: 0.7rem;
-          letter-spacing: 0.16em;
-          color: #f59e0b;
-          text-shadow: 0 0 10px #f59e0b66;
-          flex: 1;
-          min-width: 0;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+          font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700;
+          letter-spacing: 0.16em; color: var(--rim, #ffd166);
+          text-shadow: 0 0 14px var(--sky, #ffd166);
+          flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .game-stats {
-          display: flex;
-          gap: 0.85rem;
-          font-family: var(--font-mono);
-          font-size: 0.68rem;
-          letter-spacing: 0.1em;
-          white-space: nowrap;
+          display: flex; gap: 0.8rem;
+          font-family: var(--font-mono); font-size: 0.66rem; font-weight: 700;
+          letter-spacing: 0.1em; white-space: nowrap;
         }
         .game-x {
-          background: #1d1610;
-          border: 1px solid #4a3524;
-          color: #8a6f57;
-          border-radius: 3px;
-          width: 26px; height: 26px;
-          cursor: pointer;
-          font-size: 0.7rem;
-          line-height: 1;
-          flex-shrink: 0;
+          background: #1a0f2e; border: 1px solid var(--sky, #ffd166);
+          color: var(--sky, #ffd166); border-radius: 4px;
+          width: 26px; height: 26px; cursor: pointer; font-size: 0.7rem; line-height: 1; flex-shrink: 0;
         }
-        .game-x:hover { color: #f59e0b; border-color: #f59e0b; }
+        .game-x:hover { background: var(--sky, #ffd166); color: #08060f; }
 
-        .game-stage { position: relative; background: #0d0b09; }
-        .game-canvas {
-          display: block;
-          width: 100%;
-          height: auto;
-          aspect-ratio: 16 / 9;
-          image-rendering: auto;
+        .game-stage { position: relative; background: #08060f; overflow: hidden; }
+        .game-canvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+
+        /* ── power-up banner: slams in from the left, holds, slides out ── */
+        .pw-banner {
+          position: absolute; left: 0; right: 0; top: 34%;
+          pointer-events: none;
+          animation: pwIn 1.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes pwIn {
+          0%   { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+          14%  { transform: translateX(0) skewX(-18deg); opacity: 1; }
+          20%  { transform: translateX(0) skewX(0deg); }
+          78%  { transform: translateX(0) skewX(0deg); opacity: 1; }
+          100% { transform: translateX(120%) skewX(14deg); opacity: 0; }
+        }
+        .pw-streak {
+          position: absolute; inset: 0;
+          background: linear-gradient(90deg, transparent, var(--pw), var(--pw2), var(--pw), transparent);
+          opacity: 0.35;
+          filter: blur(6px);
+        }
+        .pw-inner {
+          position: relative;
+          display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+          padding: 0.7rem 1rem;
+          background: linear-gradient(90deg, transparent, #08060fdd 18%, #08060fdd 82%, transparent);
+          border-top: 2px solid var(--pw); border-bottom: 2px solid var(--pw);
+        }
+        .pw-name {
+          font-family: var(--font-mono); font-size: clamp(1.3rem, 4.6vw, 2.4rem);
+          font-weight: 700; letter-spacing: 0.14em; color: var(--pw2);
+          text-shadow: 0 0 10px var(--pw), 0 0 34px var(--pw), 3px 3px 0 #08060f;
+        }
+        .pw-blurb {
+          font-family: var(--font-mono); font-size: 0.62rem;
+          letter-spacing: 0.24em; color: var(--pw);
+        }
+
+        /* ── dialogue ── */
+        .dlg {
+          position: absolute; inset: 0;
+          display: flex; align-items: flex-end; justify-content: center;
+          padding: 1.1rem;
+          background: linear-gradient(180deg, #04030a00 40%, #04030acc 100%);
+          cursor: pointer;
+          animation: fadeUp 0.25s ease both;
+        }
+        .dlg-box {
+          width: 100%; max-width: 640px;
+          background: #0b0817ee;
+          border: 2px solid var(--spk);
+          border-left: 6px solid var(--spk);
+          border-radius: 4px;
+          padding: 0.9rem 1.1rem 0.7rem;
+          box-shadow: 0 0 30px color-mix(in srgb, var(--spk) 40%, transparent);
+          animation: dlgIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes dlgIn {
+          0%   { transform: translateY(14px) scale(0.98); opacity: 0; }
+          100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        .dlg-who {
+          font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
+          letter-spacing: 0.22em; color: var(--spk);
+          text-shadow: 0 0 12px var(--spk);
+          margin-bottom: 0.4rem;
+        }
+        .dlg-text {
+          font-family: var(--font-body); font-size: 0.98rem; line-height: 1.55;
+          color: #f2ecff; margin: 0 0 0.5rem; min-height: 2.9em;
+        }
+        .dlg-text--narrate { font-style: italic; color: #b6aecd; }
+        .dlg-caret { color: var(--spk); }
+        .dlg-next {
+          font-family: var(--font-mono); font-size: 0.58rem;
+          letter-spacing: 0.18em; color: var(--spk); text-align: right;
         }
 
         .game-modal {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          padding: 2rem 1.5rem;
-          background: radial-gradient(ellipse at 50% 50%, #1b1006f2 0%, #0d0b09fa 75%);
+          position: absolute; inset: 0;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          text-align: center; padding: 2rem 1.5rem;
+          background: radial-gradient(ellipse at 50% 50%, #2a0a3af2 0%, #04030afa 76%);
           animation: fadeUp 0.3s ease both;
         }
         .game-kicker {
-          font-family: var(--font-mono);
-          font-size: 0.62rem;
-          letter-spacing: 0.22em;
-          color: #a3e635;
-          margin: 0 0 0.7rem;
+          font-family: var(--font-mono); font-size: 0.62rem;
+          letter-spacing: 0.26em; color: var(--rim, #ffd166); margin: 0 0 0.7rem;
         }
         .game-h {
-          font-family: var(--font-mono);
-          font-size: 1.5rem;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          color: #f59e0b;
-          text-shadow: 0 0 22px #f59e0b55;
-          margin: 0 0 0.7rem;
+          font-family: var(--font-mono); font-size: clamp(1.3rem, 5vw, 2rem);
+          font-weight: 700; letter-spacing: 0.1em; color: #fff;
+          text-shadow: 0 0 18px var(--sky, #ffd166), 0 0 50px var(--sky, #ffd166);
+          margin: 0 0 0.8rem;
         }
         .game-sub {
-          font-family: var(--font-body);
-          font-size: 0.9rem;
-          line-height: 1.6;
-          color: #b39a82;
-          max-width: 30rem;
-          margin: 0 0 1.6rem;
+          font-family: var(--font-body); font-size: 0.92rem; line-height: 1.6;
+          color: #cbc3e0; max-width: 32rem; margin: 0 0 1.6rem;
         }
         .game-btn {
-          font-family: var(--font-mono);
-          font-size: 0.72rem;
-          font-weight: 700;
-          letter-spacing: 0.16em;
-          padding: 0.85rem 2.1rem;
-          color: #140f0b;
-          background: linear-gradient(180deg, #f59e0b, #c2410c);
-          border: none;
-          border-radius: 3px;
-          cursor: pointer;
-          box-shadow: 0 0 26px #f59e0b55;
+          font-family: var(--font-mono); font-size: 0.72rem; font-weight: 700;
+          letter-spacing: 0.16em; padding: 0.9rem 2.2rem; color: #08060f;
+          background: linear-gradient(90deg, var(--sky, #ffd166), var(--rim, #ff7b54));
+          border: none; border-radius: 4px; cursor: pointer;
+          box-shadow: 0 0 30px var(--sky, #ffd166);
           transition: transform 0.12s ease, box-shadow 0.2s ease;
         }
-        .game-btn:hover { transform: translateY(-1px); box-shadow: 0 0 38px #f59e0b88; }
+        .game-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 0 50px var(--sky, #ffd166); }
         .game-btn:active { transform: scale(0.96); }
 
         .game-help {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 1.1rem;
+          display: flex; flex-wrap: wrap; gap: 1.1rem;
           padding: 0.7rem 1rem;
-          background: #140f0b;
-          border-top: 1px solid #33251a;
-          font-family: var(--font-mono);
-          font-size: 0.62rem;
-          letter-spacing: 0.12em;
-          color: #6b5a4a;
+          background: #0b0817; border-top: 2px solid #23103d;
+          font-family: var(--font-mono); font-size: 0.62rem;
+          letter-spacing: 0.12em; color: #6b6480;
         }
-        .game-help b { color: #a3e635; font-weight: 700; }
+        .game-help b { color: var(--rim, #ffd166); font-weight: 700; }
 
         .game-touch { display: none; }
         @media (hover: none) and (pointer: coarse) {
           .game-touch {
-            display: flex;
-            gap: 0.6rem;
+            display: flex; gap: 0.6rem;
             padding: 0.8rem 1rem 1rem;
-            background: #140f0b;
-            border-top: 1px solid #33251a;
+            background: #0b0817; border-top: 2px solid #23103d;
           }
           .game-touch button {
-            flex: 1;
-            padding: 0.9rem 0;
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: #f59e0b;
-            background: #2a1f17;
-            border: 1px solid #4a3524;
-            border-radius: 3px;
-            touch-action: none;
-            user-select: none;
+            flex: 1; padding: 0.9rem 0;
+            font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700;
+            color: var(--sky, #ffd166); background: #1a0f2e;
+            border: 1px solid var(--sky, #ffd166); border-radius: 4px;
+            touch-action: none; user-select: none;
           }
-          .game-touch button:active { background: #f59e0b; color: #140f0b; }
-          .game-touch-jump { flex: 1.6 !important; color: #a3e635 !important; }
+          .game-touch button:active { background: var(--sky, #ffd166); color: #08060f; }
+          .game-touch-jump { flex: 1.6 !important; }
         }
 
         /* ── About page ── */
