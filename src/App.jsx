@@ -1524,172 +1524,190 @@ const JUMP_BUFFER = 0.12;  // jump pressed just before landing still counts
 // airborne the platform vanishing behind you is harmless.
 const CRUMBLE_TIME = 0.55;
 
+// Redesigned maps. Each has a signature idea and more vertical variety than
+// the old flat-hop layouts, while every static gap stays inside the base jump.
 const LEVELS = [
   {
+    // Rolling dawn hills: learn to jump, hit a bounce pad, grab the magnet.
     name: "Warm-Up Round",
-    width: 2820,
+    width: 3000,
     spawn: { x: 60, y: 300 },
     platforms: [
-      { x: 0, y: 390, w: 460, h: 90 },
-      { x: 560, y: 390, w: 300, h: 90 },
-      { x: 940, y: 340, w: 170, h: 22 },
-      { x: 1200, y: 285, w: 170, h: 22 },
-      { x: 1460, y: 390, w: 320, h: 90 },
-      { x: 1880, y: 335, w: 150, h: 22 },
-      { x: 2130, y: 275, w: 150, h: 22 },
-      { x: 2360, y: 390, w: 460, h: 90 },
+      { x: 0, y: 390, w: 420, h: 90 },
+      { x: 520, y: 350, w: 150, h: 22 },
+      { x: 760, y: 320, w: 150, h: 22 },
+      { x: 1000, y: 360, w: 220, h: 22 },
+      { x: 1320, y: 390, w: 300, h: 90 },
+      { x: 1720, y: 340, w: 150, h: 22 },
+      { x: 1960, y: 290, w: 150, h: 22 },
+      { x: 2200, y: 240, w: 150, h: 22 },
+      { x: 2440, y: 300, w: 150, h: 22 },
+      { x: 2660, y: 390, w: 340, h: 90 },
     ],
-    hazards: [{ x: 1600, y: 366, w: 70, h: 24 }],
-    gems: [[220, 340], [660, 340], [1000, 290], [1260, 235], [1560, 340], [1930, 285], [2180, 225], [2520, 340]],
-    pads: [[680, 390]],
-    powers: [[1250, 240, 'magnet']],
-    goal: { x: 2680, y: 310, w: 44, h: 80 },
+    hazards: [{ x: 1450, y: 366, w: 70, h: 24 }],
+    gems: [[210, 340], [560, 305], [800, 275], [1080, 315], [1460, 340], [1770, 295], [2010, 245], [2250, 195], [2490, 255], [2820, 340]],
+    pads: [[1150, 360]],
+    powers: [[1080, 300, 'magnet']],
+    goal: { x: 2900, y: 310, w: 44, h: 80 },
   },
   {
+    // Noon conveyor: two moving platforms and a patrolling spike, plus the
+    // first taste of a bounce over a wide pit. Overdrive rewards the sprint.
     name: "Quarterfinals",
-    width: 2900,
+    width: 3100,
     spawn: { x: 60, y: 300 },
     platforms: [
       { x: 0, y: 390, w: 340, h: 90 },
-      { x: 430, y: 350, w: 120, h: 22 },
-      { x: 670, y: 300, w: 110, h: 22 },
-      { x: 900, y: 250, w: 110, h: 22 },
-      { x: 1130, y: 320, w: 110, h: 22 },
-      { x: 1350, y: 390, w: 290, h: 90 },
-      { x: 1730, y: 350, w: 110, h: 22, mv: { axis: "y", dist: 120, speed: 60 } },
-      { x: 1970, y: 300, w: 100, h: 22 },
-      { x: 2190, y: 240, w: 100, h: 22 },
-      { x: 2410, y: 390, w: 490, h: 90 },
+      { x: 440, y: 340, w: 130, h: 22 },
+      { x: 660, y: 290, w: 120, h: 22 },
+      { x: 880, y: 340, w: 120, h: 22, mv: { axis: "x", dist: 150, speed: 60 } },
+      { x: 1180, y: 300, w: 120, h: 22 },
+      { x: 1400, y: 390, w: 280, h: 90 },
+      { x: 1780, y: 340, w: 110, h: 22, mv: { axis: "y", dist: 120, speed: 55 } },
+      { x: 2020, y: 300, w: 120, h: 22 },
+      { x: 2240, y: 250, w: 120, h: 22 },
+      { x: 2460, y: 320, w: 120, h: 22 },
+      { x: 2680, y: 390, w: 420, h: 90 },
     ],
     hazards: [
-      { x: 1450, y: 366, w: 60, h: 24 },
-      { x: 2560, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 150, speed: 60 } },
+      { x: 1500, y: 366, w: 70, h: 24 },
+      { x: 2800, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 160, speed: 65 } },
     ],
-    gems: [[180, 340], [490, 300], [725, 250], [955, 200], [1185, 270], [1450, 340], [1785, 290], [2020, 250], [2240, 190], [2700, 340]],
-    pads: [[1500, 390]],
-    powers: [[1450, 335, 'overdrive']],
-    goal: { x: 2800, y: 310, w: 44, h: 80 },
-  },
-  {
-    name: "Semifinals",
-    width: 3060,
-    spawn: { x: 60, y: 300 },
-    platforms: [
-      { x: 0, y: 390, w: 300, h: 90 },
-      { x: 420, y: 345, w: 90, h: 20 },
-      { x: 590, y: 300, w: 80, h: 20, crumble: true },
-      { x: 750, y: 255, w: 80, h: 20, crumble: true },
-      { x: 920, y: 300, w: 90, h: 20 },
-      { x: 1100, y: 250, w: 80, h: 20, crumble: true },
-      { x: 1270, y: 305, w: 90, h: 20 },
-      { x: 1450, y: 390, w: 250, h: 90 },
-      { x: 1810, y: 340, w: 100, h: 20, mv: { axis: "y", dist: 130, speed: 70 } },
-      { x: 2030, y: 285, w: 90, h: 20 },
-      { x: 2210, y: 235, w: 80, h: 20, crumble: true },
-      { x: 2380, y: 290, w: 90, h: 20 },
-      { x: 2560, y: 390, w: 500, h: 90 },
-    ],
-    hazards: [
-      { x: 1530, y: 366, w: 70, h: 24 },
-      { x: 2700, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 170, speed: 70 } },
-    ],
-    gems: [[160, 340], [460, 300], [625, 255], [785, 210], [960, 255], [1135, 205], [1310, 260], [1560, 340], [1855, 290], [2070, 240], [2245, 190], [2420, 245], [2900, 340]],
-    pads: [[1620, 390]],
-    powers: [[1550, 335, 'jet']],
+    gems: [[180, 340], [500, 295], [720, 245], [1240, 255], [1540, 340], [1835, 290], [2080, 255], [2300, 205], [2520, 275], [2900, 340]],
+    pads: [[1560, 390]],
+    powers: [[1240, 240, 'overdrive']],
     goal: { x: 2960, y: 310, w: 44, h: 80 },
   },
   {
-    name: "Finals",
-    width: 3120,
+    // Storm ascent: a crumbling bridge you cannot linger on, then a climb up
+    // a moving lift into thin air. Jet Stream turns the climb trivial.
+    name: "Semifinals",
+    width: 3200,
     spawn: { x: 60, y: 300 },
     platforms: [
       { x: 0, y: 390, w: 300, h: 90 },
-      { x: 400, y: 355, w: 90, h: 20 },
-      { x: 600, y: 310, w: 90, h: 20 },
-      { x: 800, y: 265, w: 90, h: 20 },
-      // Travel is 260 rather than 130 on purpose: at 130 its far edge still
-      // left a 230px gap to the next platform against a 161px max jump,
-      // which stranded the player with no way back. Verified by simulation.
-      { x: 1010, y: 320, w: 90, h: 20, mv: { axis: "x", dist: 260, speed: 70 } },
-      { x: 1330, y: 280, w: 90, h: 20 },
-      { x: 1540, y: 390, w: 240, h: 90 },
-      { x: 1880, y: 340, w: 90, h: 20, mv: { axis: "y", dist: 120, speed: 70, phase: 1.6 } },
-      { x: 2090, y: 290, w: 90, h: 20 },
-      { x: 2290, y: 240, w: 80, h: 20, crumble: true },
-      { x: 2470, y: 190, w: 80, h: 20, crumble: true },
-      { x: 2660, y: 250, w: 90, h: 20 },
-      { x: 2860, y: 390, w: 260, h: 90 },
+      { x: 400, y: 350, w: 90, h: 20, crumble: true },
+      { x: 560, y: 320, w: 90, h: 20, crumble: true },
+      { x: 720, y: 290, w: 90, h: 20, crumble: true },
+      { x: 900, y: 330, w: 120, h: 22 },
+      { x: 1120, y: 280, w: 90, h: 20, crumble: true },
+      { x: 1300, y: 330, w: 130, h: 22 },
+      { x: 1520, y: 390, w: 240, h: 90 },
+      { x: 1860, y: 340, w: 110, h: 22, mv: { axis: "y", dist: 130, speed: 60 } },
+      { x: 2080, y: 290, w: 110, h: 22 },
+      { x: 2300, y: 240, w: 90, h: 20, crumble: true },
+      { x: 2480, y: 200, w: 90, h: 20 },
+      { x: 2680, y: 280, w: 110, h: 22 },
+      { x: 2880, y: 390, w: 320, h: 90 },
     ],
     hazards: [
       { x: 1600, y: 366, w: 70, h: 24 },
-      { x: 2930, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 140, speed: 75 } },
+      { x: 2980, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 170, speed: 70 } },
     ],
-    gems: [[150, 340], [440, 305], [640, 260], [840, 215], [1050, 270], [1370, 230], [1650, 340], [1920, 290], [2130, 240], [2325, 190], [2505, 140], [2700, 200], [3050, 340]],
-    pads: [[1700, 390]],
-    powers: [[1650, 335, 'ironhide']],
-    goal: { x: 3050, y: 310, w: 44, h: 80 },
+    gems: [[160, 340], [445, 305], [605, 275], [765, 245], [960, 285], [1165, 235], [1365, 285], [1620, 340], [1915, 290], [2135, 245], [2345, 195], [2525, 155], [2735, 235], [3040, 340]],
+    pads: [[1640, 390]],
+    powers: [[1360, 235, 'jet']],
+    goal: { x: 3080, y: 310, w: 44, h: 80 },
   },
   {
+    // Dusk descent and rebound: drop down a stepped shaft, cross a moving gap,
+    // then a pad flings you up to the exit. Iron Hide covers the spikes.
+    name: "Finals",
+    width: 3300,
+    spawn: { x: 60, y: 240 },
+    platforms: [
+      { x: 0, y: 300, w: 260, h: 180 },
+      { x: 360, y: 250, w: 100, h: 20 },
+      { x: 540, y: 300, w: 100, h: 20 },
+      { x: 720, y: 350, w: 100, h: 20 },
+      { x: 900, y: 390, w: 200, h: 90 },
+      { x: 1200, y: 340, w: 100, h: 20, mv: { axis: "x", dist: 180, speed: 70 } },
+      { x: 1520, y: 300, w: 110, h: 22 },
+      { x: 1740, y: 250, w: 90, h: 20, crumble: true },
+      { x: 1920, y: 300, w: 110, h: 22 },
+      { x: 2140, y: 350, w: 120, h: 22 },
+      { x: 2360, y: 390, w: 220, h: 90 },
+      { x: 2720, y: 330, w: 100, h: 20, mv: { axis: "y", dist: 120, speed: 65, phase: 1.4 } },
+      { x: 2940, y: 300, w: 120, h: 22 },
+      { x: 3120, y: 390, w: 180, h: 90 },
+    ],
+    hazards: [
+      { x: 980, y: 366, w: 60, h: 24 },
+      { x: 2420, y: 366, w: 70, h: 24 },
+      { x: 3160, y: 366, w: 50, h: 24, mv: { axis: "x", dist: 90, speed: 75 } },
+    ],
+    gems: [[130, 250], [410, 205], [590, 255], [770, 305], [1000, 340], [1250, 295], [1570, 255], [1785, 205], [1975, 255], [2195, 305], [2460, 340], [2770, 285], [2990, 255], [3210, 340]],
+    pads: [[2480, 390]],
+    powers: [[1000, 300, 'ironhide']],
+    goal: { x: 3210, y: 310, w: 44, h: 80 },
+  },
+  {
+    // Night gauntlet: a long run of alternating movers and crumbles with two
+    // patrolling hazards, climbing to a high finish. Titan Core = huge jumps.
     name: "Nationals",
-    width: 3400,
+    width: 3500,
     spawn: { x: 60, y: 300 },
     platforms: [
       { x: 0, y: 390, w: 280, h: 90 },
-      { x: 400, y: 340, w: 90, h: 20 },
-      { x: 580, y: 290, w: 80, h: 20, crumble: true },
-      { x: 760, y: 240, w: 80, h: 20, crumble: true },
-      { x: 940, y: 300, w: 90, h: 20 },
-      { x: 1120, y: 250, w: 90, h: 20, mv: { axis: "y", dist: 130, speed: 75 } },
-      { x: 1310, y: 200, w: 80, h: 20, crumble: true },
-      { x: 1490, y: 270, w: 90, h: 20 },
-      { x: 1670, y: 390, w: 240, h: 90 },
-      { x: 2040, y: 330, w: 90, h: 20, mv: { axis: "x", dist: 200, speed: 80 } },
-      { x: 2350, y: 280, w: 90, h: 20 },
-      { x: 2530, y: 230, w: 80, h: 20, crumble: true },
-      { x: 2700, y: 180, w: 80, h: 20, crumble: true },
-      { x: 2880, y: 250, w: 90, h: 20 },
-      { x: 3060, y: 390, w: 340, h: 90 },
+      { x: 380, y: 340, w: 100, h: 20 },
+      { x: 560, y: 300, w: 90, h: 20, crumble: true },
+      { x: 720, y: 270, w: 90, h: 20, crumble: true },
+      { x: 900, y: 320, w: 100, h: 20, mv: { axis: "x", dist: 150, speed: 70 } },
+      { x: 1200, y: 280, w: 90, h: 20 },
+      { x: 1380, y: 240, w: 90, h: 20, crumble: true },
+      { x: 1560, y: 300, w: 110, h: 22 },
+      { x: 1780, y: 390, w: 220, h: 90 },
+      { x: 2120, y: 330, w: 100, h: 20, mv: { axis: "y", dist: 130, speed: 72 } },
+      { x: 2340, y: 280, w: 90, h: 20 },
+      { x: 2520, y: 230, w: 90, h: 20, crumble: true },
+      { x: 2700, y: 200, w: 90, h: 20 },
+      { x: 2900, y: 260, w: 100, h: 20, mv: { axis: "x", dist: 140, speed: 75 } },
+      { x: 3200, y: 390, w: 300, h: 90 },
     ],
     hazards: [
-      { x: 1740, y: 366, w: 70, h: 24 },
-      { x: 3150, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 160, speed: 70 } },
+      { x: 1860, y: 366, w: 70, h: 24 },
+      { x: 2300, y: 256, w: 40, h: 20, mv: { axis: "y", dist: 90, speed: 60 } },
+      { x: 3280, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 180, speed: 70 } },
     ],
-    gems: [[140, 340], [440, 295], [615, 245], [795, 195], [980, 255], [1160, 205], [1345, 155], [1530, 225], [1780, 340], [2080, 285], [2390, 235], [2565, 185], [2735, 135], [2920, 205], [3320, 340]],
-    pads: [[1850, 390]],
-    powers: [[1780, 335, 'titan']],
-    goal: { x: 3320, y: 310, w: 44, h: 80 },
+    gems: [[140, 340], [425, 295], [605, 255], [765, 225], [950, 275], [1245, 235], [1425, 195], [1615, 255], [1890, 340], [2170, 285], [2385, 235], [2565, 185], [2745, 155], [2950, 215], [3350, 340]],
+    pads: [[1900, 390]],
+    powers: [[1615, 250, 'titan']],
+    goal: { x: 3400, y: 310, w: 44, h: 80 },
   },
   {
+    // Insane-O Crazy: the longest run, every mechanic at once, two power
+    // capsules, three hazards, ending on a hard high tower.
     name: "Insane-O Crazy",
-    width: 3600,
+    width: 3800,
     spawn: { x: 60, y: 300 },
     platforms: [
       { x: 0, y: 390, w: 260, h: 90 },
-      { x: 390, y: 345, w: 80, h: 20 },
-      { x: 570, y: 300, w: 80, h: 20, crumble: true },
-      { x: 750, y: 255, w: 80, h: 20, crumble: true },
-      { x: 930, y: 210, w: 80, h: 20, crumble: true },
-      { x: 1110, y: 280, w: 80, h: 20 },
-      { x: 1290, y: 235, w: 80, h: 20, mv: { axis: "y", dist: 140, speed: 85 } },
-      { x: 1470, y: 190, w: 80, h: 20, crumble: true },
-      { x: 1650, y: 390, w: 220, h: 90 },
-      { x: 2000, y: 330, w: 80, h: 20, mv: { axis: "x", dist: 300, speed: 85 } },
-      { x: 2330, y: 270, w: 80, h: 20 },
-      { x: 2510, y: 215, w: 80, h: 20, crumble: true },
-      { x: 2690, y: 160, w: 80, h: 20, crumble: true },
-      { x: 2870, y: 230, w: 80, h: 20 },
-      { x: 3050, y: 300, w: 80, h: 20 },
-      { x: 3230, y: 390, w: 370, h: 90 },
+      { x: 360, y: 340, w: 90, h: 20, crumble: true },
+      { x: 520, y: 300, w: 90, h: 20, crumble: true },
+      { x: 700, y: 340, w: 100, h: 20, mv: { axis: "x", dist: 160, speed: 80 } },
+      { x: 1000, y: 300, w: 90, h: 20, crumble: true },
+      { x: 1180, y: 260, w: 90, h: 20, crumble: true },
+      { x: 1360, y: 310, w: 110, h: 22 },
+      { x: 1580, y: 260, w: 90, h: 20, mv: { axis: "y", dist: 140, speed: 82 } },
+      { x: 1800, y: 210, w: 90, h: 20 },
+      { x: 2000, y: 390, w: 220, h: 90 },
+      { x: 2340, y: 330, w: 90, h: 20, crumble: true },
+      { x: 2520, y: 290, w: 100, h: 20, mv: { axis: "x", dist: 170, speed: 85 } },
+      { x: 2820, y: 250, w: 90, h: 20 },
+      { x: 3000, y: 300, w: 90, h: 20, crumble: true },
+      { x: 3180, y: 250, w: 90, h: 20 },
+      { x: 3360, y: 200, w: 90, h: 20, crumble: true },
+      { x: 3540, y: 390, w: 260, h: 90 },
     ],
     hazards: [
-      { x: 1700, y: 366, w: 80, h: 24 },
-      { x: 3320, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 200, speed: 80 } },
-      { x: 3450, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 150, speed: 95, phase: 2.1 } },
+      { x: 2080, y: 366, w: 80, h: 24 },
+      { x: 1470, y: 286, w: 40, h: 20, mv: { axis: "y", dist: 100, speed: 70 } },
+      { x: 3620, y: 366, w: 70, h: 24, mv: { axis: "x", dist: 200, speed: 80 } },
     ],
-    gems: [[120, 340], [430, 300], [610, 255], [790, 210], [970, 165], [1150, 235], [1330, 190], [1510, 145], [1760, 340], [2040, 285], [2370, 225], [2550, 170], [2730, 115], [2910, 185], [3090, 255], [3400, 340]],
-    pads: [[1800, 390]],
-    powers: [[1740, 335, 'overdrive'], [3300, 335, 'jet']],
-    goal: { x: 3500, y: 310, w: 44, h: 80 },
+    gems: [[130, 340], [405, 295], [565, 255], [750, 295], [1045, 255], [1225, 215], [1415, 265], [1625, 215], [1845, 165], [2110, 340], [2385, 285], [2570, 245], [2865, 205], [3045, 255], [3225, 205], [3405, 155], [3670, 340]],
+    pads: [[2140, 390]],
+    powers: [[1415, 255, 'overdrive'], [2865, 195, 'jet']],
+    goal: { x: 3700, y: 310, w: 44, h: 80 },
   },
 ];
 
@@ -1851,7 +1869,7 @@ const STORY = [
 ];
 
 const ISRAELI_FLAG_LEVEL = 2;
-const ISRAELI_FLAG_AT = { x: 1472, y: 402 };
+const ISRAELI_FLAG_AT = { x: 1560, y: 402 };
 
 function drawFlagDecal(ctx, x, y, w) {
   const h = w * 0.72;
@@ -2116,6 +2134,11 @@ function SecretGame({ onClose }) {
     const pops = [];    // floating impact words
     const trail = [];
     let shake = 0, flash = 0, freeze = 0, zoom = 0;
+    // Power-up cinematics: a slow-motion window, a rising light column, and a
+    // full-screen colour wash, all separate from the generic flash so the
+    // pickup reads as a bigger event than a hit.
+    let slowmo = 0, powerFx = 0, powerCol = "#fff", powerCol2 = "#fff";
+    let pillarX = 0, pillarY = 0;
     let deaths = 0, collected = 0, cam = 0, t = 0, raf = 0;
     let last = performance.now();
     let finished = false, hudInit = false;
@@ -2137,7 +2160,7 @@ function SecretGame({ onClose }) {
         });
       }
     };
-    const ring = (x, y, col, max, w) => rings.push({ x, y, r: 6, max, col, w: w || 3, life: 1 });
+    const ring = (x, y, col, max, w, delay) => rings.push({ x, y, r: 6, max, col, w: w || 3, life: 1, delay: delay || 0 });
     const burstLines = (x, y, col, n) => {
       for (let i = 0; i < n; i += 1) {
         const a = (Math.PI * 2 * i) / n + Math.random() * 0.3;
@@ -2150,16 +2173,33 @@ function SecretGame({ onClose }) {
       const P = POWERS[kind];
       player.power = kind;
       player.powerLeft = P.dur;
-      freeze = 0.14; flash = 1; shake = Math.max(shake, 12); zoom = 1;
-      ring(player.x + 13, player.y + 15, P.col, 190, 5);
-      ring(player.x + 13, player.y + 15, P.col2, 130, 3);
-      burstLines(player.x + 13, player.y + 15, P.col, 22);
-      spawn(60, player.x + 13, player.y + 15, { col: P.col, spd: 300, life: 0.85, size: 4, glow: true, grav: 120 });
-      spawn(34, player.x + 13, player.y + 15, { col: P.col2, spd: 190, life: 1.1, size: 3, glow: true, grav: 60 });
-      popWord(player.x + 13, player.y - 12, P.cry, P.col2);
+      const cx = player.x + 13, cy = player.y + 15;
+
+      // Stage 1: a hard hitstop, then a slow-motion window so the burst is
+      // watchable. powerFx drives the pillar and the colour wash over ~0.7s.
+      freeze = 0.2; slowmo = 0.55; powerFx = 1; zoom = 1.4;
+      flash = 0.6; shake = Math.max(shake, 14);
+      powerCol = P.col; powerCol2 = P.col2; pillarX = cx; pillarY = cy;
+
+      // Stage 2: four shockwaves fired in sequence, alternating the two power
+      // colours, so it pulses outward instead of popping once.
+      ring(cx, cy, P.col2, 90, 4, 0);
+      ring(cx, cy, P.col, 180, 5, 0.09);
+      ring(cx, cy, P.col2, 250, 3, 0.19);
+      ring(cx, cy, P.col, 320, 4, 0.3);
+
+      // Stage 3: two rounds of speed lines and a fat, layered particle burst.
+      burstLines(cx, cy, P.col, 26);
+      burstLines(cx, cy, P.col2, 18);
+      spawn(80, cx, cy, { col: P.col, spd: 340, life: 1, size: 4.5, glow: true, grav: 90 });
+      spawn(46, cx, cy, { col: P.col2, spd: 210, life: 1.3, size: 3, glow: true, grav: 40 });
+      // a spray that erupts straight up the pillar
+      spawn(30, cx, cy, { col: P.col2, dir: -Math.PI / 2, spread: 0.5, spd: 380, life: 1.1, size: 3.4, glow: true, grav: 260 });
+      popWord(cx, cy - 16, P.cry, P.col2);
+
       clearTimeout(bannerTimer.current);
       setBanner({ kind, name: P.name, blurb: P.blurb, col: P.col, col2: P.col2 });
-      bannerTimer.current = setTimeout(() => setBanner(null), 1900);
+      bannerTimer.current = setTimeout(() => setBanner(null), 2600);
       syncHud();
     };
 
@@ -2184,7 +2224,8 @@ function SecretGame({ onClose }) {
       player.x = level.spawn.x; player.y = level.spawn.y;
       player.vx = 0; player.vy = 0; player.standing = null;
       player.shield = T.shield; player.iframe = 0.8;
-      player.power = null; player.powerLeft = 0;
+      // Keep any active power-up through a death: falling in a pit shouldn't
+      // strip a Kirby ability you just earned. The timer keeps running.
       for (const p of plats) { p.fuse = null; p.gone = false; }
       syncHud();
     };
@@ -2354,7 +2395,9 @@ function SecretGame({ onClose }) {
         b.vy += b.grav * dt; b.x += b.vx * dt; b.y += b.vy * dt;
       }
       for (let i = rings.length - 1; i >= 0; i -= 1) {
-        const rg = rings[i]; rg.r += (rg.max - rg.r) * Math.min(1, dt * 7); rg.life -= dt * 1.7;
+        const rg = rings[i];
+        if (rg.delay > 0) { rg.delay -= dt; continue; } // staggered rings wait their turn
+        rg.r += (rg.max - rg.r) * Math.min(1, dt * 7); rg.life -= dt * 1.7;
         if (rg.life <= 0) rings.splice(i, 1);
       }
       for (let i = lines.length - 1; i >= 0; i -= 1) { lines[i].life -= dt; if (lines[i].life <= 0) lines.splice(i, 1); }
@@ -2705,6 +2748,34 @@ function SecretGame({ onClose }) {
       }
       ctx.restore();
 
+      // Power-up light pillar: a bright column erupting from the pickup point,
+      // brightest at the start and fading as powerFx decays.
+      if (powerFx > 0) {
+        const pf = powerFx;
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const halfW = (10 + pf * 26);
+        const pgd = ctx.createLinearGradient(pillarX - halfW, 0, pillarX + halfW, 0);
+        pgd.addColorStop(0, "#00000000");
+        pgd.addColorStop(0.5, powerCol2);
+        pgd.addColorStop(1, "#00000000");
+        ctx.globalAlpha = pf * 0.7;
+        ctx.fillStyle = pgd;
+        ctx.fillRect(pillarX - halfW, pillarY - 460, halfW * 2, 520);
+        // a thinner white-hot core
+        ctx.globalAlpha = pf * 0.9;
+        ctx.fillStyle = powerCol;
+        ctx.fillRect(pillarX - 3, pillarY - 440, 6, 500);
+        // rising sparks climbing the beam
+        for (let i = 0; i < 5; i += 1) {
+          const ry = pillarY - ((t * 300 + i * 90) % 420);
+          ctx.globalAlpha = pf * 0.8;
+          ctx.fillStyle = powerCol2;
+          ctx.fillRect(pillarX - 2 + Math.sin(t * 6 + i) * halfW * 0.6, ry, 3, 8);
+        }
+        ctx.restore();
+      }
+
       for (const gt of trail) drawAtlas(gt.x, gt.y, gt.f, u, (gt.life / 0.24) * 0.26);
       if (player.iframe <= 0 || Math.sin(t * 40) > 0) drawAtlas(player.x, player.y, player.face, u, 1);
       if (player.shield) {
@@ -2727,6 +2798,7 @@ function SecretGame({ onClose }) {
         ctx.fillRect(b.x, b.y, sz, sz);
       }
       for (const rg of rings) {
+        if (rg.delay > 0) continue; // not fired yet
         ctx.globalAlpha = Math.max(0, rg.life) * 0.85;
         ctx.strokeStyle = rg.col; ctx.lineWidth = rg.w;
         ctx.beginPath(); ctx.arc(rg.x, rg.y, rg.r, 0, Math.PI * 2); ctx.stroke();
@@ -2815,16 +2887,40 @@ function SecretGame({ onClose }) {
         ctx.restore();
       }
 
+      // Power-up colour wash: the whole screen briefly floods with the power's
+      // hue from the edges in, so the pickup owns the frame for a moment.
+      if (powerFx > 0) {
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        const wg = ctx.createRadialGradient(pillarX - cam, pillarY, 40, pillarX - cam, pillarY, GAME_W * 0.7);
+        wg.addColorStop(0, "#00000000");
+        wg.addColorStop(0.7, "#00000000");
+        wg.addColorStop(1, powerCol);
+        ctx.globalAlpha = powerFx * 0.5;
+        ctx.fillStyle = wg;
+        ctx.fillRect(0, 0, GAME_W, GAME_H);
+        ctx.restore();
+      }
+
       // vignette keeps the eye centred once the colours get loud (cached)
       ctx.fillStyle = vigGrad; ctx.fillRect(0, 0, GAME_W, GAME_H);
     };
 
     const loop = (now) => {
       if (!hudInit) { hudInit = true; syncHud(); }
-      let dt = Math.min((now - last) / 1000, 1 / 30);
+      const realDt = Math.min((now - last) / 1000, 1 / 30);
       last = now;
+      // Cinematic timers always run on real time, so the pillar and the colour
+      // wash resolve even while the world is frozen or slowed.
+      if (powerFx > 0) powerFx = Math.max(0, powerFx - realDt / 0.7);
+      let dt = realDt;
       // hitstop: hold the world still for a beat so the power-up lands hard
-      if (freeze > 0) { freeze -= dt; dt = 0; }
+      if (freeze > 0) { freeze -= realDt; dt = 0; }
+      // slow-motion after a power-up, easing back to full speed
+      if (slowmo > 0) {
+        dt *= 0.32 + 0.68 * (1 - Math.min(1, slowmo / 0.55));
+        slowmo = Math.max(0, slowmo - realDt);
+      }
       if (dt > 0) step(dt);
       draw();
       if (!finished) raf = requestAnimationFrame(loop);
