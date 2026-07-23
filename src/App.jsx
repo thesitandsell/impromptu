@@ -1684,15 +1684,110 @@ const LEVELS = [
 const overlaps = (a, b) =>
   a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
+// Atlas's own palette. Deliberately nothing like the site's cool violet and
+// cyan: this is her workshop, so it is rust, amber and hot steel over warm
+// black, with acid-green readouts and a CRT sitting on top of all of it.
+const GC = {
+  bg0: "#0d0b09", bg1: "#1b1511", bg2: "#241c16",
+  rust: "#9a3412", rustLit: "#c2410c",
+  amber: "#f59e0b", hot: "#fb923c", ember: "#ff5500",
+  steel: "#9fb3c8", steelMid: "#5A7DA0", steelDark: "#3A5570",
+  acid: "#a3e635", term: "#65a30d",
+  danger: "#ef4444",
+  tan: "#F0B27A", tanMid: "#C9844B", tanDark: "#8A5A2C",
+  eye: "#22d3ee",
+};
+
+// Each cleared round bolts one more system onto Atlas, and every one of them
+// is a piece the mascot on the site already has. Finish all six and the dog
+// you are running around as *is* the dog flying across the Practice tab.
+const UPGRADES = [
+  { key: "servo",   name: "Servo Legs",       blurb: "Reinforced hydraulics. Jump higher." },
+  { key: "thruster",name: "Thruster Pack",    blurb: "Her boosters. Double jump unlocked." },
+  { key: "gyro",    name: "Gyro Core",        blurb: "Stabilised spin. Sharper control in the air." },
+  { key: "plating", name: "Ablative Plating", blurb: "Her armour plate. Survive one hit per life." },
+  { key: "optics",  name: "Optic Lasers",     blurb: "Her laser ports. Mostly for the look." },
+  { key: "core",    name: "Fusion Core",      blurb: "Fully modified. She is complete." },
+];
+
+// Physics scales with how much of herself Atlas has rebuilt. Levels are all
+// verified against the *base* numbers, so every upgrade is pure headroom and
+// can never make a round unsolvable.
+const tuning = (u) => ({
+  jump: u >= 1 ? -675 : JUMP_VEL,
+  speed: u >= 5 ? MOVE_SPEED * 1.1 : MOVE_SPEED,
+  coyote: u >= 3 ? COYOTE * 1.8 : COYOTE,
+  airJumps: u >= 2 ? 1 : 0,
+  shield: u >= 4,
+});
+
+// A tiny flag decal, stencilled once on one crate in one round. Small enough
+// that you only find it if you are actually looking at the scenery.
+const ISRAELI_FLAG_LEVEL = 2;
+const ISRAELI_FLAG_AT = { x: 1472, y: 402 };
+
+function drawFlagDecal(ctx, x, y, w) {
+  const h = w * 0.72;
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+  ctx.fillStyle = "#eef2f7";
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "#0038b8";
+  ctx.fillRect(x, y + h * 0.14, w, h * 0.16);
+  ctx.fillRect(x, y + h * 0.70, w, h * 0.16);
+  // Star of David: two overlaid triangles, stroked so it stays legible tiny.
+  const cx = x + w / 2, cy = y + h / 2, r = h * 0.26;
+  ctx.strokeStyle = "#0038b8";
+  ctx.lineWidth = Math.max(0.6, w * 0.05);
+  for (const flip of [1, -1]) {
+    ctx.beginPath();
+    for (let i = 0; i < 3; i += 1) {
+      const a = (Math.PI * 2 * i) / 3 - Math.PI / 2;
+      const px = cx + Math.cos(a) * r, py = cy + Math.sin(a) * r * flip;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// Deterministic scenery so a level's junk always sits in the same place.
+const rnd = (seed) => {
+  let s = seed;
+  return () => {
+    s = (s * 1664525 + 1013904223) % 4294967296;
+    return s / 4294967296;
+  };
+};
+
+function buildScenery(level, idx) {
+  const r = rnd(idx * 7919 + 13);
+  const far = [], mid = [], near = [];
+  for (let x = -200; x < level.width + 400; x += 210 + r() * 120) {
+    far.push({ x, h: 90 + r() * 150, w: 50 + r() * 70, kind: r() > 0.55 ? "tower" : "stack" });
+  }
+  for (let x = -150; x < level.width + 400; x += 260 + r() * 160) {
+    mid.push({ x, y: 150 + r() * 120, rad: 26 + r() * 30, teeth: 8 + Math.floor(r() * 6), spin: r() > 0.5 ? 1 : -1 });
+  }
+  for (let x = -100; x < level.width + 400; x += 320 + r() * 200) {
+    near.push({ x, w: 40 + r() * 40, h: 30 + r() * 26 });
+  }
+  return { far, mid, near };
+}
+
 function SecretGame({ onClose }) {
   const canvasRef = useRef(null);
   const keysRef = useRef({ left: false, right: false, jump: false });
   const [levelIndex, setLevelIndex] = useState(0);
   const [runId, setRunId] = useState(0);
-  const [hud, setHud] = useState({ gems: 0, total: 0, deaths: 0 });
+  const [hud, setHud] = useState({ parts: 0, total: 0, deaths: 0, shield: false });
+  const [pending, setPending] = useState(null); // upgrade earned, awaiting install
   const [won, setWon] = useState(false);
+  // State, not a ref: the help line and Atlas's sprite both have to redraw
+  // the moment a part is installed.
+  const [upgrades, setUpgrades] = useState(0);
 
-  // Arrows and space are swallowed so the page behind never scrolls.
   useEffect(() => {
     const down = (e) => {
       const k = e.key;
@@ -1717,10 +1812,8 @@ function SecretGame({ onClose }) {
     };
   }, [onClose]);
 
-  // One game loop per level attempt. Changing level or restarting re-runs
-  // this effect, which is what gives every attempt a clean slate.
   useEffect(() => {
-    if (won) return undefined;
+    if (won || pending) return undefined;
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     const ctx = canvas.getContext("2d");
@@ -1730,75 +1823,113 @@ function SecretGame({ onClose }) {
     ctx.scale(dpr, dpr);
 
     const level = LEVELS[levelIndex];
+    const scene = buildScenery(level, levelIndex);
     const plats = level.platforms.map((p) => ({ ...p, dx: 0, dy: 0, ox: p.x, oy: p.y, fuse: null, gone: false }));
     const hzds = level.hazards.map((h) => ({ ...h, ox: h.x, oy: h.y }));
-    const gems = level.gems.map(([x, y]) => ({ x, y, got: false }));
+    const parts = level.gems.map(([x, y]) => ({ x, y, got: false }));
+    const T = tuning(upgrades);
     const player = {
       x: level.spawn.x, y: level.spawn.y, w: 26, h: 30,
-      vx: 0, vy: 0, onGround: false, face: 1, coyote: 0, buffer: 0, run: 0, standing: null,
+      vx: 0, vy: 0, onGround: false, face: 1, coyote: 0, buffer: 0, run: 0,
+      standing: null, airJumps: 0, shield: T.shield, iframe: 0, thrust: 0,
     };
-    let deaths = 0;
-    let collected = 0;
-    let cam = 0;
-    let t = 0;
-    let raf = 0;
+    const bits = [];        // particles
+    const trail = [];       // afterimages
+    let shake = 0;
+    let deaths = 0, collected = 0, cam = 0, t = 0, raf = 0;
     let last = performance.now();
     let finished = false;
-    // Reset on the first animation frame rather than synchronously here, so
-    // loading a level doesn't cascade an extra render before it has drawn.
-    let hudReset = false;
+    let hudInit = false;
+
+    const spawn = (n, x, y, opt) => {
+      for (let i = 0; i < n; i += 1) {
+        const a = opt.dir === undefined ? Math.random() * Math.PI * 2 : opt.dir + (Math.random() - 0.5) * (opt.spread || 1);
+        const sp = (opt.spd || 90) * (0.35 + Math.random());
+        bits.push({
+          x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (opt.lift || 0),
+          life: (opt.life || 0.5) * (0.6 + Math.random() * 0.8), max: opt.life || 0.5,
+          col: opt.col, size: (opt.size || 3) * (0.5 + Math.random()), grav: opt.grav === undefined ? 380 : opt.grav,
+          kind: opt.kind || "dot",
+        });
+      }
+    };
 
     const die = () => {
+      if (player.shield) {
+        player.shield = false; player.iframe = 1.1; shake = Math.max(shake, 9);
+        spawn(26, player.x + 13, player.y + 15, { col: GC.steel, spd: 190, life: 0.5, size: 3 });
+        player.y -= 12; player.vy = -260;
+        setHud({ parts: collected, total: parts.length, deaths, shield: false });
+        return;
+      }
       deaths += 1;
+      shake = Math.max(shake, 14);
+      spawn(40, player.x + 13, player.y + 15, { col: GC.ember, spd: 240, life: 0.7, size: 4 });
+      spawn(22, player.x + 13, player.y + 15, { col: GC.amber, spd: 150, life: 0.9, size: 2.5 });
       player.x = level.spawn.x; player.y = level.spawn.y;
       player.vx = 0; player.vy = 0; player.standing = null;
-      // Crumbled platforms come back, otherwise a death would leave the
-      // level in a state you can no longer finish.
+      player.shield = T.shield; player.iframe = 0.7;
       for (const p of plats) { p.fuse = null; p.gone = false; }
-      setHud({ gems: collected, total: gems.length, deaths });
+      setHud({ parts: collected, total: parts.length, deaths, shield: T.shield });
     };
 
     const step = (dt) => {
       t += dt;
+      shake = Math.max(0, shake - dt * 42);
+      player.iframe = Math.max(0, player.iframe - dt);
 
-      // Moving platforms first, so a rider inherits this frame's motion.
-      for (const p of plats) {
-        if (!p.mv) continue;
-        const prevX = p.x, prevY = p.y;
-        const off = Math.sin(t * (p.mv.speed / 100) + (p.mv.phase || 0)) * (p.mv.dist / 2);
-        if (p.mv.axis === "x") p.x = p.ox + off; else p.y = p.oy + off;
-        p.dx = p.x - prevX; p.dy = p.y - prevY;
-      }
       for (const h of hzds) {
         if (!h.mv) continue;
         const off = Math.sin(t * (h.mv.speed / 100) + (h.mv.phase || 0)) * (h.mv.dist / 2);
         if (h.mv.axis === "x") h.x = h.ox + off; else h.y = h.oy + off;
       }
       for (const p of plats) {
+        if (!p.mv) continue;
+        const px = p.x, py = p.y;
+        const off = Math.sin(t * (p.mv.speed / 100) + (p.mv.phase || 0)) * (p.mv.dist / 2);
+        if (p.mv.axis === "x") p.x = p.ox + off; else p.y = p.oy + off;
+        p.dx = p.x - px; p.dy = p.y - py;
+      }
+      for (const p of plats) {
         if (!p.crumble || p.fuse === null || p.gone) continue;
         p.fuse -= dt;
-        if (p.fuse <= 0) { p.gone = true; if (player.standing === p) player.standing = null; }
+        if (p.fuse < CRUMBLE_TIME * 0.6 && Math.random() < 0.4) {
+          spawn(1, p.x + Math.random() * p.w, p.y + p.h, { col: GC.rustLit, spd: 30, life: 0.5, size: 2, grav: 260 });
+        }
+        if (p.fuse <= 0) {
+          p.gone = true;
+          if (player.standing === p) player.standing = null;
+          spawn(16, p.x + p.w / 2, p.y + 6, { col: GC.rust, spd: 120, life: 0.7, size: 3.5 });
+          shake = Math.max(shake, 4);
+        }
       }
       if (player.standing) { player.x += player.standing.dx; player.y += player.standing.dy; }
 
       const k = keysRef.current;
       const dir = (k.right ? 1 : 0) - (k.left ? 1 : 0);
-      player.vx = dir * MOVE_SPEED;
+      player.vx = dir * T.speed;
       if (dir !== 0) { player.face = dir; player.run += dt * 12; }
 
+      const wasAir = !player.onGround;
       player.buffer = k.jump ? JUMP_BUFFER : Math.max(0, player.buffer - dt);
-      player.coyote = player.onGround ? COYOTE : Math.max(0, player.coyote - dt);
+      player.coyote = player.onGround ? T.coyote : Math.max(0, player.coyote - dt);
       if (player.buffer > 0 && player.coyote > 0) {
-        player.vy = JUMP_VEL;
+        player.vy = T.jump;
         player.buffer = 0; player.coyote = 0; player.onGround = false; player.standing = null;
+        player.airJumps = T.airJumps;
+        spawn(9, player.x + 13, player.y + 30, { col: GC.amber, dir: Math.PI / 2, spread: 1.6, spd: 90, life: 0.32, size: 2.6 });
+      } else if (player.buffer > 0 && wasAir && player.airJumps > 0) {
+        // Thruster Pack: one mid-air relight, with the exhaust to match.
+        player.vy = T.jump * 0.92;
+        player.airJumps -= 1; player.buffer = 0; player.thrust = 0.32;
+        spawn(20, player.x + 13, player.y + 28, { col: GC.ember, dir: Math.PI / 2, spread: 1.1, spd: 200, life: 0.45, size: 3.4 });
+        spawn(10, player.x + 13, player.y + 28, { col: GC.amber, dir: Math.PI / 2, spread: 0.8, spd: 130, life: 0.3, size: 2.4 });
+        shake = Math.max(shake, 3);
       }
-      // Releasing jump early cuts the arc, so taps and holds feel different.
+      player.thrust = Math.max(0, player.thrust - dt);
       if (!k.jump && player.vy < 0) player.vy *= 0.86;
-
       player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL);
 
-      // Axis-separated sweep: resolve X, then Y. Doing both at once makes
-      // corners eject the player in the wrong direction.
       player.x += player.vx * dt;
       for (const p of plats) {
         if (p.gone || !overlaps(player, p)) continue;
@@ -1807,6 +1938,7 @@ function SecretGame({ onClose }) {
         player.vx = 0;
       }
 
+      const fell = player.vy;
       player.y += player.vy * dt;
       player.onGround = false; player.standing = null;
       for (const p of plats) {
@@ -1815,152 +1947,332 @@ function SecretGame({ onClose }) {
           player.y = p.y - player.h;
           player.onGround = true; player.standing = p;
           if (p.crumble && p.fuse === null) p.fuse = CRUMBLE_TIME;
-        } else if (player.vy < 0) {
-          player.y = p.y + p.h;
-        }
+          if (fell > 420) {
+            spawn(10, player.x + 13, player.y + 30, { col: GC.steel, dir: 0, spread: 6.3, spd: 70, life: 0.3, size: 2.2 });
+            shake = Math.max(shake, 2.5);
+          }
+        } else if (player.vy < 0) player.y = p.y + p.h;
         player.vy = 0;
       }
+      if (player.onGround) player.airJumps = T.airJumps;
 
       if (player.x < 0) player.x = 0;
       if (player.x + player.w > level.width) player.x = level.width - player.w;
 
-      for (const h of hzds) if (overlaps(player, h)) die();
+      if (player.iframe <= 0) for (const h of hzds) if (overlaps(player, h)) { die(); break; }
       if (player.y > DEATH_Y) die();
 
-      for (const g of gems) {
+      for (const g of parts) {
         if (g.got) continue;
-        if (overlaps(player, { x: g.x - 11, y: g.y - 11, w: 22, h: 22 })) {
+        if (overlaps(player, { x: g.x - 12, y: g.y - 12, w: 24, h: 24 })) {
           g.got = true; collected += 1;
-          setHud({ gems: collected, total: gems.length, deaths });
+          spawn(18, g.x, g.y, { col: GC.amber, spd: 150, life: 0.5, size: 3 });
+          spawn(8, g.x, g.y, { col: GC.acid, spd: 90, life: 0.7, size: 2 });
+          shake = Math.max(shake, 2);
+          setHud({ parts: collected, total: parts.length, deaths, shield: player.shield });
         }
       }
 
       if (!finished && overlaps(player, level.goal)) {
         finished = true;
-        if (levelIndex + 1 < LEVELS.length) setLevelIndex(levelIndex + 1);
-        else setWon(true);
+        spawn(46, level.goal.x + 22, level.goal.y + 40, { col: GC.acid, spd: 220, life: 0.9, size: 3.4 });
+        setPending({ level: levelIndex, parts: collected, total: parts.length });
+      }
+
+      if (Math.abs(player.vx) > 10 && t % 0.05 < dt) trail.push({ x: player.x, y: player.y, f: player.face, life: 0.22 });
+      for (let i = trail.length - 1; i >= 0; i -= 1) { trail[i].life -= dt; if (trail[i].life <= 0) trail.splice(i, 1); }
+      for (let i = bits.length - 1; i >= 0; i -= 1) {
+        const b = bits[i];
+        b.life -= dt;
+        if (b.life <= 0) { bits.splice(i, 1); continue; }
+        b.vy += b.grav * dt; b.x += b.vx * dt; b.y += b.vy * dt;
       }
 
       const target = player.x + player.w / 2 - GAME_W / 2;
       cam += (Math.max(0, Math.min(target, level.width - GAME_W)) - cam) * Math.min(1, dt * 8);
     };
 
+    // Atlas herself. `u` is how many systems she has recovered, so the same
+    // routine draws the stripped-down dog in round one and the full mascot
+    // by the end. Ghost mode is reused for the motion trail.
+    const drawAtlas = (px, py, face, u, opts = {}) => {
+      const a = opts.alpha === undefined ? 1 : opts.alpha;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.translate(px + 13, py + 15);
+      ctx.scale(face, 1);
+      const bob = player.onGround ? Math.sin(player.run) * 1.4 : 0;
+      const swing = player.onGround ? Math.sin(player.run) * 4 : 2.5;
+
+      if (u >= 2 && (player.thrust > 0 || !player.onGround)) {
+        const heat = player.thrust > 0 ? 1 : 0.42;
+        for (const lx of [-7, 5]) {
+          const fl = (10 + Math.random() * 12) * heat;
+          const g = ctx.createLinearGradient(0, 14, 0, 14 + fl);
+          g.addColorStop(0, GC.amber); g.addColorStop(1, "#ff550000");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.moveTo(lx - 3, 14); ctx.lineTo(lx + 3, 14); ctx.lineTo(lx, 14 + fl);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+
+      // tail
+      ctx.strokeStyle = GC.tanDark; ctx.lineWidth = 4.5; ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-12, -4 + bob);
+      ctx.quadraticCurveTo(-21, -9 + bob, -18, -17 + bob);
+      ctx.stroke();
+
+      // legs
+      ctx.fillStyle = GC.tanDark;
+      ctx.fillRect(-9 + swing, 7 + bob, 5, 8);
+      ctx.fillRect(4 - swing, 7 + bob, 5, 8);
+      if (u >= 1) {
+        ctx.fillStyle = GC.steelMid;
+        ctx.fillRect(-10 + swing, 9 + bob, 7, 4);
+        ctx.fillRect(3 - swing, 9 + bob, 7, 4);
+      }
+      if (u >= 2) {
+        ctx.fillStyle = GC.steelDark;
+        ctx.fillRect(-10 + swing, 14 + bob, 7, 3);
+        ctx.fillRect(3 - swing, 14 + bob, 7, 3);
+      }
+
+      // body
+      const bg = ctx.createLinearGradient(0, -12 + bob, 0, 9 + bob);
+      bg.addColorStop(0, GC.tan); bg.addColorStop(1, GC.tanMid);
+      ctx.fillStyle = bg;
+      ctx.beginPath(); ctx.roundRect(-13, -10 + bob, 25, 19, 8); ctx.fill();
+
+      if (u >= 3) { // gyro core
+        ctx.save();
+        ctx.translate(-3, -1 + bob); ctx.rotate(t * 3);
+        ctx.strokeStyle = GC.eye; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.ellipse(0, 0, 6, 2.4, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+      if (u >= 4) { // armour plate
+        ctx.fillStyle = GC.steel;
+        ctx.beginPath(); ctx.roundRect(-11, -8 + bob, 15, 13, 3); ctx.fill();
+        ctx.fillStyle = GC.steelDark;
+        ctx.fillRect(-11, -8 + bob, 15, 3.5);
+        for (const bx of [-9, 1]) for (const by of [-5, 2]) {
+          ctx.beginPath(); ctx.arc(bx, by + bob, 1, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+
+      // head + snout + ear
+      ctx.fillStyle = GC.tan;
+      ctx.beginPath(); ctx.roundRect(4, -15 + bob, 13, 13, 5); ctx.fill();
+      ctx.fillStyle = GC.tanDark;
+      ctx.beginPath(); ctx.roundRect(13, -8 + bob, 6, 5, 2.5); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(6, -14 + bob); ctx.lineTo(10, -22 + bob); ctx.lineTo(14, -13 + bob);
+      ctx.closePath(); ctx.fill();
+
+      if (u >= 5) { // laser emitter
+        ctx.fillStyle = GC.steelDark;
+        ctx.beginPath(); ctx.arc(-13, -2 + bob, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = GC.danger;
+        ctx.beginPath(); ctx.arc(-13, -2 + bob, 1.6, 0, Math.PI * 2); ctx.fill();
+        if (Math.sin(t * 2.4) > 0.72) {
+          ctx.strokeStyle = "#ef444488"; ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.moveTo(-15, -2 + bob); ctx.lineTo(-120, -2 + bob); ctx.stroke();
+        }
+      }
+
+      // cyborg eye
+      ctx.fillStyle = "#0A0A12";
+      ctx.beginPath(); ctx.arc(9, -9 + bob, 4, 0, Math.PI * 2); ctx.fill();
+      const eg = ctx.createRadialGradient(9, -9 + bob, 0, 9, -9 + bob, 4);
+      eg.addColorStop(0, "#e0f7ff"); eg.addColorStop(0.45, GC.eye); eg.addColorStop(1, "#8b5cf6");
+      ctx.fillStyle = eg;
+      ctx.beginPath(); ctx.arc(9, -9 + bob, 3, 0, Math.PI * 2); ctx.fill();
+      if (u >= 6) {
+        ctx.strokeStyle = GC.acid; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(9, -9 + bob, 6 + Math.sin(t * 5) * 1.2, 0, Math.PI * 2); ctx.stroke();
+      }
+      ctx.restore();
+    };
+
     const draw = () => {
-      ctx.clearRect(0, 0, GAME_W, GAME_H);
+      const sx = shake > 0 ? (Math.random() - 0.5) * shake : 0;
+      const sy = shake > 0 ? (Math.random() - 0.5) * shake : 0;
+      const u = upgrades;
+
       const sky = ctx.createLinearGradient(0, 0, 0, GAME_H);
-      sky.addColorStop(0, "#0b0c1a"); sky.addColorStop(1, "#07070d");
+      sky.addColorStop(0, GC.bg1); sky.addColorStop(0.6, GC.bg0); sky.addColorStop(1, "#06050400");
+      ctx.fillStyle = GC.bg0; ctx.fillRect(0, 0, GAME_W, GAME_H);
       ctx.fillStyle = sky; ctx.fillRect(0, 0, GAME_W, GAME_H);
 
-      // Two parallax star layers give depth without shipping any art.
-      for (let layer = 0; layer < 2; layer += 1) {
-        const speed = layer === 0 ? 0.2 : 0.45;
-        ctx.fillStyle = layer === 0 ? "#8b5cf633" : "#22d3ee33";
-        for (let i = 0; i < 34; i += 1) {
-          const sx = ((i * 197 + layer * 61) - cam * speed) % (GAME_W + 60);
-          const px = sx < 0 ? sx + GAME_W + 60 : sx;
-          ctx.fillRect(px, (i * 83 + layer * 37) % (GAME_H - 90), 2, 2);
+      // warm haze low on the screen, like a forge somewhere off-frame
+      const haze = ctx.createRadialGradient(GAME_W * 0.5, GAME_H, 0, GAME_W * 0.5, GAME_H, GAME_H * 0.9);
+      haze.addColorStop(0, "#c2410c22"); haze.addColorStop(1, "#00000000");
+      ctx.fillStyle = haze; ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+      ctx.save();
+      ctx.translate(sx, sy);
+
+      // far silhouettes
+      ctx.fillStyle = "#171310";
+      for (const f of scene.far) {
+        const x = f.x - cam * 0.25;
+        if (x < -160 || x > GAME_W + 160) continue;
+        ctx.fillRect(x, GAME_H - f.h, f.w, f.h);
+        if (f.kind === "tower") {
+          ctx.fillRect(x + f.w * 0.3, GAME_H - f.h - 16, f.w * 0.4, 16);
+          ctx.fillStyle = "#3a2a1e";
+          ctx.fillRect(x + 6, GAME_H - f.h + 14, f.w - 12, 3);
+          ctx.fillStyle = "#171310";
         }
+      }
+      // mid gears
+      for (const g of scene.mid) {
+        const x = g.x - cam * 0.45;
+        if (x < -120 || x > GAME_W + 120) continue;
+        ctx.save();
+        ctx.translate(x, g.y); ctx.rotate(t * 0.32 * g.spin);
+        ctx.strokeStyle = "#241b14"; ctx.lineWidth = 7;
+        ctx.beginPath(); ctx.arc(0, 0, g.rad, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = "#2e231a"; ctx.lineWidth = 5;
+        for (let i = 0; i < g.teeth; i += 1) {
+          const a = (Math.PI * 2 * i) / g.teeth;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * g.rad, Math.sin(a) * g.rad);
+          ctx.lineTo(Math.cos(a) * (g.rad + 8), Math.sin(a) * (g.rad + 8));
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      // near crates, one of which is stencilled
+      for (const c of scene.near) {
+        const x = c.x - cam * 0.75;
+        if (x < -120 || x > GAME_W + 120) continue;
+        ctx.fillStyle = "#2a1f17";
+        ctx.fillRect(x, GAME_H - 46 - c.h, c.w, c.h);
+        ctx.strokeStyle = "#3d2c20"; ctx.lineWidth = 2;
+        ctx.strokeRect(x, GAME_H - 46 - c.h, c.w, c.h);
       }
 
       ctx.save();
       ctx.translate(-cam, 0);
 
+      if (levelIndex === ISRAELI_FLAG_LEVEL) {
+        drawFlagDecal(ctx, ISRAELI_FLAG_AT.x, ISRAELI_FLAG_AT.y, 13);
+      }
+
       for (const p of plats) {
         if (p.gone) continue;
-        // A lit fuse shakes the platform and flips its edge to amber, so the
-        // "get off now" signal is readable without any text.
         const lit = p.crumble && p.fuse !== null;
-        const sh = lit ? Math.sin(t * 45) * 1.6 : 0;
-        const edge = p.crumble ? (lit ? "#fb923c" : "#facc15") : p.mv ? "#22d3ee" : "#8b5cf6";
+        const sh = lit ? Math.sin(t * 45) * 1.8 : 0;
         ctx.save();
-        ctx.globalAlpha = lit ? 0.55 + 0.45 * (p.fuse / CRUMBLE_TIME) : 1;
-        ctx.fillStyle = "#171a2c";
+        ctx.globalAlpha = lit ? 0.5 + 0.5 * (p.fuse / CRUMBLE_TIME) : 1;
+        // riveted steel decking
+        const grd = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
+        grd.addColorStop(0, GC.bg2); grd.addColorStop(1, "#140f0b");
+        ctx.fillStyle = grd;
         ctx.fillRect(p.x + sh, p.y, p.w, p.h);
-        ctx.fillStyle = edge;
+        ctx.fillStyle = p.crumble ? (lit ? GC.ember : GC.amber) : p.mv ? GC.acid : GC.rustLit;
         ctx.fillRect(p.x + sh, p.y, p.w, 3);
-        ctx.globalAlpha *= 0.13;
-        ctx.fillRect(p.x + sh, p.y + 3, p.w, 8);
+        ctx.globalAlpha *= 0.5;
+        ctx.fillStyle = GC.steelDark;
+        for (let bx = p.x + 7; bx < p.x + p.w - 4; bx += 18) {
+          ctx.beginPath(); ctx.arc(bx + sh, p.y + 9, 1.4, 0, Math.PI * 2); ctx.fill();
+        }
         ctx.restore();
       }
 
       for (const h of hzds) {
-        ctx.fillStyle = "#f87171";
-        const spikes = Math.max(1, Math.floor(h.w / 14));
-        for (let i = 0; i < spikes; i += 1) {
-          const sx = h.x + (i * h.w) / spikes;
+        ctx.fillStyle = GC.danger;
+        ctx.shadowColor = GC.danger; ctx.shadowBlur = 8;
+        const n = Math.max(1, Math.floor(h.w / 14));
+        for (let i = 0; i < n; i += 1) {
+          const hx = h.x + (i * h.w) / n;
           ctx.beginPath();
-          ctx.moveTo(sx, h.y + h.h);
-          ctx.lineTo(sx + h.w / spikes / 2, h.y);
-          ctx.lineTo(sx + h.w / spikes, h.y + h.h);
+          ctx.moveTo(hx, h.y + h.h);
+          ctx.lineTo(hx + h.w / n / 2, h.y);
+          ctx.lineTo(hx + h.w / n, h.y + h.h);
           ctx.closePath(); ctx.fill();
         }
+        ctx.shadowBlur = 0;
       }
 
-      for (const g of gems) {
+      // parts: spinning cogs, not gems
+      for (const g of parts) {
         if (g.got) continue;
-        const gbob = Math.sin(t * 3 + g.x) * 4;
+        const bobp = Math.sin(t * 3 + g.x) * 4;
         ctx.save();
-        ctx.translate(g.x, g.y + gbob);
-        ctx.rotate(t * 2);
-        ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 14;
-        ctx.fillStyle = "#22d3ee";
-        ctx.beginPath();
-        ctx.moveTo(0, -9); ctx.lineTo(7, 0); ctx.lineTo(0, 9); ctx.lineTo(-7, 0);
-        ctx.closePath(); ctx.fill();
+        ctx.translate(g.x, g.y + bobp);
+        ctx.rotate(t * 1.6);
+        ctx.shadowColor = GC.amber; ctx.shadowBlur = 14;
+        ctx.strokeStyle = GC.amber; ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.arc(0, 0, 5.4, 0, Math.PI * 2); ctx.stroke();
+        for (let i = 0; i < 6; i += 1) {
+          const a = (Math.PI * 2 * i) / 6;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * 5.4, Math.sin(a) * 5.4);
+          ctx.lineTo(Math.cos(a) * 9, Math.sin(a) * 9);
+          ctx.stroke();
+        }
         ctx.restore();
       }
 
+      // goal: an upgrade bay
       const gl = level.goal;
       ctx.save();
-      ctx.shadowColor = "#8b5cf6"; ctx.shadowBlur = 22;
+      ctx.shadowColor = GC.acid; ctx.shadowBlur = 20;
+      ctx.strokeStyle = GC.acid; ctx.lineWidth = 2;
+      ctx.strokeRect(gl.x, gl.y, gl.w, gl.h);
+      ctx.globalAlpha = 0.35 + Math.sin(t * 4) * 0.25;
+      ctx.fillStyle = GC.acid;
+      ctx.fillRect(gl.x + 4, gl.y + 4, gl.w - 8, gl.h - 8);
+      ctx.globalAlpha = 1;
       for (let i = 0; i < 3; i += 1) {
-        ctx.strokeStyle = i % 2 ? "#22d3ee" : "#8b5cf6";
-        ctx.lineWidth = 2;
-        const r = 14 + ((t * 26 + i * 16) % 34);
-        ctx.globalAlpha = Math.max(0, 1 - r / 48);
-        ctx.beginPath();
-        ctx.arc(gl.x + gl.w / 2, gl.y + gl.h / 2, r, 0, Math.PI * 2);
-        ctx.stroke();
+        const yy = gl.y + ((t * 40 + i * 27) % gl.h);
+        ctx.fillStyle = "#a3e63566";
+        ctx.fillRect(gl.x, yy, gl.w, 2);
+      }
+      ctx.restore();
+
+      for (const g of trail) {
+        drawAtlas(g.x, g.y, g.f, u, { alpha: (g.life / 0.22) * 0.22 });
+      }
+      if (player.iframe <= 0 || Math.sin(t * 40) > 0) {
+        drawAtlas(player.x, player.y, player.face, u);
+      }
+      if (player.shield) {
+        ctx.save();
+        ctx.strokeStyle = GC.steel; ctx.globalAlpha = 0.45 + Math.sin(t * 3) * 0.2;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(player.x + 13, player.y + 15, 22, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+
+      for (const b of bits) {
+        ctx.globalAlpha = Math.max(0, Math.min(1, b.life / b.max));
+        ctx.fillStyle = b.col;
+        ctx.fillRect(b.x, b.y, b.size, b.size);
       }
       ctx.globalAlpha = 1;
-      ctx.fillStyle = "#8b5cf6";
-      ctx.fillRect(gl.x + gl.w / 2 - 3, gl.y, 6, gl.h);
-      ctx.restore();
 
-      // Atlas, drawn from primitives so there is no sprite sheet to ship.
+      ctx.restore(); // world
+      ctx.restore(); // shake
+
+      // CRT: scanlines and a soft vignette, drawn last over everything
       ctx.save();
-      ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
-      ctx.scale(player.face, 1);
-      const bob = player.onGround ? Math.sin(player.run) * 1.5 : 0;
-      ctx.fillStyle = "#a78bfa";
-      ctx.beginPath(); ctx.roundRect(-13, -11 + bob, 26, 20, 7); ctx.fill();
-      ctx.fillStyle = "#8b5cf6";
-      ctx.beginPath(); ctx.roundRect(4, -15 + bob, 13, 13, 5); ctx.fill();
-      ctx.beginPath();
-      ctx.moveTo(6, -14 + bob); ctx.lineTo(11, -22 + bob); ctx.lineTo(14, -13 + bob);
-      ctx.closePath(); ctx.fill();
-      ctx.fillStyle = "#22d3ee";
-      ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.arc(11, -9 + bob, 2.4, 0, Math.PI * 2); ctx.fill();
-      ctx.shadowBlur = 0;
-      ctx.strokeStyle = "#a78bfa"; ctx.lineWidth = 3; ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(-13, -6 + bob);
-      ctx.quadraticCurveTo(-22, -10 + bob, -19, -18 + bob);
-      ctx.stroke();
-      ctx.fillStyle = "#7c3aed";
-      const swing = player.onGround ? Math.sin(player.run) * 4 : 2;
-      ctx.fillRect(-10 + swing, 8 + bob, 5, 7);
-      ctx.fillRect(5 - swing, 8 + bob, 5, 7);
-      ctx.restore();
-
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = "#000";
+      for (let y = 0; y < GAME_H; y += 3) ctx.fillRect(0, y, GAME_W, 1);
+      ctx.globalAlpha = 1;
+      const vig = ctx.createRadialGradient(GAME_W / 2, GAME_H / 2, GAME_H * 0.35, GAME_W / 2, GAME_H / 2, GAME_H * 0.85);
+      vig.addColorStop(0, "#00000000"); vig.addColorStop(1, "#000000cc");
+      ctx.fillStyle = vig; ctx.fillRect(0, 0, GAME_W, GAME_H);
       ctx.restore();
     };
 
     const loop = (now) => {
-      if (!hudReset) { hudReset = true; setHud({ gems: 0, total: gems.length, deaths: 0 }); }
-      // Clamped so a backgrounded tab does not resume with a huge dt and
-      // tunnel the player straight through the floor.
+      if (!hudInit) { hudInit = true; setHud({ parts: 0, total: parts.length, deaths: 0, shield: T.shield }); }
       const dt = Math.min((now - last) / 1000, 1 / 30);
       last = now;
       step(dt);
@@ -1969,51 +2281,70 @@ function SecretGame({ onClose }) {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [levelIndex, runId, won]);
+  }, [levelIndex, runId, won, pending, upgrades]);
 
   const hold = (key, val) => (e) => { e.preventDefault(); keysRef.current[key] = val; };
 
+  const install = () => {
+    const nextLevel = pending.level + 1;
+    setUpgrades(Math.min(nextLevel, UPGRADES.length));
+    setPending(null);
+    if (nextLevel < LEVELS.length) setLevelIndex(nextLevel);
+    else setWon(true);
+  };
+
+  const restartAll = () => {
+    setUpgrades(0);
+    setWon(false); setPending(null); setLevelIndex(0); setRunId((n) => n + 1);
+  };
+
+  const earned = pending ? UPGRADES[Math.min(pending.level, UPGRADES.length - 1)] : null;
+
   return createPortal(
-    <div className="game-overlay" role="dialog" aria-label="Secret platformer">
+    <div className="game-overlay" role="dialog" aria-label="Atlas: Full Modification">
       <div className="game-frame">
         <div className="game-bar">
           <span className="game-title">
-            {won ? "All Rounds Cleared" : `Round ${levelIndex + 1}/${LEVELS.length} · ${LEVELS[levelIndex].name}`}
+            {won ? "FULLY MODIFIED" : `BAY ${levelIndex + 1}/${LEVELS.length} · ${LEVELS[levelIndex].name.toUpperCase()}`}
           </span>
           <span className="game-stats">
-            <span style={{ color: "var(--accent-2)" }}>◆ {hud.gems}/{hud.total}</span>
-            <span style={{ color: "var(--text-faint)" }}>Falls {hud.deaths}</span>
+            <span style={{ color: "#f59e0b" }}>⚙ {hud.parts}/{LEVELS[levelIndex].gems.length}</span>
+            {hud.shield && <span style={{ color: "#9fb3c8" }}>◈ PLATED</span>}
+            <span style={{ color: "#6b5a4a" }}>WRECKS {hud.deaths}</span>
           </span>
           <button onClick={onClose} className="game-x" aria-label="Close game">✕</button>
         </div>
 
         <div className="game-stage">
           <canvas ref={canvasRef} className="game-canvas" />
+
+          {earned && (
+            <div className="game-modal">
+              <p className="game-kicker">PART RECOVERED · {pending.parts}/{pending.total} COGS</p>
+              <h3 className="game-h">{earned.name}</h3>
+              <p className="game-sub">{earned.blurb}</p>
+              <button className="game-btn" onClick={install}>INSTALL</button>
+            </div>
+          )}
+
           {won && (
-            <div className="game-win">
-              <p className="eyebrow" style={{ color: "var(--accent-2)", marginBottom: "0.6rem" }}>Secret cleared</p>
-              <h3 className="about-h3" style={{ marginBottom: "0.75rem" }}>
-                Atlas <span className="grad-text">wins the round</span>
-              </h3>
-              <p className="about-p" style={{ marginBottom: "1.5rem" }}>
-                You found the thing that isn&apos;t on the menu. Now go practice an actual speech.
+            <div className="game-modal">
+              <p className="game-kicker">ALL SYSTEMS ONLINE</p>
+              <h3 className="game-h">ATLAS IS COMPLETE</h3>
+              <p className="game-sub">
+                Every part recovered. She has the plating, the boosters and the lasers now.
+                Go look at the dog flying across the Practice tab. That is her, finished.
               </p>
-              <button
-                className="btn btn-primary"
-                style={{ padding: "0.8rem 2rem" }}
-                onClick={() => { setWon(false); setLevelIndex(0); setRunId((n) => n + 1); }}
-              >
-                Run It Back
-              </button>
+              <button className="game-btn" onClick={restartAll}>STRIP HER DOWN AND GO AGAIN</button>
             </div>
           )}
         </div>
 
         <div className="game-help">
-          <span><b>←</b> <b>→</b> move</span>
-          <span><b>Space</b> jump</span>
-          <span><b>R</b> restart round</span>
-          <span><b>Esc</b> quit</span>
+          <span><b>←</b> <b>→</b> MOVE</span>
+          <span><b>SPACE</b> JUMP{upgrades >= 2 ? " ×2" : ""}</span>
+          <span><b>R</b> RESET BAY</span>
+          <span><b>ESC</b> QUIT</span>
         </div>
 
         <div className="game-touch" aria-hidden="true">
@@ -2548,41 +2879,59 @@ export default function App() {
           50%      { filter: drop-shadow(0 0 20px #22d3eeee); }
         }
 
-        /* ── Secret platformer ── */
+        /* ── Atlas: Full Modification ──
+           Intentionally nothing like the rest of the site. Warm metal,
+           amber readouts, hard edges and a CRT bezel: it should feel like
+           a cabinet someone wheeled into the room, not another page. */
         .game-overlay {
           position: fixed;
           inset: 0;
           z-index: 600;
-          background: rgba(4, 5, 10, 0.88);
-          backdrop-filter: blur(6px);
+          background: radial-gradient(ellipse at 50% 50%, #1b1006ee 0%, #060504f8 70%);
+          backdrop-filter: blur(7px);
           display: flex;
           align-items: center;
           justify-content: center;
           padding: 1.5rem;
-          animation: fadeUp 0.25s ease both;
+          animation: gameBoot 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        /* the cabinet powering on */
+        @keyframes gameBoot {
+          0%   { opacity: 0; }
+          40%  { opacity: 1; }
+          100% { opacity: 1; }
         }
         .game-frame {
           width: 100%;
-          max-width: 860px;
-          background: var(--bg-raised);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-md);
-          box-shadow: var(--shadow-card), 0 0 80px #8b5cf633;
+          max-width: 880px;
+          background: linear-gradient(180deg, #241c16 0%, #140f0b 100%);
+          border: 1px solid #4a3524;
+          border-radius: 6px;
+          box-shadow:
+            0 0 0 1px #0000008c,
+            0 0 70px #c2410c33,
+            0 30px 70px -20px #000000e6;
           overflow: hidden;
+          animation: gameFrameIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes gameFrameIn {
+          0%   { transform: scale(0.86) translateY(14px); opacity: 0; }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
         }
         .game-bar {
           display: flex;
           align-items: center;
           gap: 1rem;
-          padding: 0.85rem 1.1rem;
-          border-bottom: 1px solid var(--border-soft);
+          padding: 0.7rem 1rem;
+          background: linear-gradient(180deg, #2e231a 0%, #1d1610 100%);
+          border-bottom: 1px solid #4a3524;
         }
         .game-title {
           font-family: var(--font-mono);
-          font-size: 0.72rem;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: var(--text);
+          font-size: 0.7rem;
+          letter-spacing: 0.16em;
+          color: #f59e0b;
+          text-shadow: 0 0 10px #f59e0b66;
           flex: 1;
           min-width: 0;
           overflow: hidden;
@@ -2591,35 +2940,35 @@ export default function App() {
         }
         .game-stats {
           display: flex;
-          gap: 0.9rem;
+          gap: 0.85rem;
           font-family: var(--font-mono);
-          font-size: 0.72rem;
-          letter-spacing: 0.06em;
+          font-size: 0.68rem;
+          letter-spacing: 0.1em;
           white-space: nowrap;
         }
         .game-x {
-          background: transparent;
-          border: 1px solid var(--border);
-          color: var(--text-dim);
-          border-radius: var(--radius-sm);
-          width: 28px; height: 28px;
+          background: #1d1610;
+          border: 1px solid #4a3524;
+          color: #8a6f57;
+          border-radius: 3px;
+          width: 26px; height: 26px;
           cursor: pointer;
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           line-height: 1;
           flex-shrink: 0;
         }
-        .game-x:hover { color: var(--text); border-color: var(--accent); }
+        .game-x:hover { color: #f59e0b; border-color: #f59e0b; }
 
-        .game-stage { position: relative; background: #07070d; }
-        /* The canvas has a fixed 800x450 backing store; this scales it to
-           whatever width the frame ends up at without touching game units. */
+        .game-stage { position: relative; background: #0d0b09; }
         .game-canvas {
           display: block;
           width: 100%;
           height: auto;
           aspect-ratio: 16 / 9;
+          image-rendering: auto;
         }
-        .game-win {
+
+        .game-modal {
           position: absolute;
           inset: 0;
           display: flex;
@@ -2627,32 +2976,73 @@ export default function App() {
           align-items: center;
           justify-content: center;
           text-align: center;
-          padding: 2rem;
-          background: rgba(7, 7, 13, 0.92);
+          padding: 2rem 1.5rem;
+          background: radial-gradient(ellipse at 50% 50%, #1b1006f2 0%, #0d0b09fa 75%);
+          animation: fadeUp 0.3s ease both;
         }
+        .game-kicker {
+          font-family: var(--font-mono);
+          font-size: 0.62rem;
+          letter-spacing: 0.22em;
+          color: #a3e635;
+          margin: 0 0 0.7rem;
+        }
+        .game-h {
+          font-family: var(--font-mono);
+          font-size: 1.5rem;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          color: #f59e0b;
+          text-shadow: 0 0 22px #f59e0b55;
+          margin: 0 0 0.7rem;
+        }
+        .game-sub {
+          font-family: var(--font-body);
+          font-size: 0.9rem;
+          line-height: 1.6;
+          color: #b39a82;
+          max-width: 30rem;
+          margin: 0 0 1.6rem;
+        }
+        .game-btn {
+          font-family: var(--font-mono);
+          font-size: 0.72rem;
+          font-weight: 700;
+          letter-spacing: 0.16em;
+          padding: 0.85rem 2.1rem;
+          color: #140f0b;
+          background: linear-gradient(180deg, #f59e0b, #c2410c);
+          border: none;
+          border-radius: 3px;
+          cursor: pointer;
+          box-shadow: 0 0 26px #f59e0b55;
+          transition: transform 0.12s ease, box-shadow 0.2s ease;
+        }
+        .game-btn:hover { transform: translateY(-1px); box-shadow: 0 0 38px #f59e0b88; }
+        .game-btn:active { transform: scale(0.96); }
 
         .game-help {
           display: flex;
           flex-wrap: wrap;
           gap: 1.1rem;
-          padding: 0.8rem 1.1rem;
-          border-top: 1px solid var(--border-soft);
+          padding: 0.7rem 1rem;
+          background: #140f0b;
+          border-top: 1px solid #33251a;
           font-family: var(--font-mono);
-          font-size: 0.66rem;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          color: var(--text-faint);
+          font-size: 0.62rem;
+          letter-spacing: 0.12em;
+          color: #6b5a4a;
         }
-        .game-help b { color: var(--accent-2); font-weight: 700; }
+        .game-help b { color: #a3e635; font-weight: 700; }
 
-        /* Touch pad: only worth showing where there is no keyboard. */
         .game-touch { display: none; }
         @media (hover: none) and (pointer: coarse) {
           .game-touch {
             display: flex;
             gap: 0.6rem;
-            padding: 0.9rem 1.1rem 1.1rem;
-            border-top: 1px solid var(--border-soft);
+            padding: 0.8rem 1rem 1rem;
+            background: #140f0b;
+            border-top: 1px solid #33251a;
           }
           .game-touch button {
             flex: 1;
@@ -2660,15 +3050,15 @@ export default function App() {
             font-family: var(--font-mono);
             font-size: 0.9rem;
             font-weight: 700;
-            color: var(--text);
-            background: #171a2c;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
+            color: #f59e0b;
+            background: #2a1f17;
+            border: 1px solid #4a3524;
+            border-radius: 3px;
             touch-action: none;
             user-select: none;
           }
-          .game-touch button:active { background: var(--accent); color: #05060a; }
-          .game-touch-jump { flex: 1.6 !important; color: var(--accent-2) !important; }
+          .game-touch button:active { background: #f59e0b; color: #140f0b; }
+          .game-touch-jump { flex: 1.6 !important; color: #a3e635 !important; }
         }
 
         /* ── About page ── */
