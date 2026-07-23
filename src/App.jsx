@@ -1485,6 +1485,416 @@ function SubmitTab({ onSubmit }) {
   );
 }
 
+// ── Secret platformer ───────────────────────────────────────────
+// Not linked from anywhere in the UI. The only way in is to type the
+// dragon's cry on the keyboard, anywhere outside a text field. That cry
+// comes from a real quote in the community pool ("I am the dragon who
+// always wins Duo Improv! Rwar!"), so it is findable by someone who
+// actually reads the quotes and pokes at things, and invisible
+// otherwise. Deliberately kept out of the update log.
+const SECRET_CODE = "rwar";
+
+const GAME_W = 800;
+const GAME_H = 450;
+const DEATH_Y = 640;
+
+// Tuned so a full jump clears ~96px of height and ~160px of distance at
+// run speed. Every gap in LEVELS is sized against those two numbers.
+const GRAVITY = 2000;
+const MOVE_SPEED = 260;
+const JUMP_VEL = -620;
+const MAX_FALL = 900;
+const COYOTE = 0.1;        // still jumpable just after walking off an edge
+const JUMP_BUFFER = 0.12;  // jump pressed just before landing still counts
+
+const LEVELS = [
+  {
+    name: "Warm-Up Round",
+    width: 2820,
+    spawn: { x: 60, y: 300 },
+    platforms: [
+      { x: 0, y: 390, w: 460, h: 90 },
+      { x: 560, y: 390, w: 300, h: 90 },
+      { x: 940, y: 340, w: 170, h: 22 },
+      { x: 1200, y: 285, w: 170, h: 22 },
+      { x: 1460, y: 390, w: 320, h: 90 },
+      { x: 1880, y: 335, w: 150, h: 22 },
+      { x: 2130, y: 275, w: 150, h: 22 },
+      { x: 2360, y: 390, w: 460, h: 90 },
+    ],
+    hazards: [{ x: 1600, y: 366, w: 70, h: 24 }],
+    gems: [[220, 340], [660, 340], [1000, 290], [1260, 235], [1560, 340], [1930, 285], [2180, 225], [2520, 340]],
+    goal: { x: 2680, y: 310, w: 44, h: 80 },
+  },
+  {
+    name: "Quarterfinals",
+    width: 2900,
+    spawn: { x: 60, y: 300 },
+    platforms: [
+      { x: 0, y: 390, w: 340, h: 90 },
+      { x: 430, y: 350, w: 120, h: 22 },
+      { x: 660, y: 300, w: 120, h: 22 },
+      { x: 890, y: 250, w: 120, h: 22 },
+      { x: 1120, y: 320, w: 120, h: 22 },
+      { x: 1340, y: 390, w: 300, h: 90 },
+      { x: 1720, y: 350, w: 110, h: 22, mv: { axis: "y", dist: 110, speed: 55 } },
+      { x: 1960, y: 300, w: 110, h: 22 },
+      { x: 2180, y: 240, w: 110, h: 22 },
+      { x: 2400, y: 390, w: 500, h: 90 },
+    ],
+    hazards: [{ x: 1440, y: 366, w: 60, h: 24 }, { x: 2520, y: 366, w: 60, h: 24 }],
+    gems: [[180, 340], [490, 300], [720, 250], [950, 200], [1180, 270], [1450, 340], [1775, 290], [2015, 250], [2235, 190], [2680, 340]],
+    goal: { x: 2790, y: 310, w: 44, h: 80 },
+  },
+  {
+    name: "Finals",
+    width: 3120,
+    spawn: { x: 60, y: 300 },
+    platforms: [
+      { x: 0, y: 390, w: 300, h: 90 },
+      { x: 400, y: 355, w: 90, h: 20 },
+      { x: 600, y: 310, w: 90, h: 20 },
+      { x: 800, y: 265, w: 90, h: 20 },
+      // Travel is 260 rather than 130 on purpose: at 130 its far edge still
+      // left a 230px gap to the next platform against a 161px max jump,
+      // which stranded the player with no way back. Verified by simulation.
+      { x: 1010, y: 320, w: 90, h: 20, mv: { axis: "x", dist: 260, speed: 70 } },
+      { x: 1330, y: 280, w: 90, h: 20 },
+      { x: 1540, y: 390, w: 240, h: 90 },
+      { x: 1880, y: 340, w: 90, h: 20, mv: { axis: "y", dist: 120, speed: 70, phase: 1.6 } },
+      { x: 2090, y: 290, w: 90, h: 20 },
+      { x: 2290, y: 240, w: 90, h: 20 },
+      { x: 2490, y: 190, w: 90, h: 20 },
+      { x: 2700, y: 390, w: 420, h: 90 },
+    ],
+    hazards: [{ x: 1600, y: 366, w: 70, h: 24 }, { x: 2820, y: 366, w: 70, h: 24 }],
+    gems: [[150, 340], [440, 305], [640, 260], [840, 215], [1050, 270], [1370, 230], [1650, 340], [1920, 290], [2130, 240], [2330, 190], [2530, 140], [2960, 340]],
+    goal: { x: 3020, y: 310, w: 44, h: 80 },
+  },
+];
+
+const overlaps = (a, b) =>
+  a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+function SecretGame({ onClose }) {
+  const canvasRef = useRef(null);
+  const keysRef = useRef({ left: false, right: false, jump: false });
+  const [levelIndex, setLevelIndex] = useState(0);
+  const [runId, setRunId] = useState(0);
+  const [hud, setHud] = useState({ gems: 0, total: 0, deaths: 0 });
+  const [won, setWon] = useState(false);
+
+  // Arrows and space are swallowed so the page behind never scrolls.
+  useEffect(() => {
+    const down = (e) => {
+      const k = e.key;
+      if (k === "Escape") { onClose(); return; }
+      if (k === "r" || k === "R") { setRunId((n) => n + 1); return; }
+      if (k === "ArrowLeft" || k === "a" || k === "A") keysRef.current.left = true;
+      if (k === "ArrowRight" || k === "d" || k === "D") keysRef.current.right = true;
+      if (k === " " || k === "ArrowUp" || k === "w" || k === "W") keysRef.current.jump = true;
+      if ([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(k)) e.preventDefault();
+    };
+    const up = (e) => {
+      const k = e.key;
+      if (k === "ArrowLeft" || k === "a" || k === "A") keysRef.current.left = false;
+      if (k === "ArrowRight" || k === "d" || k === "D") keysRef.current.right = false;
+      if (k === " " || k === "ArrowUp" || k === "w" || k === "W") keysRef.current.jump = false;
+    };
+    window.addEventListener("keydown", down, { passive: false });
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, [onClose]);
+
+  // One game loop per level attempt. Changing level or restarting re-runs
+  // this effect, which is what gives every attempt a clean slate.
+  useEffect(() => {
+    if (won) return undefined;
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const ctx = canvas.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = GAME_W * dpr;
+    canvas.height = GAME_H * dpr;
+    ctx.scale(dpr, dpr);
+
+    const level = LEVELS[levelIndex];
+    const plats = level.platforms.map((p) => ({ ...p, dx: 0, dy: 0, ox: p.x, oy: p.y }));
+    const gems = level.gems.map(([x, y]) => ({ x, y, got: false }));
+    const player = {
+      x: level.spawn.x, y: level.spawn.y, w: 26, h: 30,
+      vx: 0, vy: 0, onGround: false, face: 1, coyote: 0, buffer: 0, run: 0, standing: null,
+    };
+    let deaths = 0;
+    let collected = 0;
+    let cam = 0;
+    let t = 0;
+    let raf = 0;
+    let last = performance.now();
+    let finished = false;
+    // Reset on the first animation frame rather than synchronously here, so
+    // loading a level doesn't cascade an extra render before it has drawn.
+    let hudReset = false;
+
+    const die = () => {
+      deaths += 1;
+      player.x = level.spawn.x; player.y = level.spawn.y;
+      player.vx = 0; player.vy = 0; player.standing = null;
+      setHud({ gems: collected, total: gems.length, deaths });
+    };
+
+    const step = (dt) => {
+      t += dt;
+
+      // Moving platforms first, so a rider inherits this frame's motion.
+      for (const p of plats) {
+        if (!p.mv) continue;
+        const prevX = p.x, prevY = p.y;
+        const off = Math.sin(t * (p.mv.speed / 100) + (p.mv.phase || 0)) * (p.mv.dist / 2);
+        if (p.mv.axis === "x") p.x = p.ox + off; else p.y = p.oy + off;
+        p.dx = p.x - prevX; p.dy = p.y - prevY;
+      }
+      if (player.standing) { player.x += player.standing.dx; player.y += player.standing.dy; }
+
+      const k = keysRef.current;
+      const dir = (k.right ? 1 : 0) - (k.left ? 1 : 0);
+      player.vx = dir * MOVE_SPEED;
+      if (dir !== 0) { player.face = dir; player.run += dt * 12; }
+
+      player.buffer = k.jump ? JUMP_BUFFER : Math.max(0, player.buffer - dt);
+      player.coyote = player.onGround ? COYOTE : Math.max(0, player.coyote - dt);
+      if (player.buffer > 0 && player.coyote > 0) {
+        player.vy = JUMP_VEL;
+        player.buffer = 0; player.coyote = 0; player.onGround = false; player.standing = null;
+      }
+      // Releasing jump early cuts the arc, so taps and holds feel different.
+      if (!k.jump && player.vy < 0) player.vy *= 0.86;
+
+      player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL);
+
+      // Axis-separated sweep: resolve X, then Y. Doing both at once makes
+      // corners eject the player in the wrong direction.
+      player.x += player.vx * dt;
+      for (const p of plats) {
+        if (!overlaps(player, p)) continue;
+        if (player.vx > 0) player.x = p.x - player.w;
+        else if (player.vx < 0) player.x = p.x + p.w;
+        player.vx = 0;
+      }
+
+      player.y += player.vy * dt;
+      player.onGround = false; player.standing = null;
+      for (const p of plats) {
+        if (!overlaps(player, p)) continue;
+        if (player.vy > 0) {
+          player.y = p.y - player.h;
+          player.onGround = true; player.standing = p;
+        } else if (player.vy < 0) {
+          player.y = p.y + p.h;
+        }
+        player.vy = 0;
+      }
+
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.w > level.width) player.x = level.width - player.w;
+
+      for (const h of level.hazards) if (overlaps(player, h)) die();
+      if (player.y > DEATH_Y) die();
+
+      for (const g of gems) {
+        if (g.got) continue;
+        if (overlaps(player, { x: g.x - 11, y: g.y - 11, w: 22, h: 22 })) {
+          g.got = true; collected += 1;
+          setHud({ gems: collected, total: gems.length, deaths });
+        }
+      }
+
+      if (!finished && overlaps(player, level.goal)) {
+        finished = true;
+        if (levelIndex + 1 < LEVELS.length) setLevelIndex(levelIndex + 1);
+        else setWon(true);
+      }
+
+      const target = player.x + player.w / 2 - GAME_W / 2;
+      cam += (Math.max(0, Math.min(target, level.width - GAME_W)) - cam) * Math.min(1, dt * 8);
+    };
+
+    const draw = () => {
+      ctx.clearRect(0, 0, GAME_W, GAME_H);
+      const sky = ctx.createLinearGradient(0, 0, 0, GAME_H);
+      sky.addColorStop(0, "#0b0c1a"); sky.addColorStop(1, "#07070d");
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+      // Two parallax star layers give depth without shipping any art.
+      for (let layer = 0; layer < 2; layer += 1) {
+        const speed = layer === 0 ? 0.2 : 0.45;
+        ctx.fillStyle = layer === 0 ? "#8b5cf633" : "#22d3ee33";
+        for (let i = 0; i < 34; i += 1) {
+          const sx = ((i * 197 + layer * 61) - cam * speed) % (GAME_W + 60);
+          const px = sx < 0 ? sx + GAME_W + 60 : sx;
+          ctx.fillRect(px, (i * 83 + layer * 37) % (GAME_H - 90), 2, 2);
+        }
+      }
+
+      ctx.save();
+      ctx.translate(-cam, 0);
+
+      for (const p of plats) {
+        ctx.fillStyle = "#171a2c";
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = p.mv ? "#22d3ee" : "#8b5cf6";
+        ctx.fillRect(p.x, p.y, p.w, 3);
+        ctx.fillStyle = p.mv ? "#22d3ee22" : "#8b5cf611";
+        ctx.fillRect(p.x, p.y + 3, p.w, 8);
+      }
+
+      for (const h of level.hazards) {
+        ctx.fillStyle = "#f87171";
+        const spikes = Math.max(1, Math.floor(h.w / 14));
+        for (let i = 0; i < spikes; i += 1) {
+          const sx = h.x + (i * h.w) / spikes;
+          ctx.beginPath();
+          ctx.moveTo(sx, h.y + h.h);
+          ctx.lineTo(sx + h.w / spikes / 2, h.y);
+          ctx.lineTo(sx + h.w / spikes, h.y + h.h);
+          ctx.closePath(); ctx.fill();
+        }
+      }
+
+      for (const g of gems) {
+        if (g.got) continue;
+        const gbob = Math.sin(t * 3 + g.x) * 4;
+        ctx.save();
+        ctx.translate(g.x, g.y + gbob);
+        ctx.rotate(t * 2);
+        ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 14;
+        ctx.fillStyle = "#22d3ee";
+        ctx.beginPath();
+        ctx.moveTo(0, -9); ctx.lineTo(7, 0); ctx.lineTo(0, 9); ctx.lineTo(-7, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+
+      const gl = level.goal;
+      ctx.save();
+      ctx.shadowColor = "#8b5cf6"; ctx.shadowBlur = 22;
+      for (let i = 0; i < 3; i += 1) {
+        ctx.strokeStyle = i % 2 ? "#22d3ee" : "#8b5cf6";
+        ctx.lineWidth = 2;
+        const r = 14 + ((t * 26 + i * 16) % 34);
+        ctx.globalAlpha = Math.max(0, 1 - r / 48);
+        ctx.beginPath();
+        ctx.arc(gl.x + gl.w / 2, gl.y + gl.h / 2, r, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#8b5cf6";
+      ctx.fillRect(gl.x + gl.w / 2 - 3, gl.y, 6, gl.h);
+      ctx.restore();
+
+      // Atlas, drawn from primitives so there is no sprite sheet to ship.
+      ctx.save();
+      ctx.translate(player.x + player.w / 2, player.y + player.h / 2);
+      ctx.scale(player.face, 1);
+      const bob = player.onGround ? Math.sin(player.run) * 1.5 : 0;
+      ctx.fillStyle = "#a78bfa";
+      ctx.beginPath(); ctx.roundRect(-13, -11 + bob, 26, 20, 7); ctx.fill();
+      ctx.fillStyle = "#8b5cf6";
+      ctx.beginPath(); ctx.roundRect(4, -15 + bob, 13, 13, 5); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(6, -14 + bob); ctx.lineTo(11, -22 + bob); ctx.lineTo(14, -13 + bob);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#22d3ee";
+      ctx.shadowColor = "#22d3ee"; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(11, -9 + bob, 2.4, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "#a78bfa"; ctx.lineWidth = 3; ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-13, -6 + bob);
+      ctx.quadraticCurveTo(-22, -10 + bob, -19, -18 + bob);
+      ctx.stroke();
+      ctx.fillStyle = "#7c3aed";
+      const swing = player.onGround ? Math.sin(player.run) * 4 : 2;
+      ctx.fillRect(-10 + swing, 8 + bob, 5, 7);
+      ctx.fillRect(5 - swing, 8 + bob, 5, 7);
+      ctx.restore();
+
+      ctx.restore();
+    };
+
+    const loop = (now) => {
+      if (!hudReset) { hudReset = true; setHud({ gems: 0, total: gems.length, deaths: 0 }); }
+      // Clamped so a backgrounded tab does not resume with a huge dt and
+      // tunnel the player straight through the floor.
+      const dt = Math.min((now - last) / 1000, 1 / 30);
+      last = now;
+      step(dt);
+      draw();
+      if (!finished) raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [levelIndex, runId, won]);
+
+  const hold = (key, val) => (e) => { e.preventDefault(); keysRef.current[key] = val; };
+
+  return createPortal(
+    <div className="game-overlay" role="dialog" aria-label="Secret platformer">
+      <div className="game-frame">
+        <div className="game-bar">
+          <span className="game-title">
+            {won ? "All Rounds Cleared" : `Round ${levelIndex + 1}/${LEVELS.length} · ${LEVELS[levelIndex].name}`}
+          </span>
+          <span className="game-stats">
+            <span style={{ color: "var(--accent-2)" }}>◆ {hud.gems}/{hud.total}</span>
+            <span style={{ color: "var(--text-faint)" }}>Falls {hud.deaths}</span>
+          </span>
+          <button onClick={onClose} className="game-x" aria-label="Close game">✕</button>
+        </div>
+
+        <div className="game-stage">
+          <canvas ref={canvasRef} className="game-canvas" />
+          {won && (
+            <div className="game-win">
+              <p className="eyebrow" style={{ color: "var(--accent-2)", marginBottom: "0.6rem" }}>Secret cleared</p>
+              <h3 className="about-h3" style={{ marginBottom: "0.75rem" }}>
+                Atlas <span className="grad-text">wins the round</span>
+              </h3>
+              <p className="about-p" style={{ marginBottom: "1.5rem" }}>
+                You found the thing that isn&apos;t on the menu. Now go practice an actual speech.
+              </p>
+              <button
+                className="btn btn-primary"
+                style={{ padding: "0.8rem 2rem" }}
+                onClick={() => { setWon(false); setLevelIndex(0); setRunId((n) => n + 1); }}
+              >
+                Run It Back
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="game-help">
+          <span><b>←</b> <b>→</b> move</span>
+          <span><b>Space</b> jump</span>
+          <span><b>R</b> restart round</span>
+          <span><b>Esc</b> quit</span>
+        </div>
+
+        <div className="game-touch" aria-hidden="true">
+          <button onPointerDown={hold("left", true)} onPointerUp={hold("left", false)} onPointerLeave={hold("left", false)}>←</button>
+          <button onPointerDown={hold("right", true)} onPointerUp={hold("right", false)} onPointerLeave={hold("right", false)}>→</button>
+          <button className="game-touch-jump" onPointerDown={hold("jump", true)} onPointerUp={hold("jump", false)} onPointerLeave={hold("jump", false)}>JUMP</button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
 function UpdateLog() {
   const [expanded, setExpanded] = useState(false);
   const shown = expanded ? CHANGELOG : CHANGELOG.slice(0, 3);
@@ -1619,8 +2029,29 @@ export default function App() {
   const [dragonReacting, setDragonReacting] = useState(false);
   const [dragonReactKey, setDragonReactKey] = useState(0);
   const [legalTab, setLegalTab] = useState(null);
+  const [gameOpen, setGameOpen] = useState(false);
   const dogReactTimer = useRef(null);
   const dragonReactTimer = useRef(null);
+  const codeRef = useRef("");
+
+  // Listens for SECRET_CODE typed anywhere outside a text field. Keeping a
+  // rolling buffer of the last N characters means the code still fires if
+  // you fumble a few keys first, without ever needing a visible input.
+  useEffect(() => {
+    const onKey = (e) => {
+      const el = e.target;
+      if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key.length !== 1) return;
+      codeRef.current = (codeRef.current + e.key.toLowerCase()).slice(-SECRET_CODE.length);
+      if (codeRef.current === SECRET_CODE) {
+        codeRef.current = "";
+        setGameOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const petDog = () => {
     clearTimeout(dogReactTimer.current);
@@ -1948,6 +2379,129 @@ export default function App() {
           .start-orb--launch { opacity: 0; transition: opacity 0.2s linear; }
           .launch-flash { animation: launchFade 0.5s linear both; transform: scale(4); }
           @keyframes launchFade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+        }
+
+        /* ── Secret platformer ── */
+        .game-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 600;
+          background: rgba(4, 5, 10, 0.88);
+          backdrop-filter: blur(6px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1.5rem;
+          animation: fadeUp 0.25s ease both;
+        }
+        .game-frame {
+          width: 100%;
+          max-width: 860px;
+          background: var(--bg-raised);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-card), 0 0 80px #8b5cf633;
+          overflow: hidden;
+        }
+        .game-bar {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          padding: 0.85rem 1.1rem;
+          border-bottom: 1px solid var(--border-soft);
+        }
+        .game-title {
+          font-family: var(--font-mono);
+          font-size: 0.72rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--text);
+          flex: 1;
+          min-width: 0;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .game-stats {
+          display: flex;
+          gap: 0.9rem;
+          font-family: var(--font-mono);
+          font-size: 0.72rem;
+          letter-spacing: 0.06em;
+          white-space: nowrap;
+        }
+        .game-x {
+          background: transparent;
+          border: 1px solid var(--border);
+          color: var(--text-dim);
+          border-radius: var(--radius-sm);
+          width: 28px; height: 28px;
+          cursor: pointer;
+          font-size: 0.75rem;
+          line-height: 1;
+          flex-shrink: 0;
+        }
+        .game-x:hover { color: var(--text); border-color: var(--accent); }
+
+        .game-stage { position: relative; background: #07070d; }
+        /* The canvas has a fixed 800x450 backing store; this scales it to
+           whatever width the frame ends up at without touching game units. */
+        .game-canvas {
+          display: block;
+          width: 100%;
+          height: auto;
+          aspect-ratio: 16 / 9;
+        }
+        .game-win {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 2rem;
+          background: rgba(7, 7, 13, 0.92);
+        }
+
+        .game-help {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1.1rem;
+          padding: 0.8rem 1.1rem;
+          border-top: 1px solid var(--border-soft);
+          font-family: var(--font-mono);
+          font-size: 0.66rem;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: var(--text-faint);
+        }
+        .game-help b { color: var(--accent-2); font-weight: 700; }
+
+        /* Touch pad: only worth showing where there is no keyboard. */
+        .game-touch { display: none; }
+        @media (hover: none) and (pointer: coarse) {
+          .game-touch {
+            display: flex;
+            gap: 0.6rem;
+            padding: 0.9rem 1.1rem 1.1rem;
+            border-top: 1px solid var(--border-soft);
+          }
+          .game-touch button {
+            flex: 1;
+            padding: 0.9rem 0;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text);
+            background: #171a2c;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            touch-action: none;
+            user-select: none;
+          }
+          .game-touch button:active { background: var(--accent); color: #05060a; }
+          .game-touch-jump { flex: 1.6 !important; color: var(--accent-2) !important; }
         }
 
         /* ── About page ── */
@@ -2560,6 +3114,8 @@ export default function App() {
             ))}
           </div>
         </footer>
+
+        {gameOpen && <SecretGame onClose={() => setGameOpen(false)} />}
 
         {legalTab && createPortal(
           <div
