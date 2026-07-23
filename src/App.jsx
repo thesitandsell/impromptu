@@ -1494,6 +1494,20 @@ function SubmitTab({ onSubmit }) {
 // otherwise. Deliberately kept out of the update log.
 const SECRET_CODE = "rwar";
 
+// Primary way in: pet Atlas this many times before the combo lapses. The
+// labels below escalate so you get told, in plain words, that persisting is
+// the point. Five is short enough to stumble into and long enough that a
+// single idle click never does it.
+const DOG_COMBO_UNLOCK = 5;
+const DOG_COMBO_WINDOW = 4000;
+const DOG_HINTS = [
+  "Atlas says hi! 🐾",
+  "Atlas says hi! 🐾",
+  "Atlas wags harder... 🐾",
+  "Atlas is definitely up to something... ✨",
+  "Atlas wants to show you something! One more! 🎮",
+];
+
 const GAME_W = 800;
 const GAME_H = 450;
 const DEATH_Y = 640;
@@ -1506,6 +1520,9 @@ const JUMP_VEL = -620;
 const MAX_FALL = 900;
 const COYOTE = 0.1;        // still jumpable just after walking off an edge
 const JUMP_BUFFER = 0.12;  // jump pressed just before landing still counts
+// Only has to cover reaction-plus-jump, not the whole flight: once you are
+// airborne the platform vanishing behind you is harmless.
+const CRUMBLE_TIME = 0.55;
 
 const LEVELS = [
   {
@@ -1533,18 +1550,47 @@ const LEVELS = [
     platforms: [
       { x: 0, y: 390, w: 340, h: 90 },
       { x: 430, y: 350, w: 120, h: 22 },
-      { x: 660, y: 300, w: 120, h: 22 },
-      { x: 890, y: 250, w: 120, h: 22 },
-      { x: 1120, y: 320, w: 120, h: 22 },
-      { x: 1340, y: 390, w: 300, h: 90 },
-      { x: 1720, y: 350, w: 110, h: 22, mv: { axis: "y", dist: 110, speed: 55 } },
-      { x: 1960, y: 300, w: 110, h: 22 },
-      { x: 2180, y: 240, w: 110, h: 22 },
-      { x: 2400, y: 390, w: 500, h: 90 },
+      { x: 670, y: 300, w: 110, h: 22 },
+      { x: 900, y: 250, w: 110, h: 22 },
+      { x: 1130, y: 320, w: 110, h: 22 },
+      { x: 1350, y: 390, w: 290, h: 90 },
+      { x: 1730, y: 350, w: 110, h: 22, mv: { axis: "y", dist: 120, speed: 60 } },
+      { x: 1970, y: 300, w: 100, h: 22 },
+      { x: 2190, y: 240, w: 100, h: 22 },
+      { x: 2410, y: 390, w: 490, h: 90 },
     ],
-    hazards: [{ x: 1440, y: 366, w: 60, h: 24 }, { x: 2520, y: 366, w: 60, h: 24 }],
-    gems: [[180, 340], [490, 300], [720, 250], [950, 200], [1180, 270], [1450, 340], [1775, 290], [2015, 250], [2235, 190], [2680, 340]],
-    goal: { x: 2790, y: 310, w: 44, h: 80 },
+    hazards: [
+      { x: 1450, y: 366, w: 60, h: 24 },
+      { x: 2560, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 150, speed: 60 } },
+    ],
+    gems: [[180, 340], [490, 300], [725, 250], [955, 200], [1185, 270], [1450, 340], [1785, 290], [2020, 250], [2240, 190], [2700, 340]],
+    goal: { x: 2800, y: 310, w: 44, h: 80 },
+  },
+  {
+    name: "Semifinals",
+    width: 3060,
+    spawn: { x: 60, y: 300 },
+    platforms: [
+      { x: 0, y: 390, w: 300, h: 90 },
+      { x: 420, y: 345, w: 90, h: 20 },
+      { x: 590, y: 300, w: 80, h: 20, crumble: true },
+      { x: 750, y: 255, w: 80, h: 20, crumble: true },
+      { x: 920, y: 300, w: 90, h: 20 },
+      { x: 1100, y: 250, w: 80, h: 20, crumble: true },
+      { x: 1270, y: 305, w: 90, h: 20 },
+      { x: 1450, y: 390, w: 250, h: 90 },
+      { x: 1810, y: 340, w: 100, h: 20, mv: { axis: "y", dist: 130, speed: 70 } },
+      { x: 2030, y: 285, w: 90, h: 20 },
+      { x: 2210, y: 235, w: 80, h: 20, crumble: true },
+      { x: 2380, y: 290, w: 90, h: 20 },
+      { x: 2560, y: 390, w: 500, h: 90 },
+    ],
+    hazards: [
+      { x: 1530, y: 366, w: 70, h: 24 },
+      { x: 2700, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 170, speed: 70 } },
+    ],
+    gems: [[160, 340], [460, 300], [625, 255], [785, 210], [960, 255], [1135, 205], [1310, 260], [1560, 340], [1855, 290], [2070, 240], [2245, 190], [2420, 245], [2900, 340]],
+    goal: { x: 2960, y: 310, w: 44, h: 80 },
   },
   {
     name: "Finals",
@@ -1563,13 +1609,75 @@ const LEVELS = [
       { x: 1540, y: 390, w: 240, h: 90 },
       { x: 1880, y: 340, w: 90, h: 20, mv: { axis: "y", dist: 120, speed: 70, phase: 1.6 } },
       { x: 2090, y: 290, w: 90, h: 20 },
-      { x: 2290, y: 240, w: 90, h: 20 },
-      { x: 2490, y: 190, w: 90, h: 20 },
-      { x: 2700, y: 390, w: 420, h: 90 },
+      { x: 2290, y: 240, w: 80, h: 20, crumble: true },
+      { x: 2470, y: 190, w: 80, h: 20, crumble: true },
+      { x: 2660, y: 250, w: 90, h: 20 },
+      { x: 2860, y: 390, w: 260, h: 90 },
     ],
-    hazards: [{ x: 1600, y: 366, w: 70, h: 24 }, { x: 2820, y: 366, w: 70, h: 24 }],
-    gems: [[150, 340], [440, 305], [640, 260], [840, 215], [1050, 270], [1370, 230], [1650, 340], [1920, 290], [2130, 240], [2330, 190], [2530, 140], [2960, 340]],
-    goal: { x: 3020, y: 310, w: 44, h: 80 },
+    hazards: [
+      { x: 1600, y: 366, w: 70, h: 24 },
+      { x: 2930, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 140, speed: 75 } },
+    ],
+    gems: [[150, 340], [440, 305], [640, 260], [840, 215], [1050, 270], [1370, 230], [1650, 340], [1920, 290], [2130, 240], [2325, 190], [2505, 140], [2700, 200], [3050, 340]],
+    goal: { x: 3050, y: 310, w: 44, h: 80 },
+  },
+  {
+    name: "Nationals",
+    width: 3400,
+    spawn: { x: 60, y: 300 },
+    platforms: [
+      { x: 0, y: 390, w: 280, h: 90 },
+      { x: 400, y: 340, w: 90, h: 20 },
+      { x: 580, y: 290, w: 80, h: 20, crumble: true },
+      { x: 760, y: 240, w: 80, h: 20, crumble: true },
+      { x: 940, y: 300, w: 90, h: 20 },
+      { x: 1120, y: 250, w: 90, h: 20, mv: { axis: "y", dist: 130, speed: 75 } },
+      { x: 1310, y: 200, w: 80, h: 20, crumble: true },
+      { x: 1490, y: 270, w: 90, h: 20 },
+      { x: 1670, y: 390, w: 240, h: 90 },
+      { x: 2040, y: 330, w: 90, h: 20, mv: { axis: "x", dist: 200, speed: 80 } },
+      { x: 2350, y: 280, w: 90, h: 20 },
+      { x: 2530, y: 230, w: 80, h: 20, crumble: true },
+      { x: 2700, y: 180, w: 80, h: 20, crumble: true },
+      { x: 2880, y: 250, w: 90, h: 20 },
+      { x: 3060, y: 390, w: 340, h: 90 },
+    ],
+    hazards: [
+      { x: 1740, y: 366, w: 70, h: 24 },
+      { x: 3150, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 160, speed: 70 } },
+    ],
+    gems: [[140, 340], [440, 295], [615, 245], [795, 195], [980, 255], [1160, 205], [1345, 155], [1530, 225], [1780, 340], [2080, 285], [2390, 235], [2565, 185], [2735, 135], [2920, 205], [3320, 340]],
+    goal: { x: 3320, y: 310, w: 44, h: 80 },
+  },
+  {
+    name: "Insane-O Crazy",
+    width: 3600,
+    spawn: { x: 60, y: 300 },
+    platforms: [
+      { x: 0, y: 390, w: 260, h: 90 },
+      { x: 390, y: 345, w: 80, h: 20 },
+      { x: 570, y: 300, w: 80, h: 20, crumble: true },
+      { x: 750, y: 255, w: 80, h: 20, crumble: true },
+      { x: 930, y: 210, w: 80, h: 20, crumble: true },
+      { x: 1110, y: 280, w: 80, h: 20 },
+      { x: 1290, y: 235, w: 80, h: 20, mv: { axis: "y", dist: 140, speed: 85 } },
+      { x: 1470, y: 190, w: 80, h: 20, crumble: true },
+      { x: 1650, y: 390, w: 220, h: 90 },
+      { x: 2000, y: 330, w: 80, h: 20, mv: { axis: "x", dist: 300, speed: 85 } },
+      { x: 2330, y: 270, w: 80, h: 20 },
+      { x: 2510, y: 215, w: 80, h: 20, crumble: true },
+      { x: 2690, y: 160, w: 80, h: 20, crumble: true },
+      { x: 2870, y: 230, w: 80, h: 20 },
+      { x: 3050, y: 300, w: 80, h: 20 },
+      { x: 3230, y: 390, w: 370, h: 90 },
+    ],
+    hazards: [
+      { x: 1700, y: 366, w: 80, h: 24 },
+      { x: 3320, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 200, speed: 80 } },
+      { x: 3450, y: 366, w: 60, h: 24, mv: { axis: "x", dist: 150, speed: 95, phase: 2.1 } },
+    ],
+    gems: [[120, 340], [430, 300], [610, 255], [790, 210], [970, 165], [1150, 235], [1330, 190], [1510, 145], [1760, 340], [2040, 285], [2370, 225], [2550, 170], [2730, 115], [2910, 185], [3090, 255], [3400, 340]],
+    goal: { x: 3500, y: 310, w: 44, h: 80 },
   },
 ];
 
@@ -1622,7 +1730,8 @@ function SecretGame({ onClose }) {
     ctx.scale(dpr, dpr);
 
     const level = LEVELS[levelIndex];
-    const plats = level.platforms.map((p) => ({ ...p, dx: 0, dy: 0, ox: p.x, oy: p.y }));
+    const plats = level.platforms.map((p) => ({ ...p, dx: 0, dy: 0, ox: p.x, oy: p.y, fuse: null, gone: false }));
+    const hzds = level.hazards.map((h) => ({ ...h, ox: h.x, oy: h.y }));
     const gems = level.gems.map(([x, y]) => ({ x, y, got: false }));
     const player = {
       x: level.spawn.x, y: level.spawn.y, w: 26, h: 30,
@@ -1643,6 +1752,9 @@ function SecretGame({ onClose }) {
       deaths += 1;
       player.x = level.spawn.x; player.y = level.spawn.y;
       player.vx = 0; player.vy = 0; player.standing = null;
+      // Crumbled platforms come back, otherwise a death would leave the
+      // level in a state you can no longer finish.
+      for (const p of plats) { p.fuse = null; p.gone = false; }
       setHud({ gems: collected, total: gems.length, deaths });
     };
 
@@ -1656,6 +1768,16 @@ function SecretGame({ onClose }) {
         const off = Math.sin(t * (p.mv.speed / 100) + (p.mv.phase || 0)) * (p.mv.dist / 2);
         if (p.mv.axis === "x") p.x = p.ox + off; else p.y = p.oy + off;
         p.dx = p.x - prevX; p.dy = p.y - prevY;
+      }
+      for (const h of hzds) {
+        if (!h.mv) continue;
+        const off = Math.sin(t * (h.mv.speed / 100) + (h.mv.phase || 0)) * (h.mv.dist / 2);
+        if (h.mv.axis === "x") h.x = h.ox + off; else h.y = h.oy + off;
+      }
+      for (const p of plats) {
+        if (!p.crumble || p.fuse === null || p.gone) continue;
+        p.fuse -= dt;
+        if (p.fuse <= 0) { p.gone = true; if (player.standing === p) player.standing = null; }
       }
       if (player.standing) { player.x += player.standing.dx; player.y += player.standing.dy; }
 
@@ -1679,7 +1801,7 @@ function SecretGame({ onClose }) {
       // corners eject the player in the wrong direction.
       player.x += player.vx * dt;
       for (const p of plats) {
-        if (!overlaps(player, p)) continue;
+        if (p.gone || !overlaps(player, p)) continue;
         if (player.vx > 0) player.x = p.x - player.w;
         else if (player.vx < 0) player.x = p.x + p.w;
         player.vx = 0;
@@ -1688,10 +1810,11 @@ function SecretGame({ onClose }) {
       player.y += player.vy * dt;
       player.onGround = false; player.standing = null;
       for (const p of plats) {
-        if (!overlaps(player, p)) continue;
+        if (p.gone || !overlaps(player, p)) continue;
         if (player.vy > 0) {
           player.y = p.y - player.h;
           player.onGround = true; player.standing = p;
+          if (p.crumble && p.fuse === null) p.fuse = CRUMBLE_TIME;
         } else if (player.vy < 0) {
           player.y = p.y + p.h;
         }
@@ -1701,7 +1824,7 @@ function SecretGame({ onClose }) {
       if (player.x < 0) player.x = 0;
       if (player.x + player.w > level.width) player.x = level.width - player.w;
 
-      for (const h of level.hazards) if (overlaps(player, h)) die();
+      for (const h of hzds) if (overlaps(player, h)) die();
       if (player.y > DEATH_Y) die();
 
       for (const g of gems) {
@@ -1743,15 +1866,24 @@ function SecretGame({ onClose }) {
       ctx.translate(-cam, 0);
 
       for (const p of plats) {
+        if (p.gone) continue;
+        // A lit fuse shakes the platform and flips its edge to amber, so the
+        // "get off now" signal is readable without any text.
+        const lit = p.crumble && p.fuse !== null;
+        const sh = lit ? Math.sin(t * 45) * 1.6 : 0;
+        const edge = p.crumble ? (lit ? "#fb923c" : "#facc15") : p.mv ? "#22d3ee" : "#8b5cf6";
+        ctx.save();
+        ctx.globalAlpha = lit ? 0.55 + 0.45 * (p.fuse / CRUMBLE_TIME) : 1;
         ctx.fillStyle = "#171a2c";
-        ctx.fillRect(p.x, p.y, p.w, p.h);
-        ctx.fillStyle = p.mv ? "#22d3ee" : "#8b5cf6";
-        ctx.fillRect(p.x, p.y, p.w, 3);
-        ctx.fillStyle = p.mv ? "#22d3ee22" : "#8b5cf611";
-        ctx.fillRect(p.x, p.y + 3, p.w, 8);
+        ctx.fillRect(p.x + sh, p.y, p.w, p.h);
+        ctx.fillStyle = edge;
+        ctx.fillRect(p.x + sh, p.y, p.w, 3);
+        ctx.globalAlpha *= 0.13;
+        ctx.fillRect(p.x + sh, p.y + 3, p.w, 8);
+        ctx.restore();
       }
 
-      for (const h of level.hazards) {
+      for (const h of hzds) {
         ctx.fillStyle = "#f87171";
         const spikes = Math.max(1, Math.floor(h.w / 14));
         for (let i = 0; i < spikes; i += 1) {
@@ -2030,13 +2162,15 @@ export default function App() {
   const [dragonReactKey, setDragonReactKey] = useState(0);
   const [legalTab, setLegalTab] = useState(null);
   const [gameOpen, setGameOpen] = useState(false);
+  const [dogCombo, setDogCombo] = useState(0);
   const dogReactTimer = useRef(null);
   const dragonReactTimer = useRef(null);
+  const dogComboTimer = useRef(null);
+  const dogComboRef = useRef(0);
   const codeRef = useRef("");
 
-  // Listens for SECRET_CODE typed anywhere outside a text field. Keeping a
-  // rolling buffer of the last N characters means the code still fires if
-  // you fumble a few keys first, without ever needing a visible input.
+  // Kept as a shortcut for anyone who already knows it, but clicking Atlas
+  // is the intended way in now.
   useEffect(() => {
     const onKey = (e) => {
       const el = e.target;
@@ -2053,11 +2187,34 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  useEffect(() => () => {
+    clearTimeout(dogComboTimer.current);
+  }, []);
+
+  // Petting Atlas repeatedly is the real door. Clicking a mascot that already
+  // reacts is something people do naturally, and DOG_HINTS escalates so the
+  // third and fourth clicks openly tell you to keep going. The combo lapses
+  // after a few seconds so ordinary petting never trips it by accident.
   const petDog = () => {
     clearTimeout(dogReactTimer.current);
+    clearTimeout(dogComboTimer.current);
     setDogReacting(true);
     setDogReactKey(k => k + 1);
     dogReactTimer.current = setTimeout(() => setDogReacting(false), 1400);
+
+    dogComboRef.current += 1;
+    if (dogComboRef.current >= DOG_COMBO_UNLOCK) {
+      dogComboRef.current = 0;
+      setDogCombo(0);
+      setDogReacting(false);
+      setGameOpen(true);
+      return;
+    }
+    setDogCombo(dogComboRef.current);
+    dogComboTimer.current = setTimeout(() => {
+      dogComboRef.current = 0;
+      setDogCombo(0);
+    }, DOG_COMBO_WINDOW);
   };
 
   const petDragon = () => {
@@ -2379,6 +2536,16 @@ export default function App() {
           .start-orb--launch { opacity: 0; transition: opacity 0.2s linear; }
           .launch-flash { animation: launchFade 0.5s linear both; transform: scale(4); }
           @keyframes launchFade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+        }
+
+        /* Builds while the pet-combo is live, so persisting visibly does
+           something before the game ever appears. */
+        .mascot--charging {
+          animation: mascotCharge 0.9s ease-in-out infinite;
+        }
+        @keyframes mascotCharge {
+          0%, 100% { filter: drop-shadow(0 0 6px #8b5cf6aa); }
+          50%      { filter: drop-shadow(0 0 20px #22d3eeee); }
         }
 
         /* ── Secret platformer ── */
@@ -3046,13 +3213,18 @@ export default function App() {
               <div
                 key={dogReactKey}
                 onClick={petDog}
-                className={dogReacting ? "mascot mascot-pop" : "mascot"}
-                style={{ opacity: dogReacting ? 1 : 0.55 }}
+                className={`${dogReacting ? "mascot mascot-pop" : "mascot"}${dogCombo >= 2 ? " mascot--charging" : ""}`}
+                style={{ opacity: dogReacting || dogCombo >= 2 ? 1 : 0.55 }}
                 role="button"
                 aria-label="Pet Atlas"
               >
                 <CyborgDog />
-                {dogReacting && <MascotReaction label="Atlas says hi! 🐾" emojis={["🦴", "✨", "🐾"]} />}
+                {dogReacting && (
+                  <MascotReaction
+                    label={DOG_HINTS[Math.min(dogCombo, DOG_HINTS.length - 1)]}
+                    emojis={dogCombo >= 3 ? ["✨", "🎮", "⚡"] : ["🦴", "✨", "🐾"]}
+                  />
+                )}
               </div>
             </div>
           </div>
