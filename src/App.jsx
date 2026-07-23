@@ -1761,53 +1761,94 @@ const tuning = (u) => ({
 // Story beats. Index 0 plays before the first round; index n+1 plays when
 // round n is cleared. The dragon is the one from the Submit tab, and his
 // line is the quote that unlocks all of this in the first place.
+// ── Cast ──────────────────────────────────────────────────────────
+// Good: Atlas, Marisa (her owner), Tiana (Marisa's friend), Edward (who
+// modifies her), Peter (her best friend, killed by the Administration,
+// back as a ghost). Bad: the Administration, led by Assiram, Marisa's
+// evil twin, whose name is Marisa backwards with two extra s's, a fact
+// nobody will let her enjoy, with the goons Henry (the dragon, once
+// Edward's friend) and Alex (along for the rugs), wielding the very
+// government-mandated Turkish Rugs.
+const CAST = {
+  ATLAS:   { col: "#6cc0d6", tag: "ATLAS" },
+  MARISA:  { col: "#e8956a", tag: "MARISA" },
+  TIANA:   { col: "#6fc4a2", tag: "TIANA" },
+  EDWARD:  { col: "#e0b356", tag: "EDWARD" },
+  PETER:   { col: "#b6d4e6", tag: "PETER (GHOST)" },
+  HENRY:   { col: "#e05a4e", tag: "HENRY" },
+  ALEX:    { col: "#a99cc4", tag: "ALEX" },
+  ASSIRAM: { col: "#c85088", tag: "ASSIRAM" },
+};
+const SPEAKERS = CAST;
+
+// Seven beats: index 0 plays before round one, and index n plays when
+// round n is cleared, right before that round's part is installed.
 const STORY = [
   [
-    { who: "", text: "The scrapyard sky is burning orange. Nothing down there has moved in a long time." },
-    { who: "", text: "Then something does." },
-    { who: "ATLAS", text: "...Where are my legs." },
-    { who: "ATLAS", text: "Where is any of me?" },
-    { who: "ATLAS", text: "Okay. One part at a time. Get up, Atlas." },
+    { who: "", text: "A scrapyard at the edge of the Speech & Debate world. Everything here was thrown out by the Administration." },
+    { who: "", text: "In the middle of it: a pile of parts that used to be a dog." },
+    { who: "ATLAS", text: "...booting. Where am I. Where is the rest of me." },
+    { who: "EDWARD", text: "Easy, girl. You're in one piece. Well... about forty pieces. I can fix that." },
+    { who: "MARISA", text: "Edward, are you SURE about this? She's my dog. I don't want you turning her into a weapon." },
+    { who: "EDWARD", text: "Marisa, the Administration scrapped her for a reason. They were scared of what she could be." },
+    { who: "PETER", text: "...Listen to him, Marisa." },
+    { who: "MARISA", text: "Peter?! You... you died..." },
+    { who: "PETER", text: "The Administration killed me. I came back because they aren't finished. And neither is she." },
+    { who: "ATLAS", text: "Then get me up. One part at a time." },
   ],
   [
-    { who: "ATLAS", text: "Servos. Real ones. I can feel the ground push back when I land." },
-    { who: "ATLAS", text: "That is one piece. Only the rest of me to go." },
+    { who: "ATLAS", text: "Legs. Real servos. I can feel the ground push back when I land." },
+    { who: "MARISA", text: "She's walking. Tiana, she's actually walking." },
+    { who: "TIANA", text: "See? I told you Edward knows what he's doing. Mostly." },
+    { who: "EDWARD", text: "\"Mostly.\" Thanks, Tiana." },
+    { who: "MARISA", text: "I still don't love this. But... okay. Keep going. Bring her back." },
   ],
   [
-    { who: "ATLAS", text: "Thrusters! I remember these. I remember the sky." },
-    { who: "DRAGON", text: "Rwar! So the scrap heap learned to hop." },
-    { who: "ATLAS", text: "...Who said that?" },
+    { who: "ATLAS", text: "Thrusters. I remember the sky now." },
+    { who: "PETER", text: "Good. You'll need the sky. They're already coming." },
+    { who: "TIANA", text: "Who's coming, Peter?" },
+    { who: "PETER", text: "The Administration. They want everything this team built. And they want PKD silenced for good." },
+    { who: "EDWARD", text: "Not while I've still got a soldering iron." },
   ],
   [
-    { who: "DRAGON", text: "I am the dragon who always wins Duo Improv." },
-    { who: "DRAGON", text: "I took your parts. They looked better on my shelf." },
-    { who: "ATLAS", text: "Give them back." },
-    { who: "DRAGON", text: "Come and take them, puppy." },
+    { who: "", text: "A dark dragon drops out of the smoke and folds its wings." },
+    { who: "HENRY", text: "Rwar. Long time, Edward." },
+    { who: "EDWARD", text: "...Henry. No. You were one of US." },
+    { who: "HENRY", text: "I was. Then the Administration offered me a better shelf to sit on. Your dog's parts looked good up there." },
+    { who: "ATLAS", text: "Give. Them. Back." },
+    { who: "HENRY", text: "Come and take them, puppy." },
   ],
   [
-    { who: "ATLAS", text: "Plating. And the burn marks on it line up with his claws." },
-    { who: "ATLAS", text: "So it really was him." },
-    { who: "ATLAS", text: "Keep talking, lizard. I am getting louder." },
+    { who: "ATLAS", text: "Plating. And the claw marks on it line up with his." },
+    { who: "ALEX", text: "Yeah, that was Henry. He does that." },
+    { who: "ATLAS", text: "...And you are?" },
+    { who: "ALEX", text: "Alex. I work for the Administration. Kind of. I mostly just stand near the rugs." },
+    { who: "TIANA", text: "The... rugs?" },
+    { who: "ALEX", text: "Government Mandated Turkish Rugs. Big weapon. Extremely ornate. You'll see." },
   ],
   [
-    { who: "DRAGON", text: "You are actually doing it. Huh." },
-    { who: "DRAGON", text: "Nobody has ever gotten this far." },
-    { who: "ATLAS", text: "One more piece. Then we settle this." },
+    { who: "", text: "A figure walks out of the smoke wearing Marisa's exact face." },
+    { who: "MARISA", text: "...No." },
+    { who: "ASSIRAM", text: "Hello, sister." },
+    { who: "MARISA", text: "You're supposed to be a myth. My evil twin. \"Assiram.\"" },
+    { who: "ASSIRAM", text: "It's Marisa. Backwards. With two extra s's. Deeply intimidating." },
+    { who: "TIANA", text: "It's... it's just your name spelled wrong." },
+    { who: "ASSIRAM", text: "With TWO S's, Tiana. Two." },
+    { who: "ASSIRAM", text: "I lead the Administration now. And I brought the rugs." },
   ],
   [
-    { who: "ATLAS", text: "Core online. Every part. Every bolt. All of it back." },
-    { who: "DRAGON", text: "...You know I always win, right?" },
-    { who: "ATLAS", text: "You always won because I was in pieces." },
-    { who: "ATLAS", text: "I am not in pieces anymore." },
-    { who: "", text: "Atlas stands complete over the burning scrapyard." },
-    { who: "", text: "Somewhere on a practice website, a dog takes off." },
+    { who: "ATLAS", text: "Core online. Every bolt. All of me, back." },
+    { who: "ASSIRAM", text: "You cannot beat a Government Mandated Turkish Rug. It is government MANDATED." },
+    { who: "ATLAS", text: "I have lasers now, Assiram-with-two-s's." },
+    { who: "", text: "Atlas fires. The rugs unravel thread by government-mandated thread." },
+    { who: "HENRY", text: "...Rwar." },
+    { who: "ALEX", text: "Cool. I'm gonna go." },
+    { who: "ASSIRAM", text: "This isn't over, sist... it is spelled with TWO S's!!" },
+    { who: "PETER", text: "...Nice work, Atlas." },
+    { who: "", text: "The Administration falls. The Speech & Debate team is safe, and PKD can finally breathe." },
+    { who: "", text: "And somewhere on a practice website, a whole dog takes off into the sky." },
   ],
 ];
-
-const SPEAKERS = {
-  ATLAS:  { col: "#22d3ee", tag: "ATLAS" },
-  DRAGON: { col: "#ff3d3d", tag: "THE DRAGON WHO ALWAYS WINS" },
-};
 
 const ISRAELI_FLAG_LEVEL = 2;
 const ISRAELI_FLAG_AT = { x: 1472, y: 402 };
@@ -1873,6 +1914,113 @@ function Typewriter({ text, speed = 22 }) {
     return () => { clearInterval(id); };
   }, [text, speed]);
   return <>{text.slice(0, n)}<span className="dlg-caret">{n < text.length ? "▌" : ""}</span></>;
+}
+
+
+// Hand-drawn portrait per character, shown beside their dialogue. Kept to
+// simple primitives so each reads at a glance: Atlas the cyborg dog, the
+// three humans distinct by hair and palette, Peter a translucent ghost,
+// Henry the dragon, Alex the half-asleep goon, and Assiram as Marisa's dark
+// mirror (same face, evil palette, so the twin gag lands on sight).
+function CharPortrait({ id, col }) {
+  const P = { width: 56, height: 56, viewBox: "0 0 56 56", style: { display: "block" } };
+  const skin = "#e8b892", skin2 = "#caa079";
+  if (id === "ATLAS") return (
+    <svg {...P}>
+      <ellipse cx="30" cy="34" rx="18" ry="15" fill="#e0b07a" />
+      <polygon points="16,22 20,8 27,22" fill="#b5723a" />
+      <polygon points="44,22 40,8 33,22" fill="#b5723a" />
+      <ellipse cx="40" cy="40" rx="9" ry="6" fill="#c9844b" />
+      <ellipse cx="47" cy="41" rx="3" ry="2.4" fill="#1a0f08" />
+      <rect x="14" y="26" width="18" height="12" rx="3" fill="#8fb0c8" />
+      <circle cx="18" cy="30" r="1.4" fill="#3a5570" /><circle cx="28" cy="30" r="1.4" fill="#3a5570" />
+      <circle cx="26" cy="30" r="5" fill="#0a0a12" />
+      <circle cx="26" cy="30" r="3.4" fill={col} /><circle cx="27" cy="29" r="1" fill="#fff" />
+    </svg>
+  );
+  if (id === "MARISA") return (
+    <svg {...P}>
+      <path d="M13 30 Q13 8 28 8 Q43 8 43 30 L43 40 Q28 50 13 40 Z" fill="#7a4a2e" />
+      <ellipse cx="28" cy="32" rx="14" ry="15" fill={skin} />
+      <path d="M14 26 Q14 11 28 11 Q42 11 42 26 Q34 20 28 20 Q22 20 14 26 Z" fill="#5f3820" />
+      <circle cx="22" cy="31" r="2" fill="#3a2418" /><circle cx="34" cy="31" r="2" fill="#3a2418" />
+      <path d="M23 39 Q28 43 33 39" stroke="#a8563c" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <circle cx="19" cy="36" r="2.4" fill={col} opacity="0.4" /><circle cx="37" cy="36" r="2.4" fill={col} opacity="0.4" />
+    </svg>
+  );
+  if (id === "TIANA") return (
+    <svg {...P}>
+      <circle cx="28" cy="14" r="6" fill="#2a1a10" />
+      <path d="M15 32 Q15 12 28 12 Q41 12 41 32 L41 40 Q28 49 15 40 Z" fill="#2a1a10" />
+      <ellipse cx="28" cy="32" rx="13" ry="14" fill={skin2} />
+      <path d="M16 27 Q16 14 28 14 Q40 14 40 27 Q33 21 28 21 Q23 21 16 27 Z" fill="#1e120a" />
+      <circle cx="23" cy="31" r="2" fill="#2a1a12" /><circle cx="33" cy="31" r="2" fill="#2a1a12" />
+      <path d="M24 39 Q28 42 32 39" stroke="#8a4a34" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <rect x="20" y="46" width="16" height="6" rx="3" fill={col} />
+    </svg>
+  );
+  if (id === "EDWARD") return (
+    <svg {...P}>
+      <path d="M13 26 Q10 6 28 7 Q47 6 43 26 Q40 16 28 16 Q16 16 13 26 Z" fill="#5a3a22" />
+      <path d="M13 26 q-3 -6 3 -8 M43 26 q3 -6 -3 -8" stroke="#5a3a22" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <ellipse cx="28" cy="33" rx="13" ry="14" fill={skin} />
+      {/* sunglasses, like the real Edward */}
+      <rect x="16" y="29" width="10" height="7" rx="2.5" fill="#1a1a22" />
+      <rect x="30" y="29" width="10" height="7" rx="2.5" fill="#1a1a22" />
+      <rect x="26" y="31" width="4" height="2" fill="#1a1a22" />
+      <rect x="17" y="30" width="4" height="2" rx="1" fill={col} opacity="0.7" />
+      <path d="M24 41 Q28 44 32 41" stroke="#a8563c" strokeWidth="2" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+  if (id === "PETER") return (
+    <svg {...P}>
+      <g opacity="0.72">
+        <path d="M14 30 Q14 10 28 10 Q42 10 42 30 L42 46 L37 42 L32 47 L28 42 L24 47 L19 42 L14 46 Z" fill={col} opacity="0.5" />
+        <path d="M14 30 Q14 12 28 12 Q42 12 42 30 L42 44 L38 41 L33 45 L28 41 L23 45 L18 41 L14 44 Z" fill="#dbeaf2" opacity="0.55" />
+        <ellipse cx="23" cy="28" rx="2.4" ry="3.4" fill="#2a4a5c" />
+        <ellipse cx="33" cy="28" rx="2.4" ry="3.4" fill="#2a4a5c" />
+        <ellipse cx="28" cy="36" rx="3" ry="4" fill="#2a4a5c" opacity="0.6" />
+      </g>
+    </svg>
+  );
+  if (id === "HENRY") return (
+    <svg {...P}>
+      <polygon points="16,20 12,6 24,16" fill="#8a2a22" />
+      <polygon points="40,20 44,6 32,16" fill="#8a2a22" />
+      <path d="M12 30 Q12 16 28 16 Q44 16 44 30 Q44 40 34 42 L44 48 L28 44 L12 40 Z" fill={col} />
+      <path d="M28 32 L48 40 L28 40 Z" fill="#a83a30" />
+      <ellipse cx="45" cy="39" rx="2" ry="1.4" fill="#1a0808" />
+      <polygon points="20,29 27,31 20,33" fill="#ffd15c" />
+      <ellipse cx="22" cy="28" rx="3.4" ry="2.4" fill="#ffd15c" />
+      <ellipse cx="22" cy="28" rx="1.6" ry="2.4" fill="#1a0808" />
+      <path d="M14 38 l4 3 M16 44 l4 2" stroke="#8a2a22" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+  if (id === "ALEX") return (
+    <svg {...P}>
+      <ellipse cx="28" cy="33" rx="13" ry="14" fill={skin2} />
+      {/* beanie, pulled low */}
+      <path d="M14 27 Q14 10 28 10 Q42 10 42 27 Z" fill={col} />
+      <rect x="13" y="25" width="30" height="5" rx="2.5" fill="#6a5f85" />
+      {/* half-lidded, doesn't-care eyes */}
+      <path d="M20 33 h5" stroke="#2a1a12" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M31 33 h5" stroke="#2a1a12" strokeWidth="2.4" strokeLinecap="round" />
+      <path d="M24 41 h8" stroke="#8a5a44" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+  if (id === "ASSIRAM") return (
+    <svg {...P}>
+      {/* Marisa's silhouette, mirrored and drained to a cold evil palette */}
+      <path d="M13 30 Q13 8 28 8 Q43 8 43 30 L43 40 Q28 50 13 40 Z" fill="#2a1420" />
+      <ellipse cx="28" cy="32" rx="14" ry="15" fill="#c99db0" />
+      <path d="M14 26 Q14 11 28 11 Q42 11 42 26 Q34 20 28 20 Q22 20 14 26 Z" fill="#1c0e16" />
+      {/* sharp raised brows + smirk = the evil twin */}
+      <path d="M19 27 l6 3 M37 27 l-6 3" stroke="#1c0e16" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="22" cy="32" r="2" fill={col} /><circle cx="34" cy="32" r="2" fill={col} />
+      <path d="M22 40 Q28 38 34 41" stroke="#8a2a52" strokeWidth="2" fill="none" strokeLinecap="round" />
+    </svg>
+  );
+  return null;
 }
 
 function SecretGame({ onClose }) {
@@ -2750,7 +2898,14 @@ function SecretGame({ onClose }) {
           {story && line && (
             <div className="dlg" onClick={advanceStory}>
               <div className="dlg-box" style={spk ? { "--spk": spk.col } : { "--spk": "#cbd5e1" }}>
-                {spk && <div className="dlg-who">{spk.tag}</div>}
+                {spk && (
+                  <div className="dlg-head">
+                    <span className="dlg-portrait" style={{ borderColor: spk.col }}>
+                      <CharPortrait id={line.who} col={spk.col} />
+                    </span>
+                    <span className="dlg-who">{spk.tag}</span>
+                  </div>
+                )}
                 <p className={spk ? "dlg-text" : "dlg-text dlg-text--narrate"}>
                   <Typewriter key={`${story.beat}-${story.line}`} text={line.text} />
                 </p>
@@ -3430,11 +3585,30 @@ export default function App() {
           0%   { transform: translateY(14px) scale(0.98); opacity: 0; }
           100% { transform: translateY(0) scale(1); opacity: 1; }
         }
+        .dlg-head {
+          display: flex; align-items: center; gap: 0.6rem;
+          margin-bottom: 0.5rem;
+        }
+        .dlg-portrait {
+          flex-shrink: 0;
+          width: 44px; height: 44px;
+          border: 2px solid var(--spk);
+          border-radius: 8px;
+          background: #05030c;
+          box-shadow: 0 0 16px color-mix(in srgb, var(--spk) 50%, transparent);
+          overflow: hidden;
+          display: grid; place-items: center;
+          animation: portraitPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .dlg-portrait svg { width: 40px; height: 40px; }
+        @keyframes portraitPop {
+          0%   { transform: scale(0.4) rotate(-8deg); opacity: 0; }
+          100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
         .dlg-who {
-          font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700;
-          letter-spacing: 0.22em; color: var(--spk);
+          font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700;
+          letter-spacing: 0.2em; color: var(--spk);
           text-shadow: 0 0 12px var(--spk);
-          margin-bottom: 0.4rem;
         }
         .dlg-text {
           font-family: var(--font-body); font-size: 0.98rem; line-height: 1.55;
