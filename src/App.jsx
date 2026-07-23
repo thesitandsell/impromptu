@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 
 const BUILTIN_QUOTES = [
-  // Easy — simple, immediately clear, no unpacking required
+  // Easy: simple, immediately clear, no unpacking required
   { text: "The only way to do great work is to love what you do.", author: "Steve Jobs", difficulty: "Easy" },
   { text: "It's not that I'm so smart, it's just that I stay with problems longer.", author: "Albert Einstein", difficulty: "Easy" },
   { text: "Slow and steady wins the race.", author: "Aesop, \"The Tortoise and the Hare\"", difficulty: "Easy" },
@@ -22,7 +22,7 @@ const BUILTIN_QUOTES = [
   { text: "The most difficult thing is the decision to act, the rest is merely tenacity.", author: "Amelia Earhart", difficulty: "Easy" },
   { text: "A journey of a thousand miles begins with a single step.", author: "Laozi", difficulty: "Easy" },
   { text: "The unexamined life is not worth living.", author: "Socrates", difficulty: "Easy" },
-  // Medium — pointed in a few different directions at once
+  // Medium: pointed in a few different directions at once
   { text: "Habit is habit, and not to be flung out of the window by any man, but coaxed downstairs a step at a time.", author: "Mark Twain", difficulty: "Medium" },
   { text: "Some books are to be tasted, others to be swallowed, and some few to be chewed and digested.", author: "Francis Bacon", difficulty: "Medium" },
   { text: "Only the wisest and the stupidest of men never change.", author: "Confucius", difficulty: "Medium" },
@@ -35,7 +35,7 @@ const BUILTIN_QUOTES = [
   { text: "Bad men need nothing more to compass their ends than that good men should look on and do nothing.", author: "John Stuart Mill", difficulty: "Medium" },
   { text: "The question is not what you look at, but what you see.", author: "Henry David Thoreau", difficulty: "Medium" },
   { text: "Against stupidity the gods themselves contend in vain.", author: "Friedrich Schiller", difficulty: "Medium" },
-  // Hard — abstract and dense, takes real work to unpack
+  // Hard: abstract and dense, takes real work to unpack
   { text: "Our inventions are wont to be pretty toys, which distract our attention from serious things. They are but improved means to an unimproved end.", author: "Henry David Thoreau", difficulty: "Hard" },
   { text: "We abuse land because we regard it as a commodity belonging to us. When we see land as a community to which we belong, we may begin to use it with love and respect.", author: "Aldo Leopold", difficulty: "Hard" },
   { text: "The fundamental cause of the trouble is that in the modern world the stupid are cocksure, while the intelligent are full of doubt.", author: "Bertrand Russell", difficulty: "Hard" },
@@ -48,7 +48,7 @@ const BUILTIN_QUOTES = [
   { text: "The good we secure for ourselves is precarious and uncertain until it is secured for all of us and incorporated into our common life.", author: "Jane Addams", difficulty: "Hard" },
   { text: "Cowardice asks the question: is it safe? Expediency asks the question: is it politic? Vanity asks the question: is it popular? But conscience asks the question: is it right?", author: "Martin Luther King Jr.", difficulty: "Hard" },
   { text: "The unleashed power of the atom has changed everything save our modes of thinking, and we thus drift toward unparalleled catastrophe.", author: "Albert Einstein", difficulty: "Hard" },
-  // Insane-O Crazy — completely unhinged, barely makes sense, that's the point
+  // Insane-O Crazy: completely unhinged, barely makes sense, that's the point
   { text: "Bro WHAT ARE YOU DOING??", author: "CS:GO Players", difficulty: "Insane-O Crazy" },
   { text: "Bruh, bruh.", author: "Oliver, Invincible", difficulty: "Insane-O Crazy" },
   { text: "Numbers, Mason. What do they mean?", author: "Call of Duty: Black Ops", difficulty: "Insane-O Crazy" },
@@ -76,7 +76,7 @@ const DIFFICULTY_CONFIG = {
 
 // Quotes saved before the tier was renamed still carry the old spelling in
 // Firestore. The rules forbid update/delete, so those documents can never be
-// rewritten — remap them on read instead, or they belong to no tier at all
+// rewritten, so remap them on read instead, or they belong to no tier at all
 // and show up in "All" while being unreachable from every difficulty filter.
 const LEGACY_DIFFICULTY = {
   "Insaneo CRAZY": "Insane-O Crazy",
@@ -87,7 +87,7 @@ const LEGACY_DIFFICULTY = {
 // ── Update log ──────────────────────────────────────────────────
 // Newest first. Written for students using the site, not for developers:
 // say what changed for *them*, not which component was refactored.
-// `tag` drives the dot colour — "new" | "fix" | "big".
+// `tag` drives the dot colour: "new" | "fix" | "big".
 const CHANGELOG = [
   {
     date: "2026-07-23",
@@ -96,7 +96,7 @@ const CHANGELOG = [
     items: [
       "Added this About page, so you know who's behind the site.",
       "Added the update log you're reading right now.",
-      "Fixed community submissions for the Insane-O Crazy tier — they were being silently rejected.",
+      "Fixed community submissions for the Insane-O Crazy tier. They were being silently rejected.",
       "Two community quotes that had gone missing from the Insane-O Crazy filter are back.",
     ],
   },
@@ -126,7 +126,7 @@ const CHANGELOG = [
     tag: "big",
     items: [
       "Optional video recording of your speech, downloadable when you finish.",
-      "Nothing is ever uploaded — the recording stays in your browser and disappears when you leave.",
+      "Nothing is ever uploaded. The recording stays in your browser and disappears when you leave.",
       "Added a Finish Now button for when you wrap early.",
       "Rewrote the whole Insane-O Crazy tier.",
     ],
@@ -136,7 +136,7 @@ const CHANGELOG = [
     title: "The big redesign",
     tag: "big",
     items: [
-      "Completely new look — violet and cyan on deep navy.",
+      "Completely new look: violet and cyan on deep navy.",
       "Added the All Quotations tab so you can browse the whole pool.",
       "Added community submissions, so anyone can grow the quote pool.",
       "Went live at edwardspracticewebsite.com.",
@@ -169,21 +169,21 @@ const PHASES = {
 // Rotating tips shown during the "get ready" buffer, researched from
 // real NFA/college-circuit impromptu coaching resources
 const IMPROMPTU_TIPS = [
-  "Remember to say quotation, not quote — quote is a verb!",
-  "Open with a hook, not a summary — grab them in the first ten seconds.",
+  "Remember to say quotation, not quote. Quote is a verb!",
+  "Open with a hook, not a summary. Grab them in the first ten seconds.",
   "Signpost your roadmap in minute one so the judge knows exactly where you're headed.",
-  "Pick your structure fast — chronological, categorical, or compare-contrast — then commit.",
+  "Pick your structure fast (chronological, categorical, or compare-contrast), then commit.",
   "Budget your 7 minutes evenly so your conclusion doesn't get rushed at the end.",
-  "Every point needs a \"so what\" — tell them why it actually matters.",
+  "Every point needs a \"so what\". Tell them why it actually matters.",
   "Try the PREP method: Point, Reason, Example, Point.",
-  "Concrete examples beat abstract claims every time — get specific.",
+  "Concrete examples beat abstract claims every time. Get specific.",
   "Bridge your points with real transitions, like \"which brings me to...\"",
-  "Your notecard is a backup, not a script — talk to the judge, don't read to them.",
-  "Eye contact equals confidence — look up, not down at your card.",
-  "Swap \"um\" for a confident pause — silence beats a filler word.",
+  "Your notecard is a backup, not a script. Talk to the judge, don't read to them.",
+  "Eye contact equals confidence. Look up, not down at your card.",
+  "Swap \"um\" for a confident pause. Silence beats a filler word.",
   "Nail your thesis in one clear sentence before you dive into your points.",
-  "Take a breath. You've got this — the timer starts soon.",
-  "Make sure you're ready to go — you'll start speaking any second.",
+  "Take a breath. You've got this. The timer starts soon.",
+  "Make sure you're ready to go. You'll start speaking any second.",
 ];
 
 const LEGAL_CONTENT = {
@@ -191,7 +191,7 @@ const LEGAL_CONTENT = {
     label: "Terms",
     title: "Terms of Service",
     body: [
-      "This site is a free practice tool built for the Simpson College Speech & Debate team. Use it to practice — that's it.",
+      "This site is a free practice tool built for the Simpson College Speech & Debate team. Use it to practice. That's it.",
       "It's provided as-is, with no guarantees of uptime, accuracy, or availability. Things may change, break, or disappear without notice.",
       "Don't submit offensive, harassing, or inappropriate content through the quotation submission form. Submissions are visible to everyone using the site and may be removed at any time.",
     ],
@@ -201,8 +201,8 @@ const LEGAL_CONTENT = {
     title: "Privacy",
     body: [
       "There are no accounts, logins, or tracking on this site. We don't collect analytics or personal data.",
-      "The only data we store is what you type into the \"Submit a Quotation\" form (the quote text and author) — that's saved to a shared database visible to everyone using the site.",
-      "Practice recordings (video/audio) never leave your browser. Nothing is uploaded or stored anywhere — the recording exists only in your browser tab and is gone for good the moment you refresh or close the page.",
+      "The only data we store is what you type into the \"Submit a Quotation\" form (the quote text and author). That's saved to a shared database visible to everyone using the site.",
+      "Practice recordings (video/audio) never leave your browser. Nothing is uploaded or stored anywhere. The recording exists only in your browser tab and is gone for good the moment you refresh or close the page.",
     ],
   },
   copyright: {
@@ -374,7 +374,7 @@ function CyborgDog() {
       <ellipse cx="173" cy="56" rx="5.5" ry="5" fill="#1A0F08" />
       <circle cx="174.5" cy="54.5" r="1.5" fill="white" />
 
-      {/* CYBORG EYE — glowing accent core, tied to site palette */}
+      {/* CYBORG EYE: glowing accent core, tied to site palette */}
       <circle cx="150" cy="57" r="9.5" fill="#0A0A12" />
       <circle cx="150" cy="57" r="7.5" fill="url(#dogEyeGlow)" />
       <circle cx="151" cy="56" r="1.4" fill="white" opacity="0.9" />
@@ -479,7 +479,7 @@ function ImprovDragon() {
       <path d="M186,65 L178,37 L192,63 Z" fill="url(#dragonGold)" stroke="#b45309" strokeWidth="1" />
       <path d="M202,61 L197,32 L210,58 Z" fill="url(#dragonGold)" stroke="#b45309" strokeWidth="1" />
 
-      {/* EYE — glowing accent core, matches CyborgDog's motif */}
+      {/* EYE: glowing accent core, matches CyborgDog's motif */}
       <ellipse cx="212" cy="79" rx="8" ry="7" fill="#03211d" />
       <ellipse cx="212" cy="79" rx="5.5" ry="5" fill="url(#dragonEyeGlow)" />
       <circle cx="213.5" cy="77.5" r="1.4" fill="white" opacity="0.85" />
@@ -488,7 +488,7 @@ function ImprovDragon() {
         <animate attributeName="ry" values="8;12;8" dur="2.2s" repeatCount="indefinite" />
       </ellipse>
 
-      {/* MOUTH — grin */}
+      {/* MOUTH: grin */}
       <path d="M218,94 Q227,101 234,95" stroke="#03211d" strokeWidth="2" fill="none" strokeLinecap="round" />
       <polygon points="221,96 224,103 227,96" fill="white" />
       <polygon points="228,95 231,102 234,95" fill="white" />
@@ -604,7 +604,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const chunksRef = useRef([]);
   phaseRef.current = phase;
 
-  // Attach the live stream to the preview <video> once it's mounted — only
+  // Attach the live stream to the preview <video> once it's mounted, only
   // when it actually changes, so the element doesn't restart every render
   useEffect(() => {
     if (liveVideoRef.current && streamRef.current && liveVideoRef.current.srcObject !== streamRef.current) {
@@ -702,7 +702,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
         audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       }
       if (audioCtxRef.current.state === "suspended") audioCtxRef.current.resume();
-    } catch (e) { /* Web Audio unsupported — beeps just won't play */ }
+    } catch (e) { /* Web Audio unsupported, beeps just won't play */ }
   };
 
   const playBeep = () => {
@@ -737,7 +737,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const beginReading = useCallback(() => {
     startRecording();
     if (readingSeconds <= 0) {
-      // No reading time — go straight into speaking
+      // No reading time, go straight into speaking
       beginSpeaking();
       return;
     }
@@ -779,7 +779,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
         root.setProperty("--iris-x", `${cx.toFixed(2)}%`);
         root.setProperty("--iris-y", `${cy.toFixed(2)}%`);
       } else {
-        // Degenerate viewport — drop the vars so the CSS fallback centre applies.
+        // Degenerate viewport, so drop the vars and let the CSS fallback centre apply.
         root.removeProperty("--iris-x");
         root.removeProperty("--iris-y");
       }
@@ -789,8 +789,8 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     setShowFlash(true);
     clearTimeout(launchTimerRef.current);
     clearTimeout(flashTimerRef.current);
-    // The phase swap happens while the flash is still covering the screen —
-    // that's what makes it read as one continuous wipe instead of a hard cut.
+    // The phase swap happens while the flash is still covering the screen,
+    // which is what makes it read as one continuous wipe instead of a hard cut.
     // Swap phases at the moment the iris is fully covering the viewport.
     launchTimerRef.current = setTimeout(() => {
       setLaunching(false);
@@ -864,7 +864,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
             We record your speech so you can download it and send it to Marisa, Tiana, or any other coach or UGA for feedback.
           </p>
           <p style={{ fontFamily: "var(--font-body)", color: "var(--text-dim)", fontSize: "0.78rem", lineHeight: 1.5, margin: "0 0 0.85rem" }}>
-            Nothing is uploaded — the recording lives only in this tab and is deleted the moment you refresh or leave.
+            Nothing is uploaded. The recording lives only in this tab and is deleted the moment you refresh or leave.
           </p>
           <button onClick={() => setShowCameraNotice(false)} className="chip-toggle">
             Got it
@@ -1048,7 +1048,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
               marginLeft: "auto",
               marginRight: "auto",
             }}>
-              🔔 You'll hear a beep every 30 seconds for the first 90 seconds of your speech — then it stops.
+              🔔 You'll hear a beep every 30 seconds for the first 90 seconds of your speech, then it stops.
             </p>
           )}
 
@@ -1077,7 +1077,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
               }}>
-                — {currentQuote.author}
+                – {currentQuote.author}
               </p>
               <div className="tag-pill" style={{
                 position: "absolute", top: "1rem", right: "1rem",
@@ -1098,7 +1098,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
 
           {cameraError && (phase === PHASES.BUFFER || phase === PHASES.READING) && (
             <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem", color: "var(--text-faint)", letterSpacing: "0.04em", marginBottom: "1.5rem" }}>
-              Camera/mic access wasn't granted — this session won't be recorded.
+              Camera/mic access wasn't granted, so this session won't be recorded.
             </p>
           )}
 
@@ -1125,7 +1125,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
                     style={{ width: "100%", maxHeight: 340, borderRadius: "var(--radius-sm)", background: "#000", display: "block" }}
                   />
                   <p style={{ fontFamily: "var(--font-mono)", fontSize: "0.68rem", color: "var(--text-faint)", letterSpacing: "0.04em", margin: "0.85rem 0 1.25rem" }}>
-                    Download it now — this recording disappears the moment you refresh or leave this page.
+                    Download it now. This recording disappears the moment you refresh or leave this page.
                   </p>
                   <button onClick={handleDownload} className="btn btn-primary" style={{ padding: "0.85rem 2rem", width: "100%" }}>
                     ↓ Download Recording
@@ -1312,7 +1312,7 @@ function BrowseTab({ allQuotes }) {
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
               }}>
-                — {q.author}
+                – {q.author}
               </p>
             </div>
           );
@@ -1445,12 +1445,12 @@ function SubmitTab({ onSubmit }) {
           <div style={{ marginTop: "0.75rem" }}>
             {["Easy", "Medium", "Hard", "Insane-O Crazy"].map(d => (
               <p key={d} style={{ color: "var(--text-faint)", fontFamily: "var(--font-body)", fontSize: "0.85rem", margin: "0.2rem 0" }}>
-                <span style={{ color: DIFFICULTY_CONFIG[d].color, fontWeight: 700 }}>{d}</span>{" "}
+                <span style={{ color: DIFFICULTY_CONFIG[d].color, fontWeight: 700 }}>{d}:</span>{" "}
                 {{
-                  Easy: "— Simple and immediately clear. No unpacking required.",
-                  Medium: "— Pointed in a few different directions at once. Room to pick an angle.",
-                  Hard: "— Abstract and dense. Takes real work to unpack.",
-                  "Insane-O Crazy": "— Completely unhinged. Barely makes sense, and that's the point.",
+                  Easy: "Simple and immediately clear. No unpacking required.",
+                  Medium: "Pointed in a few different directions at once. Room to pick an angle.",
+                  Hard: "Abstract and dense. Takes real work to unpack.",
+                  "Insane-O Crazy": "Completely unhinged. Barely makes sense, and that's the point.",
                 }[d]}
               </p>
             ))}
@@ -1496,7 +1496,7 @@ function UpdateLog() {
       <h3 className="about-h3">What&apos;s <span className="grad-text">changed</span></h3>
       <p className="about-p" style={{ marginBottom: "2rem" }}>
         Every update to the site, newest first. It gets better because people tell
-        me what&apos;s annoying — so if something bugs you, say so.
+        me what&apos;s annoying, so if something bugs you, say so.
       </p>
 
       <div className="log">
@@ -1553,7 +1553,7 @@ function AboutTab() {
           <p className="about-p">
             I&apos;m a college student at <strong>Simpson College</strong> in Indianola, Iowa,
             majoring in <strong>Political Science</strong>. I also do a lot of agentic
-            coding — and I wanted to point those skills at something that would
+            coding, and I wanted to point those skills at something that would
             actually help my team.
           </p>
           <p className="about-p">
@@ -1568,20 +1568,20 @@ function AboutTab() {
         <h3 className="about-h3">From <span className="grad-text">crap to competition-ready</span></h3>
         <p className="about-p">
           I didn&apos;t want another timer with a random quote generator bolted on. I
-          wanted something genuinely <em>useful</em> — a tool you&apos;d actually reach for
+          wanted something genuinely <em>useful</em>: a tool you&apos;d actually reach for
           before a tournament, that would make you better at Impromptu instead of
           just counting down at you.
         </p>
         <p className="about-p">
           The first version looked like crap. I&apos;m happy to admit that. But I kept
-          upgrading it, and upgrading it, and upgrading it — and now here we are.
+          upgrading it, and upgrading it, and upgrading it. And now here we are.
           Real difficulty tiers. Reading time you control. Beeps that teach you to
           pace your intro. Recording so you can send a run to Marisa, Tiana, or any
           coach or UGA for feedback. A quote pool that anyone can add to.
         </p>
         <p className="about-p">
           I bought a domain for it, and now I&apos;m trying to get more speech and debate
-          teams using it — not just Simpson. If you&apos;re on another team and this is
+          teams using it, not just Simpson. If you&apos;re on another team and this is
           useful to you, that&apos;s the whole point. Take it.
         </p>
       </div>
@@ -1592,7 +1592,7 @@ function AboutTab() {
         <p className="about-p" style={{ marginBottom: 0 }}>
           I&apos;m building an Extemp mode that pulls from current events and generates
           practice questions automatically. It&apos;ll be the biggest update to this site
-          yet — and it&apos;s in the works right now.
+          yet, and it&apos;s in the works right now.
         </p>
       </div>
 
@@ -1882,7 +1882,7 @@ export default function App() {
           100% { transform: scale(1.1);  border-color: #22d3ee00;     box-shadow: 0 0 0 #22d3ee00, inset 0 0 0 transparent; opacity: 0; }
         }
 
-        /* One thin shockwave, plus a softer echo — not a three-ring pileup. */
+        /* One thin shockwave, plus a softer echo, not a three-ring pileup. */
         .launch-ring {
           position: absolute;
           inset: 0;
@@ -1913,7 +1913,7 @@ export default function App() {
 
         /* Iris wipe: a disc of the page's own background grows out of the orb
            and covers the screen, so the phase swap underneath is invisible.
-           Tinted only at its leading edge — no full-screen white blowout. */
+           Tinted only at its leading edge, with no full-screen white blowout. */
         .launch-flash {
           position: fixed;
           inset: 0;
@@ -1931,7 +1931,7 @@ export default function App() {
           animation: launchIris 0.66s linear both;
         }
         /* Held invisible for the first ~165ms so the orb's coil-and-release
-           beat plays in the clear, then rushes out and covers by 400ms —
+           beat plays in the clear, then rushes out and covers by 400ms,
            exactly when the phase swap happens underneath. */
         @keyframes launchIris {
           0%   { transform: scale(0.05); opacity: 0; }
@@ -2327,7 +2327,7 @@ export default function App() {
       `}</style>
 
       <div style={{ minHeight: "100vh", width: "100%", fontFamily: "var(--font-body)" }}>
-        {/* Floating glass header — scrolls away with the page, not pinned */}
+        {/* Floating glass header: scrolls away with the page, not pinned */}
         <div style={{ position: "relative", zIndex: 100, padding: "1.1rem 1.25rem 0" }}>
           <header className="float-header" style={{
             maxWidth: 1240,
