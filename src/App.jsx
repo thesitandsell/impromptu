@@ -1851,18 +1851,35 @@ const STORY = [
     { who: "MARISA", text: "You're supposed to be a myth. My evil twin. \"Assiram.\"" },
     { who: "ASSIRAM", text: "It's Marisa. Backwards. With two extra s's. Deeply intimidating." },
     { who: "TIANA", text: "It's... it's just your name spelled wrong." },
-    { who: "ASSIRAM", text: "With TWO S's, Tiana. Two." },
+    { who: "ASSIRAM", text: "With TWO S's, Tiana. TWO." },
+    { who: "EDWARD", text: "Two s's doesn't make it scarier, Assiram." },
+    { who: "ASSIRAM", text: "It makes it thirty-three percent scarier. I did the math." },
     { who: "ASSIRAM", text: "I lead the Administration now. And I brought the rugs." },
+    { who: "HENRY", text: "Rwar. She really did bring the rugs." },
   ],
   [
-    { who: "ATLAS", text: "Core online. Every bolt. All of me, back." },
+    { who: "ATLAS", text: "Fusion core online. Every bolt. Every part. All of me, back." },
+    { who: "MARISA", text: "Atlas... you're whole. You're really whole." },
+    { who: "PETER", text: "She's more than whole. Look at her." },
+    { who: "ASSIRAM", text: "Adorable. A dog with a nightlight for an eye." },
     { who: "ASSIRAM", text: "You cannot beat a Government Mandated Turkish Rug. It is government MANDATED." },
     { who: "ATLAS", text: "I have lasers now, Assiram-with-two-s's." },
-    { who: "", text: "Atlas fires. The rugs unravel thread by government-mandated thread." },
-    { who: "HENRY", text: "...Rwar." },
-    { who: "ALEX", text: "Cool. I'm gonna go." },
+    { who: "EDWARD", text: "Atlas. Optic lasers on your fire key. Double jump on the thrusters. Go end this." },
+    { who: "TIANA", text: "Everyone else, back! Give her the whole field!" },
+    { who: "ASSIRAM", text: "Then let's dance, puppy. RUGS! UNFURL!" },
+    { who: "", text: "The rugs rise into the sky, ornate and humming with mandated power. Atlas plants her feet." },
+  ],
+  [
+    { who: "", text: "The last rug unravels thread by government-mandated thread and drifts down, defeated." },
+    { who: "ASSIRAM", text: "No. NO. Those were requisitioned! Do you know the PAPERWORK?!" },
+    { who: "HENRY", text: "...Rwar. She actually did it, Edward. I forgot she could." },
+    { who: "EDWARD", text: "Come home, Henry. There's a shelf here for you too." },
+    { who: "HENRY", text: "...Yeah. Yeah, okay. Rwar." },
+    { who: "ALEX", text: "Cool. I'm gonna go. Loved the rugs though. Genuinely." },
     { who: "ASSIRAM", text: "This isn't over, sist... it is spelled with TWO S's!!" },
-    { who: "PETER", text: "...Nice work, Atlas." },
+    { who: "MARISA", text: "Goodbye, Assiram." },
+    { who: "PETER", text: "...Nice work, Atlas. I can rest now." },
+    { who: "ATLAS", text: "Rest well, Peter. I've got it from here." },
     { who: "", text: "The Administration falls. The Speech & Debate team is safe, and PKD can finally breathe." },
     { who: "", text: "And somewhere on a practice website, a whole dog takes off into the sky." },
   ],
@@ -2043,7 +2060,7 @@ function CharPortrait({ id, col }) {
 
 function SecretGame({ onClose }) {
   const canvasRef = useRef(null);
-  const keysRef = useRef({ left: false, right: false, jump: false });
+  const keysRef = useRef({ left: false, right: false, jump: false, fire: false });
   const [levelIndex, setLevelIndex] = useState(0);
   const [runId, setRunId] = useState(0);
   const [hud, setHud] = useState({ parts: 0, deaths: 0, shield: false, power: null, powerLeft: 0 });
@@ -2052,6 +2069,8 @@ function SecretGame({ onClose }) {
   const [upgrades, setUpgrades] = useState(0);
   const [banner, setBanner] = useState(null);
   const [story, setStory] = useState({ beat: 0, line: 0 }); // intro plays first
+  const [boss, setBoss] = useState(null); // null | "fight" | "win"
+  const [bossHud, setBossHud] = useState({ hp: 8, max: 8, hearts: 5 });
   const bannerTimer = useRef(null);
 
   const storyActive = story !== null;
@@ -2067,6 +2086,7 @@ function SecretGame({ onClose }) {
       if (k === "ArrowLeft" || k === "a" || k === "A") keysRef.current.left = true;
       if (k === "ArrowRight" || k === "d" || k === "D") keysRef.current.right = true;
       if (k === " " || k === "ArrowUp" || k === "w" || k === "W") keysRef.current.jump = true;
+      if (k === "x" || k === "X" || k === "j" || k === "J" || k === "f" || k === "F" || k === "ArrowDown") keysRef.current.fire = true;
       if ([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(k)) e.preventDefault();
     };
     const up = (e) => {
@@ -2074,6 +2094,7 @@ function SecretGame({ onClose }) {
       if (k === "ArrowLeft" || k === "a" || k === "A") keysRef.current.left = false;
       if (k === "ArrowRight" || k === "d" || k === "D") keysRef.current.right = false;
       if (k === " " || k === "ArrowUp" || k === "w" || k === "W") keysRef.current.jump = false;
+      if (k === "x" || k === "X" || k === "j" || k === "J" || k === "f" || k === "F" || k === "ArrowDown") keysRef.current.fire = false;
     };
     window.addEventListener("keydown", down, { passive: false });
     window.addEventListener("keyup", up);
@@ -2084,7 +2105,7 @@ function SecretGame({ onClose }) {
   }, [onClose, storyActive]);
 
   useEffect(() => {
-    if (won || pending || storyActive) return undefined;
+    if (won || pending || storyActive || boss) return undefined;
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     const ctx = canvas.getContext("2d", { alpha: false });
@@ -2927,11 +2948,368 @@ function SecretGame({ onClose }) {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [levelIndex, runId, won, pending, upgrades, storyActive]);
+  }, [levelIndex, runId, won, pending, upgrades, storyActive, boss]);
+
+  // ── Final battle: Atlas vs Assiram and the Government Mandated Turkish Rugs.
+  // A single-screen arena. Atlas has every upgrade (double jump, fire her
+  // optic lasers); Assiram floats and summons rug hazards. Forgiving by
+  // design: taking hits costs hearts, and running out just reboots her.
+  useEffect(() => {
+    if (boss !== "fight") return undefined;
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    canvas.width = GAME_W; canvas.height = GAME_H;
+    ctx.imageSmoothingEnabled = true;
+    const sky = SKIES[5];
+
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, GAME_H);
+    skyGrad.addColorStop(0, sky.top); skyGrad.addColorStop(0.5, sky.mid); skyGrad.addColorStop(0.85, sky.low);
+    const vigGrad = ctx.createRadialGradient(GAME_W / 2, GAME_H / 2, GAME_H * 0.4, GAME_W / 2, GAME_H / 2, GAME_H);
+    vigGrad.addColorStop(0, "#00000000"); vigGrad.addColorStop(1, "#000000bb");
+    const BW = GAME_W >> 2, BH = GAME_H >> 2;
+    const glow = document.createElement("canvas"); glow.width = BW; glow.height = BH;
+    const gctx = glow.getContext("2d");
+
+    const GROUND = 410;
+    const plats = [
+      { x: 0, y: GROUND, w: GAME_W, h: GAME_H - GROUND },
+      { x: 70, y: 300, w: 150, h: 16 },
+      { x: GAME_W - 220, y: 300, w: 150, h: 16 },
+      { x: GAME_W / 2 - 80, y: 224, w: 160, h: 16 },
+    ];
+    const player = {
+      x: GAME_W / 2 - 13, y: GROUND - 30, w: 26, h: 30, vx: 0, vy: 0,
+      onGround: false, face: 1, coyote: 0, buffer: 0, airJumps: 0, run: 0,
+      iframe: 0, hearts: 5, hurtKnock: 0,
+    };
+    const B = { x: GAME_W / 2, y: 110, hp: 8, max: 8, phase: 0, hurt: 0, vx: 90, dashCd: 3.5, dashing: 0, bob: 0, dead: false };
+    const bolts = [];   // Atlas's optic lasers
+    const rugs = [];    // hazards
+    const bits = [];
+    const rings = [];
+    const pops = [];
+    let fireCd = 0, waveCd = 2.2, shake = 0, flash = 0, t = 0, raf = 0;
+    let last = performance.now();
+    let victoryT = 0, introT = 1.4;
+    let hb = { hp: 8, max: 8, hearts: 5 };
+
+    const syncBoss = () => {
+      if (hb.hp !== B.hp || hb.hearts !== player.hearts) {
+        hb = { hp: B.hp, max: B.max, hearts: player.hearts };
+        setBossHud({ hp: B.hp, max: B.max, hearts: player.hearts });
+      }
+    };
+    const spawn = (n, x, y, o) => {
+      for (let i = 0; i < n; i += 1) {
+        const a = o.dir === undefined ? Math.random() * Math.PI * 2 : o.dir + (Math.random() - 0.5) * (o.spread || 1);
+        const sp = (o.spd || 120) * (0.35 + Math.random());
+        bits.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - (o.lift || 0),
+          life: (o.life || 0.6) * (0.6 + Math.random() * 0.8), max: o.life || 0.6,
+          col: o.col, size: (o.size || 3) * (0.5 + Math.random()), grav: o.grav === undefined ? 300 : o.grav });
+      }
+    };
+    const ring = (x, y, col, max, w) => rings.push({ x, y, r: 6, max, col, w: w || 3, life: 1 });
+    const popWord = (x, y, text, col) => pops.push({ x, y, text, col, life: 0.9, max: 0.9 });
+
+    const summonWave = () => {
+      const n = B.hp <= 2 ? 2 : B.hp <= 5 ? (Math.random() < 0.5 ? 2 : 1) : 1;
+      for (let i = 0; i < n; i += 1) {
+        const fromLeft = Math.random() < 0.5;
+        const y = 200 + Math.random() * 170;
+        const spd = (150 + (8 - B.hp) * 14) * (fromLeft ? 1 : -1);
+        rugs.push({ x: fromLeft ? -110 : GAME_W + 110, y, w: 96, h: 30, vx: spd, warn: 0.7, kind: "sweep" });
+      }
+      if (B.hp <= 2 && Math.random() < 0.7) {
+        rugs.push({ x: player.x - 40, y: -80, w: 80, h: 28, vx: 0, vy: 340, warn: 0.6, kind: "drop" });
+      }
+    };
+
+    const hitPlayer = () => {
+      if (player.iframe > 0) return;
+      player.hearts -= 1;
+      player.iframe = 1.1; player.hurtKnock = 0.25;
+      player.vy = -260; player.vx = -player.face * 200;
+      shake = Math.max(shake, 11); flash = 0.4;
+      spawn(20, player.x + 13, player.y + 15, { col: "#ff6b6b", spd: 200, life: 0.6, size: 3.4 });
+      if (player.hearts <= 0) {
+        player.hearts = 5; player.iframe = 1.6;
+        popWord(player.x + 13, player.y - 14, "REBOOT!", "#a5f3fc");
+        ring(player.x + 13, player.y + 15, "#6cc0d6", 120, 4);
+      } else popWord(player.x + 13, player.y - 12, "HIT!", "#ffd166");
+      syncBoss();
+    };
+
+    const damageBoss = (bx, by) => {
+      B.hp -= 1; B.hurt = 0.35;
+      shake = Math.max(shake, 9); flash = 0.35;
+      ring(bx, by, "#ffd166", 90, 4);
+      ring(bx, by, sky.accent, 150, 3);
+      spawn(30, bx, by, { col: "#ffd166", spd: 260, life: 0.7, size: 4 });
+      popWord(bx, by - 18, ["HIT!", "POW!", "ZAP!", "BAM!"][B.hp % 4], "#fff");
+      syncBoss();
+      if (B.hp <= 0 && !B.dead) {
+        B.dead = true; victoryT = 2.2;
+        shake = Math.max(shake, 20); flash = 1;
+        for (let i = 0; i < 4; i += 1) ring(bx, by, i % 2 ? sky.rim : "#fff", 120 + i * 90, 5);
+        spawn(120, bx, by, { col: "#ffd166", spd: 340, life: 1.2, size: 5, grav: 120 });
+        popWord(bx, by - 30, "SYSTEM CLEARED", "#a3e635");
+      }
+    };
+
+    const step = (dt) => {
+      t += dt;
+      shake = Math.max(0, shake - dt * 44);
+      flash = Math.max(0, flash - dt * 3);
+      B.hurt = Math.max(0, B.hurt - dt);
+      player.iframe = Math.max(0, player.iframe - dt);
+      player.hurtKnock = Math.max(0, player.hurtKnock - dt);
+      if (introT > 0) { introT -= dt; return; }
+
+      // ── Assiram ──
+      if (!B.dead) {
+        B.bob += dt;
+        B.dashCd -= dt;
+        if (B.dashing > 0) {
+          B.dashing -= dt;
+          B.x += (player.x + 13 - B.x) * Math.min(1, dt * 4);
+        } else {
+          B.x += B.vx * dt;
+          if (B.x < 90) { B.x = 90; B.vx = Math.abs(B.vx); }
+          if (B.x > GAME_W - 90) { B.x = GAME_W - 90; B.vx = -Math.abs(B.vx); }
+          if (B.dashCd <= 0) { B.dashing = 0.7; B.dashCd = 3.5 - (8 - B.hp) * 0.15; }
+        }
+        B.y = 110 + Math.sin(B.bob * 1.6) * 26;
+        waveCd -= dt;
+        if (waveCd <= 0) { summonWave(); waveCd = (B.hp <= 2 ? 1.5 : B.hp <= 5 ? 2 : 2.6); }
+      }
+
+      // ── rugs ──
+      for (let i = rugs.length - 1; i >= 0; i -= 1) {
+        const r = rugs[i];
+        if (r.warn > 0) { r.warn -= dt; continue; }
+        r.x += (r.vx || 0) * dt;
+        r.y += (r.vy || 0) * dt;
+        if (r.x < -160 || r.x > GAME_W + 160 || r.y > GAME_H + 120) { rugs.splice(i, 1); continue; }
+        if (overlaps(player, { x: r.x, y: r.y, w: r.w, h: r.h })) hitPlayer();
+      }
+
+      // ── Atlas controls ──
+      const k = keysRef.current;
+      const dir = (k.right ? 1 : 0) - (k.left ? 1 : 0);
+      if (player.hurtKnock <= 0) player.vx = dir * MOVE_SPEED;
+      if (dir !== 0) { player.face = dir; player.run += dt * 12; }
+      const wasAir = !player.onGround;
+      player.buffer = k.jump ? JUMP_BUFFER : Math.max(0, player.buffer - dt);
+      player.coyote = player.onGround ? COYOTE * 1.8 : Math.max(0, player.coyote - dt);
+      if (player.buffer > 0 && player.coyote > 0) {
+        player.vy = -675; player.buffer = 0; player.coyote = 0; player.onGround = false; player.airJumps = 1;
+        spawn(8, player.x + 13, player.y + 30, { col: sky.accent, dir: Math.PI / 2, spread: 1.4, spd: 90, life: 0.3, size: 2.4 });
+      } else if (player.buffer > 0 && wasAir && player.airJumps > 0) {
+        player.vy = -640; player.airJumps -= 1; player.buffer = 0;
+        ring(player.x + 13, player.y + 26, sky.rim, 40, 2);
+        spawn(16, player.x + 13, player.y + 28, { col: sky.rim, dir: Math.PI / 2, spread: 1, spd: 200, life: 0.4, size: 3 });
+      }
+      if (!k.jump && player.vy < 0) player.vy *= 0.86;
+      player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL);
+
+      player.x += player.vx * dt;
+      if (player.x < 0) player.x = 0;
+      if (player.x + player.w > GAME_W) player.x = GAME_W - player.w;
+      player.y += player.vy * dt;
+      player.onGround = false;
+      for (const p of plats) {
+        if (!overlaps(player, p)) continue;
+        if (player.vy > 0 && player.y + player.h - player.vy * dt <= p.y + 6) {
+          player.y = p.y - player.h; player.onGround = true; player.vy = 0;
+        }
+      }
+      if (player.onGround) player.airJumps = 1;
+
+      // ── firing ──
+      fireCd = Math.max(0, fireCd - dt);
+      if (k.fire && fireCd <= 0 && !B.dead) {
+        fireCd = 0.28;
+        const cx = player.x + 13, cy = player.y + 6;
+        const ang = Math.atan2(B.y - cy, B.x - cx);
+        bolts.push({ x: cx, y: cy, vx: Math.cos(ang) * 560, vy: Math.sin(ang) * 560, life: 1.4 });
+        spawn(5, cx, cy, { col: "#ff5a4e", dir: ang, spread: 0.3, spd: 120, life: 0.25, size: 2 });
+        shake = Math.max(shake, 2);
+      }
+      for (let i = bolts.length - 1; i >= 0; i -= 1) {
+        const b = bolts[i];
+        b.life -= dt; b.x += b.vx * dt; b.y += b.vy * dt;
+        // mild homing so aiming forgives
+        if (!B.dead) {
+          const ang = Math.atan2(B.y - b.y, B.x - b.x);
+          b.vx += Math.cos(ang) * 620 * dt; b.vy += Math.sin(ang) * 620 * dt;
+          const sp = Math.hypot(b.vx, b.vy); b.vx = b.vx / sp * 560; b.vy = b.vy / sp * 560;
+        }
+        if (b.life <= 0 || b.x < -20 || b.x > GAME_W + 20 || b.y < -20 || b.y > GAME_H + 20) { bolts.splice(i, 1); continue; }
+        if (!B.dead && B.hurt <= 0 && Math.hypot(b.x - B.x, b.y - B.y) < 28) { bolts.splice(i, 1); damageBoss(B.x, B.y); }
+      }
+
+      for (let i = bits.length - 1; i >= 0; i -= 1) { const b = bits[i]; b.life -= dt; if (b.life <= 0) { bits.splice(i, 1); continue; } b.vy += b.grav * dt; b.x += b.vx * dt; b.y += b.vy * dt; }
+      for (let i = rings.length - 1; i >= 0; i -= 1) { const r = rings[i]; r.r += (r.max - r.r) * Math.min(1, dt * 7); r.life -= dt * 1.7; if (r.life <= 0) rings.splice(i, 1); }
+      for (let i = pops.length - 1; i >= 0; i -= 1) { pops[i].life -= dt; pops[i].y -= dt * 32; if (pops[i].life <= 0) pops.splice(i, 1); }
+
+      if (victoryT > 0) {
+        victoryT -= dt;
+        // Assiram down: roll the closing beat. useState setters are stable,
+        // so this needs nothing from the component's later scope.
+        if (victoryT <= 0) { setBoss("win"); setStory({ beat: STORY.length - 1, line: 0 }); }
+      }
+    };
+
+    const drawRug = (r) => {
+      ctx.save();
+      ctx.translate(r.x, r.y);
+      if (r.warn > 0) {
+        ctx.globalAlpha = 0.35 + Math.sin(t * 24) * 0.2;
+        ctx.fillStyle = "#ff5a4e";
+        ctx.fillRect(0, 0, r.w, r.h);
+        ctx.restore(); return;
+      }
+      // ornate government-mandated Turkish rug
+      ctx.fillStyle = "#7a1f2b"; ctx.fillRect(0, 0, r.w, r.h);
+      ctx.fillStyle = "#c9a24a"; ctx.fillRect(3, 3, r.w - 6, r.h - 6);
+      ctx.fillStyle = "#7a1f2b"; ctx.fillRect(7, 6, r.w - 14, r.h - 12);
+      ctx.fillStyle = "#e8c877";
+      for (let dx = 12; dx < r.w - 8; dx += 16) { ctx.beginPath(); ctx.moveTo(dx, r.h / 2 - 5); ctx.lineTo(dx + 5, r.h / 2); ctx.lineTo(dx, r.h / 2 + 5); ctx.lineTo(dx - 5, r.h / 2); ctx.closePath(); ctx.fill(); }
+      ctx.strokeStyle = "#3a5570"; ctx.lineWidth = 1; ctx.strokeRect(1, 1, r.w - 2, r.h - 2);
+      // fringe
+      ctx.fillStyle = "#e8c877";
+      for (let fx = 0; fx < r.w; fx += 6) { ctx.fillRect(fx, r.vx > 0 ? -4 : r.h, 2, 4); }
+      ctx.restore();
+    };
+
+    const drawAssiram = () => {
+      const flashing = B.hurt > 0 && Math.sin(t * 40) > 0;
+      ctx.save();
+      ctx.translate(B.x, B.y);
+      // aura
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      const au = ctx.createRadialGradient(0, 0, 6, 0, 0, 46);
+      au.addColorStop(0, "#c8508855"); au.addColorStop(1, "#00000000");
+      ctx.fillStyle = au; ctx.beginPath(); ctx.arc(0, 6, 42, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      // cape
+      ctx.fillStyle = flashing ? "#fff" : "#2a1420";
+      ctx.beginPath();
+      ctx.moveTo(0, -18);
+      ctx.lineTo(26 + Math.sin(t * 3) * 4, 34);
+      ctx.lineTo(0, 24);
+      ctx.lineTo(-26 - Math.sin(t * 3) * 4, 34);
+      ctx.closePath(); ctx.fill();
+      // body
+      ctx.fillStyle = flashing ? "#fff" : "#4a2038";
+      ctx.beginPath(); ctx.moveTo(-10, 24); ctx.lineTo(10, 24); ctx.lineTo(6, -6); ctx.lineTo(-6, -6); ctx.closePath(); ctx.fill();
+      // head (Marisa's face, cold)
+      ctx.fillStyle = flashing ? "#fff" : "#c99db0";
+      ctx.beginPath(); ctx.arc(0, -12, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#1c0e16";
+      ctx.beginPath(); ctx.arc(0, -16, 12, Math.PI, 0); ctx.fill(); // hair
+      // sharp eyes
+      ctx.fillStyle = flashing ? "#000" : "#c85088";
+      ctx.beginPath(); ctx.arc(-4, -11, 1.8, 0, Math.PI * 2); ctx.arc(4, -11, 1.8, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    };
+
+    const drawHero = () => {
+      if (player.iframe > 0 && Math.sin(t * 40) < 0) return;
+      ctx.save();
+      ctx.translate(player.x + 13, player.y + 15);
+      ctx.scale(player.face, 1);
+      const bob = player.onGround ? Math.sin(player.run) * 1.4 : 0;
+      const swing = player.onGround ? Math.sin(player.run) * 4 : 2.5;
+      // thruster flames when airborne
+      if (!player.onGround) {
+        ctx.save(); ctx.globalCompositeOperation = "lighter";
+        for (const lx of [-7, 5]) { const fl = 10 + Math.random() * 12;
+          const g = ctx.createLinearGradient(0, 14, 0, 14 + fl); g.addColorStop(0, "#ffd166"); g.addColorStop(1, "#ff550000");
+          ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(lx - 3, 14); ctx.lineTo(lx + 3, 14); ctx.lineTo(lx, 14 + fl); ctx.closePath(); ctx.fill(); }
+        ctx.restore();
+      }
+      ctx.fillStyle = "#8A5A2C"; ctx.fillRect(-9 + swing, 7 + bob, 5, 8); ctx.fillRect(4 - swing, 7 + bob, 5, 8);
+      ctx.fillStyle = "#5A7DA0"; ctx.fillRect(-10 + swing, 9 + bob, 7, 4); ctx.fillRect(3 - swing, 9 + bob, 7, 4);
+      const bg = ctx.createLinearGradient(0, -12 + bob, 0, 9 + bob); bg.addColorStop(0, "#F0B27A"); bg.addColorStop(1, "#C9844B");
+      ctx.fillStyle = bg; ctx.beginPath(); ctx.roundRect(-13, -10 + bob, 25, 19, 8); ctx.fill();
+      // armour plate
+      ctx.fillStyle = "#9fb3c8"; ctx.beginPath(); ctx.roundRect(-11, -8 + bob, 15, 13, 3); ctx.fill();
+      ctx.fillStyle = "#3A5570"; ctx.fillRect(-11, -8 + bob, 15, 3.5);
+      // head
+      ctx.fillStyle = "#F0B27A"; ctx.beginPath(); ctx.roundRect(4, -15 + bob, 13, 13, 5); ctx.fill();
+      ctx.fillStyle = "#8A5A2C"; ctx.beginPath(); ctx.roundRect(13, -8 + bob, 6, 5, 2.5); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(6, -14 + bob); ctx.lineTo(10, -22 + bob); ctx.lineTo(14, -13 + bob); ctx.closePath(); ctx.fill();
+      // laser port
+      ctx.fillStyle = "#3A5570"; ctx.beginPath(); ctx.arc(-13, -2 + bob, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#ff3d3d"; ctx.beginPath(); ctx.arc(-13, -2 + bob, 1.6, 0, Math.PI * 2); ctx.fill();
+      // eye
+      ctx.fillStyle = "#0A0A12"; ctx.beginPath(); ctx.arc(9, -9 + bob, 4, 0, Math.PI * 2); ctx.fill();
+      const eg = ctx.createRadialGradient(9, -9 + bob, 0, 9, -9 + bob, 4); eg.addColorStop(0, "#fff"); eg.addColorStop(0.45, "#22d3ee"); eg.addColorStop(1, "#8b5cf6");
+      ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(9, -9 + bob, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#ffd000"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(9, -9 + bob, 6 + Math.sin(t * 5) * 1.2, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    };
+
+    const draw = () => {
+      const sx = shake ? (Math.random() - 0.5) * shake : 0;
+      const sy = shake ? (Math.random() - 0.5) * shake : 0;
+      ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, GAME_W, GAME_H);
+      // sun
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      const sg = ctx.createRadialGradient(GAME_W / 2, 150, 6, GAME_W / 2, 150, 260);
+      sg.addColorStop(0, sky.sun); sg.addColorStop(0.3, sky.rim + "44"); sg.addColorStop(1, "#00000000");
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(GAME_W / 2, 150, 260, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      ctx.save(); ctx.translate(sx, sy);
+      // platforms
+      for (const p of plats) {
+        ctx.fillStyle = "#241e38"; ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.fillStyle = "#0d0b17"; ctx.fillRect(p.x, p.y + p.h * 0.5, p.w, p.h * 0.5);
+        ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = sky.accent; ctx.fillRect(p.x, p.y, p.w, 3); ctx.restore();
+      }
+      for (const r of rugs) drawRug(r);
+      if (!B.dead || victoryT > 1) drawAssiram();
+      drawHero();
+      // bolts
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.lineCap = "round";
+      for (const b of bolts) {
+        ctx.strokeStyle = "#ff5a4e"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - b.vx * 0.02, b.y - b.vy * 0.02); ctx.stroke();
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(b.x, b.y, 2, 0, Math.PI * 2); ctx.fill();
+      }
+      // particles + rings
+      for (const b of bits) { ctx.globalAlpha = Math.max(0, b.life / b.max); ctx.fillStyle = b.col; ctx.fillRect(b.x, b.y, b.size, b.size); }
+      ctx.globalAlpha = 1;
+      for (const r of rings) { ctx.globalAlpha = Math.max(0, r.life) * 0.85; ctx.strokeStyle = r.col; ctx.lineWidth = r.w; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.globalAlpha = 1; ctx.restore();
+      // pops
+      for (const pw of pops) { const kk = pw.life / pw.max; ctx.save(); ctx.globalAlpha = Math.min(1, kk * 1.6); ctx.font = "900 20px 'Space Mono', monospace"; ctx.textAlign = "center"; ctx.lineWidth = 4; ctx.strokeStyle = "#000"; ctx.strokeText(pw.text, pw.x, pw.y); ctx.fillStyle = pw.col; ctx.fillText(pw.text, pw.x, pw.y); ctx.restore(); }
+      ctx.restore();
+
+      // bloom
+      gctx.clearRect(0, 0, BW, BH); gctx.drawImage(canvas, 0, 0, BW, BH);
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.26; ctx.drawImage(glow, 0, 0, GAME_W, GAME_H); ctx.globalAlpha = 0.16; ctx.drawImage(glow, -6, -4, GAME_W + 12, GAME_H + 8); ctx.restore();
+      if (flash > 0) { ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = Math.min(0.85, flash); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, GAME_W, GAME_H); ctx.restore(); }
+      ctx.fillStyle = vigGrad; ctx.fillRect(0, 0, GAME_W, GAME_H);
+
+      // intro / victory banners drawn in-canvas so they don't need React
+      if (introT > 0) { ctx.save(); ctx.globalAlpha = Math.min(1, introT * 2); ctx.font = "900 44px 'Space Mono', monospace"; ctx.textAlign = "center"; ctx.fillStyle = "#ffd166"; ctx.strokeStyle = "#000"; ctx.lineWidth = 6; ctx.strokeText("FIGHT!", GAME_W / 2, GAME_H / 2); ctx.fillText("FIGHT!", GAME_W / 2, GAME_H / 2); ctx.restore(); }
+    };
+
+    const loop = (now) => {
+      let dt = Math.min((now - last) / 1000, 1 / 30); last = now;
+      step(dt); draw();
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [boss]);
 
   const advanceStory = () => {
-    const beat = STORY[story.beat];
-    if (story.line + 1 < beat.length) { setStory({ beat: story.beat, line: story.line + 1 }); return; }
+    const beatArr = STORY[story.beat];
+    if (story.line + 1 < beatArr.length) { setStory({ beat: story.beat, line: story.line + 1 }); return; }
     // beat finished
     if (story.beat === 0) { setStory(null); return; }          // intro over, play round 1
     if (pending) {
@@ -2939,12 +3317,19 @@ function SecretGame({ onClose }) {
       setUpgrades(Math.min(next, UPGRADES.length));
       setPending(null);
       setStory(null);
-      if (next < LEVELS.length) setLevelIndex(next); else setWon(true);
-    } else setStory(null);
+      // Final round cleared: its beat is the pre-battle. Launch the boss
+      // fight instead of jumping straight to the win screen.
+      if (next < LEVELS.length) setLevelIndex(next);
+      else setBoss("fight");
+      return;
+    }
+    // No pending and past the intro: this is the post-battle victory beat.
+    setStory(null);
+    setWon(true);
   };
 
   const restartAll = () => {
-    setUpgrades(0); setWon(false); setPending(null); setBanner(null);
+    setUpgrades(0); setWon(false); setPending(null); setBanner(null); setBoss(null);
     setLevelIndex(0); setRunId((n) => n + 1);
     setStory({ beat: 0, line: 0 });
   };
@@ -2963,18 +3348,27 @@ function SecretGame({ onClose }) {
       <div className="game-frame" style={{ "--sky": sky.accent, "--rim": sky.rim }}>
         <div className="game-bar">
           <span className="game-title">
-            {won ? "★ FULLY MODIFIED ★" : `ROUND ${levelIndex + 1}/${LEVELS.length} · ${LEVELS[levelIndex].name.toUpperCase()}`}
+            {won ? "★ FULLY MODIFIED ★" : boss ? "FINAL BATTLE · ASSIRAM" : `ROUND ${levelIndex + 1}/${LEVELS.length} · ${LEVELS[levelIndex].name.toUpperCase()}`}
           </span>
-          <span className="game-stats">
-            <span style={{ color: sky.accent }}>⚙ {hud.parts}/{LEVELS[levelIndex].gems.length}</span>
-            {hud.shield && <span style={{ color: "#fbbf24" }}>◈ PLATE</span>}
-            {hud.power && (
-              <span style={{ color: POWERS[hud.power].col2 }}>
-                {POWERS[hud.power].name} {Math.ceil(hud.powerLeft)}s
+          {boss === "fight" ? (
+            <span className="game-stats">
+              <span className="boss-hp" aria-label="Assiram HP">
+                <span className="boss-hp-fill" style={{ width: `${(bossHud.hp / bossHud.max) * 100}%` }} />
               </span>
-            )}
-            <span style={{ color: "#6b6480" }}>KO {hud.deaths}</span>
-          </span>
+              <span style={{ color: "#ff6b6b" }}>{"♥".repeat(Math.max(0, bossHud.hearts))}</span>
+            </span>
+          ) : (
+            <span className="game-stats">
+              <span style={{ color: sky.accent }}>⚙ {hud.parts}/{LEVELS[levelIndex].gems.length}</span>
+              {hud.shield && <span style={{ color: "#fbbf24" }}>◈ PLATE</span>}
+              {hud.power && (
+                <span style={{ color: POWERS[hud.power].col2 }}>
+                  {POWERS[hud.power].name} {Math.ceil(hud.powerLeft)}s
+                </span>
+              )}
+              <span style={{ color: "#6b6480" }}>KO {hud.deaths}</span>
+            </span>
+          )}
           <button onClick={onClose} className="game-x" aria-label="Close game">✕</button>
         </div>
 
@@ -3029,8 +3423,10 @@ function SecretGame({ onClose }) {
 
         <div className="game-help">
           <span><b>←</b> <b>→</b> MOVE</span>
-          <span><b>SPACE</b> JUMP{upgrades >= 2 ? " ×2" : ""}</span>
-          <span><b>R</b> RETRY</span>
+          <span><b>SPACE</b> JUMP{boss === "fight" || upgrades >= 2 ? " ×2" : ""}</span>
+          {boss === "fight"
+            ? <span><b>X</b> FIRE LASER</span>
+            : <span><b>R</b> RETRY</span>}
           <span><b>ESC</b> QUIT</span>
         </div>
 
@@ -3038,6 +3434,9 @@ function SecretGame({ onClose }) {
           <button onPointerDown={hold("left", true)} onPointerUp={hold("left", false)} onPointerLeave={hold("left", false)}>←</button>
           <button onPointerDown={hold("right", true)} onPointerUp={hold("right", false)} onPointerLeave={hold("right", false)}>→</button>
           <button className="game-touch-jump" onPointerDown={hold("jump", true)} onPointerUp={hold("jump", false)} onPointerLeave={hold("jump", false)}>JUMP</button>
+          {boss === "fight" && (
+            <button className="game-touch-fire" onPointerDown={hold("fire", true)} onPointerUp={hold("fire", false)} onPointerLeave={hold("fire", false)}>FIRE</button>
+          )}
         </div>
       </div>
     </div>,
@@ -3773,7 +4172,26 @@ export default function App() {
             touch-action: none; user-select: none;
           }
           .game-touch button:active { background: var(--sky, #ffd166); color: #08060f; }
-          .game-touch-jump { flex: 1.6 !important; }
+          .game-touch-jump { flex: 1.4 !important; }
+          .game-touch-fire { flex: 1.4 !important; color: #ff5a4e !important; border-color: #ff5a4e !important; }
+          .game-touch-fire:active { background: #ff5a4e !important; }
+        }
+
+        /* Boss HP bar: a wide drained-red meter in the top chrome. */
+        .boss-hp {
+          display: inline-block;
+          width: clamp(120px, 34vw, 260px);
+          height: 12px;
+          border: 1px solid #ff6b6b;
+          border-radius: 6px;
+          background: #2a0f12;
+          overflow: hidden;
+          box-shadow: 0 0 12px #ff3d3d55;
+        }
+        .boss-hp-fill {
+          display: block; height: 100%;
+          background: linear-gradient(90deg, #ff3d3d, #ffd166);
+          transition: width 0.25s ease;
         }
 
         /* ── About page ── */
