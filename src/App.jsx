@@ -84,6 +84,80 @@ const LEGACY_DIFFICULTY = {
   "Insane-O crazy": "Insane-O Crazy",
 };
 
+// ── Update log ──────────────────────────────────────────────────
+// Newest first. Written for students using the site, not for developers:
+// say what changed for *them*, not which component was refactored.
+// `tag` drives the dot colour — "new" | "fix" | "big".
+const CHANGELOG = [
+  {
+    date: "2026-07-23",
+    title: "About page & update log",
+    tag: "new",
+    items: [
+      "Added this About page, so you know who's behind the site.",
+      "Added the update log you're reading right now.",
+      "Fixed community submissions for the Insane-O Crazy tier — they were being silently rejected.",
+      "Two community quotes that had gone missing from the Insane-O Crazy filter are back.",
+    ],
+  },
+  {
+    date: "2026-07-22",
+    title: "Smoother launch, better practice controls",
+    tag: "big",
+    items: [
+      "Rebuilt the Start Session animation from scratch.",
+      "You can now pick your reading time: none, 5, 10, or 15 seconds.",
+      "A beep every 30 seconds for the first 90, so you can pace your intro without watching the clock.",
+      "Prep tips now show while you wait for the timer to start.",
+      "Recording starts at reading time instead of speaking time, so you catch your whole run.",
+    ],
+  },
+  {
+    date: "2026-07-19",
+    title: "The mascots fight back",
+    tag: "new",
+    items: [
+      "Atlas and the dragon now react when you click them. Go find out.",
+    ],
+  },
+  {
+    date: "2026-07-17",
+    title: "Record yourself",
+    tag: "big",
+    items: [
+      "Optional video recording of your speech, downloadable when you finish.",
+      "Nothing is ever uploaded — the recording stays in your browser and disappears when you leave.",
+      "Added a Finish Now button for when you wrap early.",
+      "Rewrote the whole Insane-O Crazy tier.",
+    ],
+  },
+  {
+    date: "2026-07-16",
+    title: "The big redesign",
+    tag: "big",
+    items: [
+      "Completely new look — violet and cyan on deep navy.",
+      "Added the All Quotations tab so you can browse the whole pool.",
+      "Added community submissions, so anyone can grow the quote pool.",
+      "Went live at edwardspracticewebsite.com.",
+    ],
+  },
+  {
+    date: "2026-02-26",
+    title: "The first version",
+    tag: "new",
+    items: [
+      "The original build. It looked like crap. Everything above is what happened next.",
+    ],
+  },
+];
+
+const CHANGELOG_TAGS = {
+  new: { label: "New", color: "var(--accent-2)" },
+  fix: { label: "Fixed", color: "var(--good)" },
+  big: { label: "Big update", color: "var(--accent)" },
+};
+
 const PHASES = {
   IDLE: "IDLE",
   BUFFER: "BUFFER",
@@ -1411,17 +1485,125 @@ function SubmitTab({ onSubmit }) {
   );
 }
 
+function UpdateLog() {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? CHANGELOG : CHANGELOG.slice(0, 3);
+  const hidden = CHANGELOG.length - shown.length;
+
+  return (
+    <div className="card about-card" style={{ padding: "2.25rem" }}>
+      <p className="eyebrow" style={{ marginBottom: "0.5rem" }}>Update Log</p>
+      <h3 className="about-h3">What&apos;s <span className="grad-text">changed</span></h3>
+      <p className="about-p" style={{ marginBottom: "2rem" }}>
+        Every update to the site, newest first. It gets better because people tell
+        me what&apos;s annoying — so if something bugs you, say so.
+      </p>
+
+      <div className="log">
+        {shown.map((entry) => {
+          const tag = CHANGELOG_TAGS[entry.tag] || CHANGELOG_TAGS.new;
+          return (
+            <div key={entry.date + entry.title} className="log-entry">
+              <span className="log-dot" style={{ background: tag.color, boxShadow: `0 0 10px ${tag.color}` }} />
+              <div className="log-body">
+                <div className="log-meta">
+                  <time className="log-date">{entry.date}</time>
+                  <span className="log-tag" style={{ color: tag.color, borderColor: tag.color }}>
+                    {tag.label}
+                  </span>
+                </div>
+                <h4 className="log-title">{entry.title}</h4>
+                <ul className="log-list">
+                  {entry.items.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {hidden > 0 && (
+        <button onClick={() => setExpanded(true)} className="btn btn-ghost" style={{ marginTop: "1.5rem" }}>
+          Show {hidden} Older Update{hidden === 1 ? "" : "s"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function AboutTab() {
   return (
-    <div style={{ maxWidth: 720, margin: "0 auto", padding: "2rem 1.5rem", animation: "fadeUp 0.6s ease both" }}>
-      <div className="card" style={{ padding: "2.5rem", textAlign: "center" }}>
-        <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.6rem", color: "var(--text)", fontWeight: 700, marginBottom: "0.75rem" }}>
-          About <span className="grad-text">this site</span>
-        </h2>
-        <p style={{ fontFamily: "var(--font-body)", color: "var(--text-dim)", fontSize: "1rem", lineHeight: 1.6 }}>
-          Content coming soon.
+    <div style={{ maxWidth: 780, margin: "0 auto", padding: "2rem 1.5rem", animation: "fadeUp 0.6s ease both" }}>
+
+      <div className="card about-card about-hero">
+        <div className="about-photo-wrap">
+          <img
+            src="/edward.jpg"
+            alt="Edward Kent in a suit, giving two thumbs up outside a building on the Simpson College campus"
+            className="about-photo"
+            width="800"
+            height="1000"
+          />
+        </div>
+        <div className="about-hero-text">
+          <p className="eyebrow" style={{ marginBottom: "0.6rem" }}>Who made this</p>
+          <h2 className="about-h2">
+            Hi, I&apos;m <span className="grad-text">Edward Kent</span>
+          </h2>
+          <p className="about-p">
+            I&apos;m a college student at <strong>Simpson College</strong> in Indianola, Iowa,
+            majoring in <strong>Political Science</strong>. I also do a lot of agentic
+            coding — and I wanted to point those skills at something that would
+            actually help my team.
+          </p>
+          <p className="about-p">
+            So I built this. One mission: <strong>help the Simpson College speech and
+            debate team practice Impromptu.</strong>
+          </p>
+        </div>
+      </div>
+
+      <div className="card about-card" style={{ padding: "2.25rem" }}>
+        <p className="eyebrow" style={{ marginBottom: "0.5rem" }}>The story</p>
+        <h3 className="about-h3">From <span className="grad-text">crap to competition-ready</span></h3>
+        <p className="about-p">
+          I didn&apos;t want another timer with a random quote generator bolted on. I
+          wanted something genuinely <em>useful</em> — a tool you&apos;d actually reach for
+          before a tournament, that would make you better at Impromptu instead of
+          just counting down at you.
+        </p>
+        <p className="about-p">
+          The first version looked like crap. I&apos;m happy to admit that. But I kept
+          upgrading it, and upgrading it, and upgrading it — and now here we are.
+          Real difficulty tiers. Reading time you control. Beeps that teach you to
+          pace your intro. Recording so you can send a run to Marisa, Tiana, or any
+          coach or UGA for feedback. A quote pool that anyone can add to.
+        </p>
+        <p className="about-p">
+          I bought a domain for it, and now I&apos;m trying to get more speech and debate
+          teams using it — not just Simpson. If you&apos;re on another team and this is
+          useful to you, that&apos;s the whole point. Take it.
         </p>
       </div>
+
+      <div className="card about-card about-next">
+        <p className="eyebrow" style={{ marginBottom: "0.5rem", color: "var(--accent-2)" }}>Coming soon</p>
+        <h3 className="about-h3">Automatic <span className="grad-text">Extemp practice</span></h3>
+        <p className="about-p" style={{ marginBottom: 0 }}>
+          I&apos;m building an Extemp mode that pulls from current events and generates
+          practice questions automatically. It&apos;ll be the biggest update to this site
+          yet — and it&apos;s in the works right now.
+        </p>
+      </div>
+
+      <UpdateLog />
+
+      <p style={{
+        textAlign: "center", fontFamily: "var(--font-body)", color: "var(--text-faint)",
+        fontSize: "0.85rem", lineHeight: 1.6, margin: "2rem 0 0",
+      }}>
+        Built by a Simpson College student, for speech and debate teams everywhere.
+      </p>
     </div>
   );
 }
@@ -1768,6 +1950,145 @@ export default function App() {
           @keyframes launchFade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
         }
 
+        /* ── About page ── */
+        .about-card { margin-bottom: 1.5rem; }
+
+        .about-hero {
+          display: grid;
+          grid-template-columns: 220px 1fr;
+          gap: 2rem;
+          align-items: center;
+          padding: 2.25rem;
+        }
+        .about-photo-wrap {
+          position: relative;
+          border-radius: var(--radius-md);
+          overflow: hidden;
+          border: 1px solid var(--border);
+          /* the violet/cyan rim ties the photo into the rest of the theme */
+          box-shadow: 0 0 0 1px #8b5cf633, 0 18px 40px -12px #000000cc;
+        }
+        .about-photo-wrap::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(160deg, #8b5cf61f 0%, transparent 45%, #22d3ee1f 100%);
+          pointer-events: none;
+        }
+        .about-photo {
+          display: block;
+          width: 100%;
+          height: auto;
+          aspect-ratio: 4 / 5;
+          object-fit: cover;
+        }
+
+        .about-h2 {
+          font-family: var(--font-display);
+          font-size: 1.9rem;
+          font-weight: 700;
+          color: var(--text);
+          line-height: 1.15;
+          margin: 0 0 1rem;
+        }
+        .about-h3 {
+          font-family: var(--font-display);
+          font-size: 1.35rem;
+          font-weight: 700;
+          color: var(--text);
+          line-height: 1.2;
+          margin: 0 0 1rem;
+        }
+        .about-p {
+          font-family: var(--font-body);
+          color: var(--text-dim);
+          font-size: 0.97rem;
+          line-height: 1.7;
+          margin: 0 0 1rem;
+        }
+        .about-p:last-child { margin-bottom: 0; }
+        .about-p strong { color: var(--text); font-weight: 600; }
+        .about-p em { color: var(--text); font-style: italic; }
+
+        .about-next {
+          padding: 2.25rem;
+          border-color: #22d3ee44;
+          background:
+            radial-gradient(ellipse 80% 120% at 100% 0%, #22d3ee14 0%, transparent 60%),
+            var(--bg-raised);
+        }
+
+        /* ── Update log timeline ── */
+        .log { position: relative; }
+        .log-entry {
+          position: relative;
+          display: grid;
+          grid-template-columns: 22px 1fr;
+          gap: 0.9rem;
+          padding-bottom: 1.75rem;
+        }
+        /* the connecting rail, drawn behind the dots and stopped on the last row */
+        .log-entry::before {
+          content: "";
+          position: absolute;
+          left: 5px;
+          top: 16px;
+          bottom: 0;
+          width: 1px;
+          background: var(--border);
+        }
+        .log-entry:last-child { padding-bottom: 0; }
+        .log-entry:last-child::before { display: none; }
+
+        .log-dot {
+          width: 11px; height: 11px;
+          border-radius: 50%;
+          margin-top: 5px;
+          position: relative;
+          z-index: 1;
+        }
+        .log-meta {
+          display: flex;
+          align-items: center;
+          gap: 0.7rem;
+          flex-wrap: wrap;
+          margin-bottom: 0.35rem;
+        }
+        .log-date {
+          font-family: var(--font-mono);
+          font-size: 0.7rem;
+          color: var(--text-faint);
+          letter-spacing: 0.05em;
+        }
+        .log-tag {
+          font-family: var(--font-mono);
+          font-size: 0.6rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          border: 1px solid;
+          border-radius: 999px;
+          padding: 0.14rem 0.5rem;
+          opacity: 0.85;
+        }
+        .log-title {
+          font-family: var(--font-display);
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--text);
+          margin: 0 0 0.5rem;
+        }
+        .log-list {
+          margin: 0;
+          padding-left: 1.1rem;
+          font-family: var(--font-body);
+          color: var(--text-dim);
+          font-size: 0.9rem;
+          line-height: 1.65;
+        }
+        .log-list li { margin-bottom: 0.3rem; }
+        .log-list li::marker { color: var(--text-faint); }
+
         .buffer-content { animation: fadeUp 0.45s ease both; }
 
         .start-btn { padding: 1.05rem 3.5rem; font-size: 1rem; letter-spacing: 0.14em; }
@@ -1834,6 +2155,17 @@ export default function App() {
             gap: 0.85rem !important;
           }
           .header-nav { width: 100% !important; flex-wrap: wrap !important; }
+          .about-hero {
+            grid-template-columns: 1fr !important;
+            gap: 1.5rem !important;
+            padding: 1.5rem 1.25rem !important;
+            text-align: center;
+          }
+          /* keep the portrait from eating the whole screen on a phone */
+          .about-photo-wrap { max-width: 220px; margin: 0 auto; }
+          .about-card { padding: 1.5rem 1.25rem !important; }
+          .about-h2 { font-size: 1.55rem !important; }
+          .about-h3 { font-size: 1.2rem !important; }
         }
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
