@@ -1923,6 +1923,13 @@ function SecretGame({ onClose }) {
     canvas.height = GAME_H * dpr;
     ctx.scale(dpr, dpr);
 
+    // Half-resolution buffer used for the bloom pass. Blurring a smaller
+    // surface is far cheaper and the softness is exactly what bloom wants.
+    const glow = document.createElement("canvas");
+    glow.width = Math.round(GAME_W / 2);
+    glow.height = Math.round(GAME_H / 2);
+    const gctx = glow.getContext("2d");
+
     const level = LEVELS[levelIndex];
     const sky = SKIES[levelIndex % SKIES.length];
     const scene = buildScenery(level, levelIndex);
@@ -1936,7 +1943,7 @@ function SecretGame({ onClose }) {
       x: level.spawn.x, y: level.spawn.y, w: 26, h: 30,
       vx: 0, vy: 0, onGround: false, face: 1, coyote: 0, buffer: 0, run: 0,
       standing: null, airJumps: 0, shield: T.shield, iframe: 0, thrust: 0,
-      power: null, powerLeft: 0,
+      power: null, powerLeft: 0, squash: 0, land: 0,
     };
     const bits = [];
     const rings = [];   // expanding shockwave rings
@@ -2087,6 +2094,8 @@ function SecretGame({ onClose }) {
         shake = Math.max(shake, 3);
       }
       player.thrust = Math.max(0, player.thrust - dt);
+      player.squash = Math.max(0, player.squash - dt * 4.5);
+      player.land = Math.max(0, player.land - dt * 3);
       if (!k.jump && player.vy < 0) player.vy *= 0.86;
       player.vy = Math.min(player.vy + GRAVITY * dt, MAX_FALL);
 
@@ -2107,6 +2116,8 @@ function SecretGame({ onClose }) {
           player.y = p.y - player.h;
           player.onGround = true; player.standing = p;
           if (p.crumble && p.fuse === null) p.fuse = CRUMBLE_TIME;
+          player.land = Math.min(1, fell / 700);
+          player.squash = player.land;
           if (fell > 420) {
             spawn(12, player.x + 13, player.y + 30, { col: sky.accent, dir: 0, spread: 6.3, spd: 80, life: 0.3, size: 2.2 });
             shake = Math.max(shake, 2.5);
@@ -2193,8 +2204,13 @@ function SecretGame({ onClose }) {
       const big = player.power === "titan" ? 1.28 : 1;
       ctx.save();
       ctx.globalAlpha = alpha;
-      ctx.translate(px + 13, py + 15);
-      ctx.scale(face * big, big);
+      // Squash and stretch: she compresses on impact and elongates through
+      // the air. This is most of what makes a jump feel like it has weight.
+      const air = Math.max(-1, Math.min(1, player.vy / 620));
+      const sqx = 1 + player.squash * 0.42 - air * 0.10;
+      const sqy = 1 - player.squash * 0.38 + air * 0.10;
+      ctx.translate(px + 13, py + 15 + player.squash * 6);
+      ctx.scale(face * big * sqx, big * sqy);
       const bob = player.onGround ? Math.sin(player.run) * 1.4 : 0;
       const swing = player.onGround ? Math.sin(player.run) * 4 : 2.5;
 
@@ -2281,6 +2297,14 @@ function SecretGame({ onClose }) {
           ctx.restore();
         }
       }
+
+      // rim light: a bright edge picked up from the sky behind her
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.strokeStyle = sky.rim; ctx.globalAlpha = 0.55; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.roundRect(-13, -10 + bob, 25, 19, 8); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(4, -15 + bob, 13, 13, 5); ctx.stroke();
+      ctx.restore();
 
       ctx.fillStyle = "#0A0A12";
       ctx.beginPath(); ctx.arc(9, -9 + bob, 4, 0, Math.PI * 2); ctx.fill();
@@ -2375,6 +2399,17 @@ function SecretGame({ onClose }) {
       const sgd = ctx.createLinearGradient(0, seaY, 0, GAME_H);
       sgd.addColorStop(0, `${sky.sea}00`); sgd.addColorStop(1, sky.sea);
       ctx.fillStyle = sgd; ctx.fillRect(0, seaY, GAME_W, 54);
+      // the sun's reflection scattering across the wreck-sea
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < 26; i += 1) {
+        const gx = (i * 137 + Math.sin(t * 0.7 + i) * 22) % GAME_W;
+        const gy = seaY + 8 + ((i * 53) % 40);
+        ctx.globalAlpha = 0.10 + Math.abs(Math.sin(t * 2 + i)) * 0.24;
+        ctx.fillStyle = sky.sun;
+        ctx.fillRect(gx, gy, 12 + Math.sin(t + i) * 6, 1.6);
+      }
+      ctx.restore();
       ctx.globalAlpha = 0.5; ctx.strokeStyle = sky.rim; ctx.lineWidth = 1.5;
       for (let i = 0; i < 3; i += 1) {
         ctx.beginPath();
@@ -2398,14 +2433,27 @@ function SecretGame({ onClose }) {
         ctx.save();
         ctx.globalAlpha = lit ? 0.5 + 0.5 * (p.fuse / CRUMBLE_TIME) : 1;
         const grd = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
-        grd.addColorStop(0, "#2a2340"); grd.addColorStop(1, "#12101f");
+        grd.addColorStop(0, "#3a3157"); grd.addColorStop(0.18, "#241e38"); grd.addColorStop(1, "#0d0b17");
         ctx.fillStyle = grd;
         ctx.fillRect(p.x + sh, p.y, p.w, p.h);
+        // bevel: catch light on the top-left, drop it away bottom-right
+        ctx.fillStyle = "#ffffff14";
+        ctx.fillRect(p.x + sh, p.y + 3, 2, p.h - 3);
+        ctx.fillStyle = "#00000055";
+        ctx.fillRect(p.x + sh + p.w - 2, p.y + 3, 2, p.h - 3);
+        // hazard stripes on the underside so decks read as machined
+        ctx.save();
+        ctx.globalAlpha = 0.12; ctx.fillStyle = sky.rim;
+        for (let dx2 = 0; dx2 < p.w; dx2 += 14) ctx.fillRect(p.x + sh + dx2, p.y + p.h - 5, 7, 3);
+        ctx.restore();
         const edge = p.crumble ? (lit ? "#ff6b6b" : "#ffd166") : p.mv ? "#7bf1a8" : sky.accent;
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
-        ctx.fillStyle = edge; ctx.fillRect(p.x + sh, p.y, p.w, 3);
-        ctx.globalAlpha *= 0.28; ctx.fillRect(p.x + sh, p.y + 3, p.w, 9);
+        ctx.fillStyle = edge;
+        ctx.shadowColor = edge; ctx.shadowBlur = 12;
+        ctx.fillRect(p.x + sh, p.y, p.w, 3);
+        ctx.shadowBlur = 0;
+        ctx.globalAlpha *= 0.3; ctx.fillRect(p.x + sh, p.y + 3, p.w, 10);
         ctx.restore();
         ctx.restore();
       }
@@ -2551,8 +2599,51 @@ function SecretGame({ onClose }) {
         ctx.restore();
       }
 
+      // Foreground silhouettes drift past faster than anything else, which
+      // is what actually sells the depth of the parallax behind them.
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      ctx.fillStyle = "#05030c";
+      for (const is of scene.isles) {
+        const fx = is.x * 1.7 - cam * 1.35;
+        if (fx < -400 || fx > GAME_W + 400) continue;
+        const fw = is.w * 1.5, fh = 30 + is.h;
+        ctx.beginPath();
+        ctx.moveTo(fx, GAME_H + 10);
+        ctx.lineTo(fx + fw * 0.15, GAME_H - fh);
+        ctx.lineTo(fx + fw * 0.55, GAME_H - fh * 0.7);
+        ctx.lineTo(fx + fw, GAME_H + 10);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+
       ctx.restore(); // world
       ctx.restore(); // shake
+
+      // ── bloom ──
+      // Downsample the finished frame, blur it, and add it back. Everything
+      // bright (edges, particles, the sun, auras) blooms for free.
+      gctx.clearRect(0, 0, glow.width, glow.height);
+      gctx.filter = "blur(5px) brightness(1.5)";
+      gctx.drawImage(canvas, 0, 0, glow.width, glow.height);
+      gctx.filter = "none";
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.globalAlpha = 0.42;
+      ctx.drawImage(glow, 0, 0, GAME_W, GAME_H);
+      ctx.restore();
+
+      // Chromatic split, only while the screen is already shaking, so hits
+      // land with a lens-punch instead of a clean cut.
+      if (shake > 4) {
+        const off = Math.min(4, shake * 0.22);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = 0.16;
+        ctx.drawImage(glow, -off, 0, GAME_W, GAME_H);
+        ctx.drawImage(glow, off, 0, GAME_W, GAME_H);
+        ctx.restore();
+      }
 
       if (flash > 0) {
         ctx.save();
