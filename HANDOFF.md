@@ -101,16 +101,22 @@ CSS custom properties: `--bg`, `--bg-raised`, `--border`, `--accent`
 
 ## Known issues / things to check
 
-1. **Firestore rules — Insane-O Crazy label mismatch (JUST FIXED, not yet
-   deployed).** `firestore.rules` had `'Insaneo CRAZY'` in the difficulty
-   allow-list while the app has submitted `"Insane-O Crazy"` (with hyphen
-   and dash) since commit `e80b338`. This silently 403'd every real
-   Insane-O Crazy submission via `SubmitTab`. **Confirmed live via a direct
-   REST call against production Firestore** (got back
-   `PERMISSION_DENIED`). Fixed in the repo's `firestore.rules` file. **This
-   still needs to be manually pasted into the Firebase Console** (Firestore
-   → Rules) by the user — Claude cannot push live security-rule changes to
-   Firebase itself. Do this before assuming quote submissions work.
+1. **Firestore rules — Insane-O Crazy label mismatch. RESOLVED
+   2026-07-22, published and verified in production.** `firestore.rules`
+   had `'Insaneo CRAZY'` in the difficulty allow-list while the app has
+   submitted `"Insane-O Crazy"` since commit `e80b338`, silently 403'ing
+   every real Insane-O Crazy submission via `SubmitTab`. The user pasted
+   the corrected rules into the Firebase Console. **Verified end-to-end**
+   by submitting through the live site: the document was accepted (the
+   first ever stored with the correct spelling) and appeared under the
+   Insane-O Crazy filter. Nothing outstanding here.
+
+   Note for future sessions: rules can only be published from the Firebase
+   Console by the user; Claude cannot deploy them. There is also no way to
+   verify a rules change without one real write, because old and new rules
+   differ *only* in whether an otherwise-valid Insane-O Crazy document is
+   accepted — every read-only or negative probe is denied under both
+   versions. Budget for one throwaway document and hand the user its ID.
 
 1b. **Legacy difficulty labels are now remapped on read (client-side).**
    The two pre-rename community quotes still stored as `'Insaneo CRAZY'`
@@ -124,12 +130,15 @@ CSS custom properties: `--bg`, `--bg-raised`, `--border`, `--accent`
    documents are permanent.
 
 2. **Leftover test/QA documents in the live Firestore `quotes`
-   collection.** As of 2026-07-22 the collection holds 6 documents, of
-   which **2 are junk**: `"Live Update Test"` and `"Claude QA Check"`
-   (both `Medium`). Earlier junk noted here — "Test Author", "debug",
-   "Live Test", "Handoff Check" — is **gone**, so the previous claim that
-   a "Handoff Check" doc exists is stale; verified by a read-only REST
-   call against production. Firestore rules only allow
+   collection.** As of 2026-07-22 the user cleared the old junk — "Test
+   Author", "debug", "Live Test", "Handoff Check", "Live Update Test" and
+   "Claude QA Check" are all **gone** (verified by read-only REST against
+   production). Earlier notes here claiming a "Handoff Check" doc exists
+   were stale. The collection is now 4 genuine quotes (Edward Kent, Henry
+   Godar, Dillion, Remi Wolf) **plus one throwaway** left by the rules
+   verification above: author `"Rules Test - DELETE ME"`, id
+   `ltf18XelpNdGs5NjEG2A`. The user was asked to delete it; if it is still
+   present, that request is outstanding. Firestore rules only allow
    `create`, never `update`/`delete` (`allow update, delete: if false`) —
    this is intentional (public read, validated public write, no client
    mutation ever), which also means **Claude cannot delete these itself,
