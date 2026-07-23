@@ -1712,13 +1712,17 @@ const GC = {
 // Every round gets its own sky. The run reads as one journey across a
 // burning scrapyard sea: dawn, noon, storm, dusk, night, and the final
 // blazing showdown.
+// Graded like a film still, not a highlighter. Each round still owns a
+// distinct hue, but the mids and lows (which fill most of the screen) are
+// pulled well down in chroma so the scene reads rich and colourful rather
+// than neon. Only the accent and rim stay bright, and bloom rides on those.
 const SKIES = [
-  { name: "dawn",   top: "#2b1055", mid: "#7b2d8e", low: "#ff7b54", sun: "#ffd166", sea: "#3a1a5c", accent: "#ffd166", rim: "#ff7b54" },
-  { name: "noon",   top: "#0b4f6c", mid: "#01baef", low: "#ffe66d", sun: "#fffbe6", sea: "#07394f", accent: "#01baef", rim: "#ffe66d" },
-  { name: "storm",  top: "#16123a", mid: "#3a2f7d", low: "#6d5bd0", sun: "#c9b6ff", sea: "#0f0c2b", accent: "#a78bfa", rim: "#e0d4ff" },
-  { name: "dusk",   top: "#3d1052", mid: "#c1256d", low: "#ff8c42", sun: "#ffe3a3", sea: "#2a0b3a", accent: "#ff4d9d", rim: "#ff8c42" },
-  { name: "night",  top: "#050b2e", mid: "#12295e", low: "#2e6f9e", sun: "#bfe9ff", sea: "#03071f", accent: "#38bdf8", rim: "#a5f3fc" },
-  { name: "final",  top: "#2a0505", mid: "#a11212", low: "#ff9d00", sun: "#fff3b0", sea: "#1a0303", accent: "#ff3d3d", rim: "#ffd000" },
+  { name: "dawn",   top: "#241a3a", mid: "#6b4a72", low: "#c9765f", sun: "#e8be86", sea: "#2c2140", accent: "#e0a969", rim: "#cf7d64" },
+  { name: "noon",   top: "#274a5a", mid: "#5793a1", low: "#c9b681", sun: "#eee3c4", sea: "#22414c", accent: "#6fb0bd", rim: "#d4c48c" },
+  { name: "storm",  top: "#1c1b36", mid: "#3c3a63", low: "#6660a0", sun: "#a9a2cc", sea: "#141327", accent: "#8f88c4", rim: "#b3acd6" },
+  { name: "dusk",   top: "#2e1b3d", mid: "#8a4166", low: "#c47a54", sun: "#e2bd93", sea: "#241531", accent: "#c56a8f", rim: "#cf8a5f" },
+  { name: "night",  top: "#121a33", mid: "#294059", low: "#4d7893", sun: "#a9cbdd", sea: "#0c1122", accent: "#6ba0be", rim: "#a7c4d4" },
+  { name: "final",  top: "#2a1414", mid: "#8a3230", low: "#c47e42", sun: "#e6cf94", sea: "#1c0f0f", accent: "#cf5a4e", rim: "#dbb24d" },
 ];
 
 // Temporary Kirby-style powers. Each one changes how she plays *and* how she
@@ -1917,21 +1921,34 @@ function SecretGame({ onClose }) {
     if (won || pending || storyActive) return undefined;
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
-    const ctx = canvas.getContext("2d");
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const ctx = canvas.getContext("2d", { alpha: false });
+    // Cap the backing store at 1x. Beyond that the per-frame fill cost roughly
+    // doubles for a difference no one sees once bloom and the vignette land;
+    // this alone is most of the framerate win on retina displays.
+    const dpr = 1;
     canvas.width = GAME_W * dpr;
     canvas.height = GAME_H * dpr;
     ctx.scale(dpr, dpr);
+    ctx.imageSmoothingEnabled = true;
 
-    // Half-resolution buffer used for the bloom pass. Blurring a smaller
-    // surface is far cheaper and the softness is exactly what bloom wants.
+    // Quarter-resolution bloom buffer. Instead of the CSS blur filter (which
+    // is very slow on a 2D canvas), the softness comes for free from scaling
+    // this small buffer back up bilinearly. No filter in the hot loop.
+    const BW = Math.round(GAME_W / 4), BH = Math.round(GAME_H / 4);
     const glow = document.createElement("canvas");
-    glow.width = Math.round(GAME_W / 2);
-    glow.height = Math.round(GAME_H / 2);
+    glow.width = BW; glow.height = BH;
     const gctx = glow.getContext("2d");
 
     const level = LEVELS[levelIndex];
     const sky = SKIES[levelIndex % SKIES.length];
+
+    // Static gradients cost real time when rebuilt every frame, and neither of
+    // these changes within a level, so build them once here.
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, GAME_H);
+    skyGrad.addColorStop(0, sky.top); skyGrad.addColorStop(0.45, sky.mid); skyGrad.addColorStop(0.82, sky.low);
+    const vigGrad = ctx.createRadialGradient(GAME_W / 2, GAME_H / 2, GAME_H * 0.42, GAME_W / 2, GAME_H / 2, GAME_H * 0.95);
+    vigGrad.addColorStop(0, "#00000000"); vigGrad.addColorStop(1, "#000000aa");
+
     const scene = buildScenery(level, levelIndex);
     const plats = level.platforms.map((p) => ({ ...p, dx: 0, dy: 0, ox: p.x, oy: p.y, fuse: null, gone: false }));
     const hzds = level.hazards.map((h) => ({ ...h, ox: h.x, oy: h.y }));
@@ -2324,10 +2341,8 @@ function SecretGame({ onClose }) {
       const sy = shake > 0 ? (Math.random() - 0.5) * shake : 0;
       const u = upgrades;
 
-      // ── sky ──
-      const g = ctx.createLinearGradient(0, 0, 0, GAME_H);
-      g.addColorStop(0, sky.top); g.addColorStop(0.45, sky.mid); g.addColorStop(0.82, sky.low);
-      ctx.fillStyle = g; ctx.fillRect(0, 0, GAME_W, GAME_H);
+      // ── sky ── (gradient cached at setup)
+      ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, GAME_W, GAME_H);
 
       // sun disc with god rays
       const sunX = GAME_W * 0.72 - cam * 0.04, sunY = GAME_H * 0.36;
@@ -2432,27 +2447,21 @@ function SecretGame({ onClose }) {
         const sh = lit ? Math.sin(t * 45) * 1.8 : 0;
         ctx.save();
         ctx.globalAlpha = lit ? 0.5 + 0.5 * (p.fuse / CRUMBLE_TIME) : 1;
-        const grd = ctx.createLinearGradient(0, p.y, 0, p.y + p.h);
-        grd.addColorStop(0, "#3a3157"); grd.addColorStop(0.18, "#241e38"); grd.addColorStop(1, "#0d0b17");
-        ctx.fillStyle = grd;
+        // Flat fills instead of a per-platform gradient: two bands read as
+        // the same bevel far cheaper, and the glow now comes from bloom.
+        ctx.fillStyle = "#241e38";
         ctx.fillRect(p.x + sh, p.y, p.w, p.h);
-        // bevel: catch light on the top-left, drop it away bottom-right
+        ctx.fillStyle = "#0d0b17";
+        ctx.fillRect(p.x + sh, p.y + p.h * 0.5, p.w, p.h * 0.5);
         ctx.fillStyle = "#ffffff14";
         ctx.fillRect(p.x + sh, p.y + 3, 2, p.h - 3);
         ctx.fillStyle = "#00000055";
         ctx.fillRect(p.x + sh + p.w - 2, p.y + 3, 2, p.h - 3);
-        // hazard stripes on the underside so decks read as machined
-        ctx.save();
-        ctx.globalAlpha = 0.12; ctx.fillStyle = sky.rim;
-        for (let dx2 = 0; dx2 < p.w; dx2 += 14) ctx.fillRect(p.x + sh + dx2, p.y + p.h - 5, 7, 3);
-        ctx.restore();
         const edge = p.crumble ? (lit ? "#ff6b6b" : "#ffd166") : p.mv ? "#7bf1a8" : sky.accent;
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
         ctx.fillStyle = edge;
-        ctx.shadowColor = edge; ctx.shadowBlur = 12;
         ctx.fillRect(p.x + sh, p.y, p.w, 3);
-        ctx.shadowBlur = 0;
         ctx.globalAlpha *= 0.3; ctx.fillRect(p.x + sh, p.y + 3, p.w, 10);
         ctx.restore();
         ctx.restore();
@@ -2560,12 +2569,14 @@ function SecretGame({ onClose }) {
 
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
+      // No per-particle shadow blur (it was the single biggest draw cost with
+      // 100+ live particles). Glowing bits just draw a touch bigger; bloom
+      // supplies the actual halo.
       for (const b of bits) {
         ctx.globalAlpha = Math.max(0, Math.min(1, b.life / b.max));
         ctx.fillStyle = b.col;
-        if (b.glow) { ctx.shadowColor = b.col; ctx.shadowBlur = 9; }
-        ctx.fillRect(b.x, b.y, b.size, b.size);
-        ctx.shadowBlur = 0;
+        const sz = b.glow ? b.size * 1.4 : b.size;
+        ctx.fillRect(b.x, b.y, sz, sz);
       }
       for (const rg of rings) {
         ctx.globalAlpha = Math.max(0, rg.life) * 0.85;
@@ -2621,16 +2632,18 @@ function SecretGame({ onClose }) {
       ctx.restore(); // shake
 
       // ── bloom ──
-      // Downsample the finished frame, blur it, and add it back. Everything
-      // bright (edges, particles, the sun, auras) blooms for free.
-      gctx.clearRect(0, 0, glow.width, glow.height);
-      gctx.filter = "blur(5px) brightness(1.5)";
-      gctx.drawImage(canvas, 0, 0, glow.width, glow.height);
-      gctx.filter = "none";
+      // Downsample the finished frame into the quarter-res buffer, then add it
+      // back scaled up. The upscale is bilinear, so the softness is free and
+      // there is no blur filter in the hot loop. Two offset draws widen it.
+      gctx.clearRect(0, 0, BW, BH);
+      gctx.drawImage(canvas, 0, 0, BW, BH);
       ctx.save();
       ctx.globalCompositeOperation = "lighter";
-      ctx.globalAlpha = 0.42;
+      ctx.globalAlpha = 0.26;
       ctx.drawImage(glow, 0, 0, GAME_W, GAME_H);
+      // a second, slightly larger draw softens the halo without a real blur
+      ctx.globalAlpha = 0.16;
+      ctx.drawImage(glow, -6, -4, GAME_W + 12, GAME_H + 8);
       ctx.restore();
 
       // Chromatic split, only while the screen is already shaking, so hits
@@ -2639,7 +2652,7 @@ function SecretGame({ onClose }) {
         const off = Math.min(4, shake * 0.22);
         ctx.save();
         ctx.globalCompositeOperation = "lighter";
-        ctx.globalAlpha = 0.16;
+        ctx.globalAlpha = 0.14;
         ctx.drawImage(glow, -off, 0, GAME_W, GAME_H);
         ctx.drawImage(glow, off, 0, GAME_W, GAME_H);
         ctx.restore();
@@ -2654,10 +2667,8 @@ function SecretGame({ onClose }) {
         ctx.restore();
       }
 
-      // vignette keeps the eye centred once the colours get loud
-      const vig = ctx.createRadialGradient(GAME_W / 2, GAME_H / 2, GAME_H * 0.42, GAME_W / 2, GAME_H / 2, GAME_H * 0.95);
-      vig.addColorStop(0, "#00000000"); vig.addColorStop(1, "#000000aa");
-      ctx.fillStyle = vig; ctx.fillRect(0, 0, GAME_W, GAME_H);
+      // vignette keeps the eye centred once the colours get loud (cached)
+      ctx.fillStyle = vigGrad; ctx.fillRect(0, 0, GAME_W, GAME_H);
     };
 
     const loop = (now) => {
