@@ -1937,17 +1937,17 @@ function buildScenery(level, idx) {
 
 // Types a line out character by character. Remounted per line via `key`, so
 // each new line starts from empty rather than continuing the previous one.
-function Typewriter({ text, speed = 22 }) {
+function Typewriter({ text, speed = 22, onDone }) {
   const [n, setN] = useState(0);
   useEffect(() => {
     let i = 0;
     const id = setInterval(() => {
       i += 1;
-      if (i >= text.length) clearInterval(id);
+      if (i >= text.length) { clearInterval(id); onDone && onDone(); }
       setN(Math.min(i, text.length));
     }, speed);
     return () => { clearInterval(id); };
-  }, [text, speed]);
+  }, [text, speed, onDone]);
   return <>{text.slice(0, n)}<span className="dlg-caret">{n < text.length ? "▌" : ""}</span></>;
 }
 
@@ -2071,9 +2071,18 @@ function SecretGame({ onClose }) {
   const [story, setStory] = useState({ beat: 0, line: 0 }); // intro plays first
   const [boss, setBoss] = useState(null); // null | "fight" | "win"
   const [bossHud, setBossHud] = useState({ hp: 8, max: 8, hearts: 5 });
+  const [typing, setTyping] = useState(true); // drives the talking-portrait animation
   const bannerTimer = useRef(null);
 
   const storyActive = story !== null;
+
+  // Restart the talking animation whenever the dialogue line changes, using
+  // React's "adjust state during render" pattern (no effect needed): compare
+  // the current line key to the last one we rendered. Typewriter's onDone
+  // stops the mouth when the line finishes printing.
+  const lineKey = story ? `${story.beat}:${story.line}` : null;
+  const [prevLineKey, setPrevLineKey] = useState(lineKey);
+  if (lineKey !== prevLineKey) { setPrevLineKey(lineKey); setTyping(true); }
 
   useEffect(() => () => clearTimeout(bannerTimer.current), []);
 
@@ -3387,22 +3396,22 @@ function SecretGame({ onClose }) {
 
           {story && line && (
             <div className="dlg" onClick={advanceStory}>
-              <div className="dlg-box" style={spk ? { "--spk": spk.col } : { "--spk": "#cbd5e1" }}>
-                {spk && (
-                  <div className="dlg-head">
-                    <span className="dlg-portrait" style={{ borderColor: spk.col }}>
-                      <CharPortrait id={line.who} col={spk.col} />
-                    </span>
-                    <span className="dlg-who">{spk.tag}</span>
-                  </div>
-                )}
+              {spk && (
+                <div key={line.who} className={`dlg-stage${typing ? " talking" : ""}`} style={{ "--spk": spk.col }}>
+                  <CharPortrait id={line.who} col={spk.col} />
+                </div>
+              )}
+              <div className={`dlg-box${spk ? "" : " dlg-box--narrate"}`} style={spk ? { "--spk": spk.col } : { "--spk": "#cbd5e1" }}>
+                {spk && <span className="dlg-who">{spk.tag}</span>}
                 <p className={spk ? "dlg-text" : "dlg-text dlg-text--narrate"}>
-                  <Typewriter key={`${story.beat}-${story.line}`} text={line.text} />
+                  <Typewriter key={`${story.beat}-${story.line}`} text={line.text} onDone={() => setTyping(false)} />
                 </p>
                 <div className="dlg-next">
                   {last && story.beat > 0 && earned
                     ? `▶ INSTALL ${earned.name.toUpperCase()}`
-                    : last && story.beat === 0 ? "▶ BEGIN" : "▶ CLICK TO CONTINUE"}
+                    : last && story.beat === 0 ? "▶ BEGIN"
+                    : last && story.beat === STORY.length - 1 ? "▶ THE END"
+                    : "▶ CLICK TO CONTINUE"}
                 </div>
               </div>
             </div>
@@ -4060,50 +4069,75 @@ export default function App() {
         /* ── dialogue ── */
         .dlg {
           position: absolute; inset: 0;
-          display: flex; align-items: flex-end; justify-content: center;
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: flex-end;
           padding: 1.1rem;
-          background: linear-gradient(180deg, #04030a00 40%, #04030acc 100%);
+          background: linear-gradient(180deg, #04030a00 30%, #04030add 100%);
           cursor: pointer;
           animation: fadeUp 0.25s ease both;
         }
+        /* The speaker stands on a lit stage above the text box, breathing at
+           rest and mouth-bobbing while their line prints. Keyed by speaker,
+           so the character pops in when a new one takes the stage and simply
+           keeps talking across their consecutive lines. */
+        .dlg-stage {
+          position: relative;
+          width: clamp(84px, 22vw, 116px);
+          height: clamp(84px, 22vw, 116px);
+          margin-bottom: -10px; z-index: 2;
+          border: 2px solid var(--spk);
+          border-radius: 16px;
+          background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--spk) 26%, #08060f) 0%, #06040d 78%);
+          box-shadow: 0 0 26px color-mix(in srgb, var(--spk) 55%, transparent), inset 0 -10px 24px #0009;
+          display: grid; place-items: center; overflow: hidden;
+          transform-origin: 50% 100%;
+          animation: stageBreathe 3.4s ease-in-out infinite;
+        }
+        .dlg-stage svg {
+          width: 78%; height: 78%;
+          animation: stagePop 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .dlg-stage.talking { animation: stageTalk 0.26s ease-in-out infinite; }
+        .dlg-stage::after {
+          content: ""; position: absolute; left: 15%; right: 15%; bottom: 4px; height: 8px;
+          background: radial-gradient(ellipse, color-mix(in srgb, var(--spk) 60%, transparent), transparent 70%);
+          filter: blur(2px);
+        }
+        @keyframes stagePop {
+          0%   { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+          100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+        @keyframes stageBreathe {
+          0%, 100% { transform: translateY(0) scale(1, 1); }
+          50%      { transform: translateY(-2px) scale(1.01, 0.99); }
+        }
+        @keyframes stageTalk {
+          0%, 100% { transform: translateY(0) scale(1, 1); }
+          50%      { transform: translateY(-3px) scale(0.97, 1.05); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .dlg-stage, .dlg-stage.talking { animation: none; }
+        }
         .dlg-box {
           width: 100%; max-width: 640px;
-          background: #0b0817ee;
+          background: #0b0817f2;
           border: 2px solid var(--spk);
-          border-left: 6px solid var(--spk);
-          border-radius: 4px;
-          padding: 0.9rem 1.1rem 0.7rem;
+          border-radius: 8px;
+          padding: 1rem 1.2rem 0.7rem;
           box-shadow: 0 0 30px color-mix(in srgb, var(--spk) 40%, transparent);
           animation: dlgIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
+        .dlg-box--narrate { max-width: 560px; border-color: #3a3450; }
         @keyframes dlgIn {
           0%   { transform: translateY(14px) scale(0.98); opacity: 0; }
           100% { transform: translateY(0) scale(1); opacity: 1; }
         }
-        .dlg-head {
-          display: flex; align-items: center; gap: 0.6rem;
-          margin-bottom: 0.5rem;
-        }
-        .dlg-portrait {
-          flex-shrink: 0;
-          width: 44px; height: 44px;
-          border: 2px solid var(--spk);
-          border-radius: 8px;
-          background: #05030c;
-          box-shadow: 0 0 16px color-mix(in srgb, var(--spk) 50%, transparent);
-          overflow: hidden;
-          display: grid; place-items: center;
-          animation: portraitPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
-        }
-        .dlg-portrait svg { width: 40px; height: 40px; }
-        @keyframes portraitPop {
-          0%   { transform: scale(0.4) rotate(-8deg); opacity: 0; }
-          100% { transform: scale(1) rotate(0); opacity: 1; }
-        }
         .dlg-who {
-          font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700;
+          display: block;
+          font-family: var(--font-mono); font-size: 0.64rem; font-weight: 700;
           letter-spacing: 0.2em; color: var(--spk);
           text-shadow: 0 0 12px var(--spk);
+          margin-bottom: 0.4rem;
         }
         .dlg-text {
           font-family: var(--font-body); font-size: 0.98rem; line-height: 1.55;
