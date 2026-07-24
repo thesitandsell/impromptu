@@ -2640,6 +2640,23 @@ function SecretGame({ onClose }) {
       }
       ctx.globalAlpha = 1;
 
+      // Ambient dust motes drifting up through the whole level. Positions are
+      // a pure function of time and index, so this adds atmosphere without
+      // touching the game loop's state or its verified physics.
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
+      ctx.fillStyle = sky.sun;
+      for (let i = 0; i < 40; i += 1) {
+        const mx = (i * 149 - cam * 0.5 + Math.sin(t * 0.4 + i) * 24) % (GAME_W + 40);
+        const px = mx < 0 ? mx + GAME_W + 40 : mx;
+        const py = (GAME_H - ((t * (12 + (i % 5) * 6) + i * 97) % (GAME_H + 40)));
+        ctx.globalAlpha = 0.12 + (i % 4) * 0.05 + Math.sin(t * 2 + i) * 0.05;
+        const s = 1 + (i % 3) * 0.7;
+        ctx.fillRect(px, py, s, s);
+      }
+      ctx.restore();
+      ctx.globalAlpha = 1;
+
       for (const g2 of scene.gears) {
         const x = g2.x - cam * 0.3;
         if (x < -120 || x > GAME_W + 120) continue;
@@ -3359,6 +3376,110 @@ function SecretGame({ onClose }) {
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
   }, [boss]);
+
+  // ── Living backdrop for the dialogue scenes ──
+  // While a story beat plays, the canvas is otherwise idle. This draws an
+  // animated set behind the dialogue so a scene feels like it happens
+  // somewhere: the sky drifts, embers rise, islands and gears float past,
+  // and the palette walks forward through the story (dawn to the final
+  // blaze) so the mood tracks the plot.
+  const sceneBeat = story ? story.beat : -1;
+  useEffect(() => {
+    if (sceneBeat < 0 || won) return undefined;
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    canvas.width = GAME_W; canvas.height = GAME_H;
+    ctx.imageSmoothingEnabled = true;
+
+    const sky = SKIES[Math.min(sceneBeat, SKIES.length - 1)];
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, GAME_H);
+    skyGrad.addColorStop(0, sky.top); skyGrad.addColorStop(0.5, sky.mid); skyGrad.addColorStop(0.86, sky.low);
+    const vigGrad = ctx.createRadialGradient(GAME_W / 2, GAME_H / 2, GAME_H * 0.3, GAME_W / 2, GAME_H / 2, GAME_H);
+    vigGrad.addColorStop(0, "#00000000"); vigGrad.addColorStop(1, "#000000cc");
+    const BW = GAME_W >> 2, BH = GAME_H >> 2;
+    const glow = document.createElement("canvas"); glow.width = BW; glow.height = BH;
+    const gctx = glow.getContext("2d");
+
+    const r = rnd(sceneBeat * 2311 + 7);
+    const isles = [], gears = [], clouds = [];
+    for (let x = -200; x < GAME_W + 300; x += 150 + r() * 140) isles.push({ x, y: 150 + r() * 150, w: 80 + r() * 130, h: 24 + r() * 30, d: 0.15 + r() * 0.25 });
+    for (let x = -200; x < GAME_W + 300; x += 200 + r() * 160) gears.push({ x, y: 120 + r() * 150, rad: 20 + r() * 26, teeth: 8 + Math.floor(r() * 5), spin: r() > 0.5 ? 1 : -1 });
+    for (let x = -200; x < GAME_W + 300; x += 180 + r() * 150) clouds.push({ x, y: 40 + r() * 150, w: 90 + r() * 120, h: 16 + r() * 20, d: 0.08 + r() * 0.12 });
+    const embers = [];
+    for (let i = 0; i < 46; i += 1) embers.push({ x: r() * GAME_W, y: r() * GAME_H, spd: 12 + r() * 34, sway: r() * Math.PI * 2, size: 1 + r() * 2.4 });
+
+    let t = 0, raf = 0, last = performance.now(), scroll = 0;
+
+    const draw = (dt) => {
+      t += dt; scroll += dt * 14;
+      ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, GAME_W, GAME_H);
+      // sun + soft rays
+      const sunX = GAME_W * 0.68, sunY = GAME_H * 0.34;
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      const sg = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 210);
+      sg.addColorStop(0, sky.sun); sg.addColorStop(0.28, sky.rim + "44"); sg.addColorStop(1, "#00000000");
+      ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sunX, sunY, 210, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 0.1;
+      for (let i = 0; i < 12; i += 1) {
+        const a = (Math.PI * 2 * i) / 12 + t * 0.05;
+        ctx.fillStyle = sky.sun; ctx.beginPath(); ctx.moveTo(sunX, sunY);
+        ctx.lineTo(sunX + Math.cos(a - 0.05) * 500, sunY + Math.sin(a - 0.05) * 500);
+        ctx.lineTo(sunX + Math.cos(a + 0.05) * 500, sunY + Math.sin(a + 0.05) * 500);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+      // clouds
+      for (const c of clouds) {
+        const x = ((c.x - scroll * c.d) % (GAME_W + 400) + GAME_W + 400) % (GAME_W + 400) - 200;
+        ctx.globalAlpha = 0.2; ctx.fillStyle = sky.sun;
+        ctx.beginPath(); ctx.ellipse(x, c.y + Math.sin(t * 0.3 + c.x) * 4, c.w, c.h, 0, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      // gears
+      for (const g of gears) {
+        const x = ((g.x - scroll * 0.3) % (GAME_W + 400) + GAME_W + 400) % (GAME_W + 400) - 200;
+        ctx.save(); ctx.translate(x, g.y); ctx.rotate(t * 0.3 * g.spin); ctx.globalAlpha = 0.24;
+        ctx.strokeStyle = sky.top; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(0, 0, g.rad, 0, Math.PI * 2); ctx.stroke();
+        for (let i = 0; i < g.teeth; i += 1) { const a = (Math.PI * 2 * i) / g.teeth; ctx.beginPath(); ctx.moveTo(Math.cos(a) * g.rad, Math.sin(a) * g.rad); ctx.lineTo(Math.cos(a) * (g.rad + 8), Math.sin(a) * (g.rad + 8)); ctx.stroke(); }
+        ctx.restore();
+      }
+      // floating islands
+      for (const is of isles) {
+        const x = ((is.x - scroll * is.d) % (GAME_W + 500) + GAME_W + 500) % (GAME_W + 500) - 250;
+        const yy = is.y + Math.sin(t * 0.5 + is.x * 0.01) * 5;
+        ctx.fillStyle = sky.sea;
+        ctx.beginPath(); ctx.moveTo(x, yy); ctx.lineTo(x + is.w, yy); ctx.lineTo(x + is.w * 0.62, yy + is.h * 2.1); ctx.lineTo(x + is.w * 0.3, yy + is.h * 1.4); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 0.55; ctx.fillStyle = sky.rim; ctx.fillRect(x, yy - 3, is.w, 3); ctx.globalAlpha = 1;
+      }
+      // wreck-sea shimmer along the bottom
+      const seaY = GAME_H - 60;
+      const sgd = ctx.createLinearGradient(0, seaY, 0, GAME_H); sgd.addColorStop(0, sky.sea + "00"); sgd.addColorStop(1, sky.sea);
+      ctx.fillStyle = sgd; ctx.fillRect(0, seaY, GAME_W, 60);
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = sky.rim; ctx.globalAlpha = 0.4; ctx.lineWidth = 1.4;
+      for (let i = 0; i < 3; i += 1) { ctx.beginPath(); for (let x = 0; x <= GAME_W; x += 20) { const yy = seaY + 14 + i * 13 + Math.sin(x * 0.02 + t * 1.4 + i) * 3; if (x === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy); } ctx.stroke(); }
+      ctx.restore();
+      // rising embers
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      for (const e of embers) {
+        e.y -= e.spd * dt; e.sway += dt;
+        if (e.y < -6) { e.y = GAME_H + 6; e.x = Math.random() * GAME_W; }
+        const ex = e.x + Math.sin(e.sway) * 10;
+        ctx.globalAlpha = 0.35 + Math.sin(e.sway * 2) * 0.25;
+        ctx.fillStyle = sky.sun; ctx.fillRect(ex, e.y, e.size, e.size);
+      }
+      ctx.restore();
+
+      // bloom + vignette
+      gctx.clearRect(0, 0, BW, BH); gctx.drawImage(canvas, 0, 0, BW, BH);
+      ctx.save(); ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.24; ctx.drawImage(glow, 0, 0, GAME_W, GAME_H); ctx.globalAlpha = 0.14; ctx.drawImage(glow, -6, -4, GAME_W + 12, GAME_H + 8); ctx.restore();
+      ctx.fillStyle = vigGrad; ctx.fillRect(0, 0, GAME_W, GAME_H);
+    };
+
+    const loop = (now) => { const dt = Math.min((now - last) / 1000, 1 / 30); last = now; draw(dt); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [sceneBeat, won]);
 
   const advanceStory = () => {
     const beatArr = STORY[story.beat];
