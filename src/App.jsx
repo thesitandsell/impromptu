@@ -581,6 +581,7 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
   const [difficulty, setDifficulty] = useState("Random");
   const [phase, setPhase] = useState(PHASES.IDLE);
   const [countdown, setCountdown] = useState(0);
+  const [beepFlash, setBeepFlash] = useState(0); // bumps on each beep to drive a visual pulse
   const [currentQuote, setCurrentQuote] = useState(null);
   const [showCameraNotice, setShowCameraNotice] = useState(true);
   const [recordingEnabled, setRecordingEnabled] = useState(false);
@@ -705,20 +706,49 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
     } catch (e) { /* Web Audio unsupported, beeps just won't play */ }
   };
 
-  const playBeep = () => {
+  // A single beep pulse: a bright fundamental plus an octave on top and a
+  // little low body, so it carries in a noisy room. `strong` (used for the
+  // final 90s beep) bumps the pitch and level for a clear "you're on the
+  // clock now" cue.
+  const beepPulse = (startAt, dur, strong) => {
+    const ctx = audioCtxRef.current;
+    const base = strong ? 1046 : 880;               // C6 vs A5
+    const peak = strong ? 0.5 : 0.4;
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.0001, startAt);
+    master.gain.exponentialRampToValueAtTime(peak, startAt + 0.008);
+    master.gain.setValueAtTime(peak, startAt + dur * 0.5);
+    master.gain.exponentialRampToValueAtTime(0.0001, startAt + dur);
+    master.connect(ctx.destination);
+    const voices = [
+      { type: "square", f: base, g: 0.5 },          // presence
+      { type: "sine", f: base * 2, g: 0.35 },       // brightness
+      { type: "sine", f: base / 2, g: 0.45 },       // body
+    ];
+    for (const v of voices) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = v.type;
+      osc.frequency.value = v.f;
+      g.gain.value = v.g;
+      osc.connect(g).connect(master);
+      osc.start(startAt);
+      osc.stop(startAt + dur + 0.02);
+    }
+  };
+
+  const playBeep = (strong = false) => {
     try {
       const ctx = audioCtxRef.current;
       if (!ctx) return;
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
-      osc.connect(gain).connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.22);
+      const now = ctx.currentTime;
+      // A double "beep-beep" reads as an intentional cue, not a stray click.
+      // The strong (90s) beep gets a third pulse so it stands apart.
+      beepPulse(now, 0.13, strong);
+      beepPulse(now + 0.19, 0.13, strong);
+      if (strong) beepPulse(now + 0.38, 0.16, strong);
+      // Reinforce it visually in case the sound is muted.
+      setBeepFlash((n) => n + 1);
     } catch (e) { /* ignore playback errors */ }
   };
 
@@ -728,10 +758,13 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
       stopRecording();
       setPhase(PHASES.DONE);
     }, (remaining) => {
-      // Beep every 30s, but only within the first 90s of the speech
+      // Beep every 30s, but only within the first 90s of the speech. The 90s
+      // beep is the "strong" one, marking the end of the beep window.
       const elapsed = 420 - remaining;
-      if (elapsed > 0 && elapsed <= 90 && elapsed % 30 === 0) playBeep();
+      if (elapsed > 0 && elapsed <= 90 && elapsed % 30 === 0) playBeep(elapsed === 90);
     });
+    // playBeep only touches a ref and a stable setter, so it needn't be a dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startCountdown]);
 
   const beginReading = useCallback(() => {
@@ -1009,14 +1042,25 @@ function PracticeTab({ allQuotes, onPhaseChange }) {
           </div>
 
           {phase !== PHASES.DONE && (
-            <CircularTimer
-              value={countdown}
-              max={timerMax}
-              color={timerColor}
-              size={220}
-              big={phase === PHASES.BUFFER || phase === PHASES.READING}
-              calm={timerCalm}
-            />
+            <div style={{ position: "relative", display: "inline-flex", justifyContent: "center" }}>
+              <CircularTimer
+                value={countdown}
+                max={timerMax}
+                color={timerColor}
+                size={220}
+                big={phase === PHASES.BUFFER || phase === PHASES.READING}
+                calm={timerCalm}
+              />
+              {/* A ring + "BEEP" pulse fires in sync with each audio beep, so
+                  the cue reads even with sound off. Remounts via key on every
+                  beep so the animation restarts cleanly. */}
+              {beepFlash > 0 && (
+                <span key={beepFlash} className="beep-pulse" aria-hidden="true">
+                  <span className="beep-ring" />
+                  <span className="beep-label">BEEP</span>
+                </span>
+              )}
+            </div>
           )}
 
           {phase === PHASES.BUFFER && (
@@ -4459,6 +4503,44 @@ export default function App() {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.6; }
         }
+
+        /* ── Timer beep pulse ── the visual half of the 30-second cue */
+        .beep-pulse {
+          position: absolute; inset: 0;
+          display: grid; place-items: center;
+          pointer-events: none;
+        }
+        .beep-ring {
+          position: absolute;
+          width: 220px; height: 220px;
+          border-radius: 50%;
+          border: 4px solid var(--warn);
+          animation: beepRing 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        .beep-label {
+          font-family: var(--font-mono);
+          font-weight: 700;
+          font-size: 1.15rem;
+          letter-spacing: 0.3em;
+          color: var(--warn);
+          text-shadow: 0 0 16px var(--warn);
+          transform: translateX(0.15em);
+          animation: beepLabel 0.7s ease both;
+        }
+        @keyframes beepRing {
+          0%   { transform: scale(0.86); opacity: 0.9; border-width: 6px; }
+          100% { transform: scale(1.35); opacity: 0; border-width: 1px; }
+        }
+        @keyframes beepLabel {
+          0%   { transform: translateX(0.15em) scale(0.6); opacity: 0; }
+          25%  { transform: translateX(0.15em) scale(1.15); opacity: 1; }
+          70%  { transform: translateX(0.15em) scale(1); opacity: 1; }
+          100% { transform: translateX(0.15em) scale(1); opacity: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .beep-ring { animation-duration: 0.4s; }
+        }
+
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
